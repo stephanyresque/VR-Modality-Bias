@@ -1,0 +1,27 @@
+services:
+  baseline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: vr-modality-bias:latest
+    container_name: vr-modality-bias
+    working_dir: /workspace/VR-Modality-Bias
+    volumes:
+      - ../:/workspace/VR-Modality-Bias
+    environment:
+      - PYTHONPATH=/workspace/VR-Modality-Bias/src
+      - HF_HOME=/workspace/VR-Modality-Bias/.cache/huggingface
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: bash
+    stdin_open: true
+    tty: true

@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vr-modality-bias"
+version = "0.1.0"
+description = "Baseline (Stage 2) for the VR-Modality-Bias diagnostic pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "VR-Modality-Bias contributors" }]
+keywords = ["vlm", "modality-bias", "vr", "accessibility", "interpretability"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch",
+    "transformers==4.46.*",
+    "accelerate>=0.34,<1.0",
+    "numpy<2.0",
+    "Pillow>=10.0",
+    "h5py>=3.10",
+    "pyarrow>=14.0",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "requests>=2.31",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/akcit/VR-Modality-Bias"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vr_modality_bias"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/vr_modality_bias",
+    "configs",
+    "scripts",
+    "tests",
+    "README.md",
+    "EXPERIMENT.md",
+    "pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+"scripts/**" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning:torch.*",
+    "ignore::DeprecationWarning:transformers.*",
+]
