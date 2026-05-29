@@ -1,0 +1,22 @@
+{
+  "n_images": 30,
+  "n_residual_ratio_finite": 29,
+  "n_residual_ratio_finite_in_range": 29,
+  "range": {
+    "lo": 0.0,
+    "hi": 1.0
+  },
+  "residual_ratio": {
+    "median": 0.5913683176040649,
+    "q25": 0.4488237798213959,
+    "q75": 0.6475165486335754,
+    "iqr": 0.19869276881217957,
+    "min": 0.16997221112251282,
+    "max": 0.8471763134002686,
+    "mean": 0.5644752557935386,
+    "std": 0.15962646636545835
+  },
+  "model_id": "HuggingFaceTB/SmolVLM-256M-Instruct",
+  "prompt_key": "caption_short",
+  "seed_global": 42
+}

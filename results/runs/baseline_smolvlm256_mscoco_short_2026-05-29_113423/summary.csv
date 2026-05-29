@@ -1,0 +1,31 @@
+image_id,caption_len,n_layers,residual_ratio,model_id,prompt_key,caption_ref
+000000000139,12,30,0.571212649345398,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A yellow room has a television and a table with chairs.
+000000000285,9,30,0.419579416513443,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A brown bear is looking at the camera.
+000000000632,15,30,0.7038795948028564,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A bedroom with a window, a bed, books, and a plant."
+000000000724,9,30,0.3931899666786194,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A stop sign is visible on the street.
+000000000776,12,30,0.5816153287887573,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A group of teddy bears are lying down on a couch.
+000000000785,15,30,0.6453660726547241,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A person in a red jacket stands in the snow, holding ski poles."
+000000000802,13,30,0.6475165486335754,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A kitchen with a stove, an oven, and a refrigerator."
+000000000872,16,30,0.5017889738082886,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A baseball player is in the process of catching a pitch, surrounded by trees."
+000000000885,25,30,0.7807350754737854,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A tennis player is reaching towards a player on the other side of a wall, advertising a ""JPMorgan"" deal."
+000000001000,28,30,0.7915594577789307,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A group of people, including some in red and some in turquoise, are standing on a tennis court, among them some wearing tennis gloves."
+000000001268,17,30,0.5996188521385193,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"People, water, bridge, birds, sky, sun, ground, open space."
+000000001296,19,30,0.582384467124939,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A woman holds a mobile phone in her hand and is looking at it with a serious expression.
+000000001353,27,30,0.7607860565185547,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"The image features a scene set inside an indoor playground, where children are seated on small swings and ride in a red and black ride."
+000000001425,12,30,0.6022966504096985,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A black and white image shows a sandwich on a plate.
+000000001490,17,30,0.6644975543022156,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A black and white photo shows a surfer on a paddleboard in the ocean.
+000000001503,5,30,nan,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,Apple computers with wheels.
+000000001532,12,30,0.6331353783607483,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"Vehicles on the highway, sign for Hollywood Blvd."
+000000001584,26,30,0.8471763134002686,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A double-decker bus is driving down the street with a large sign above it that says 'ALDWYCH'.
+000000001675,12,30,0.5913683176040649,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A black cat is sitting on top of a laptop keyboard.
+000000001761,10,30,0.37852874398231506,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,Three airplanes fly over a bridge in a city.
+000000001818,12,30,0.35626745223999023,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,An animal is biting and drinking from a zebra's body.
+000000001993,13,30,0.6218872666358948,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A room has a bed, a table, and a lamp."
+000000002006,15,30,0.5565077662467957,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A purple bus with the number 96 is heading to the station.
+000000002149,6,30,0.16997221112251282,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,Apples in a bowl.
+000000002153,23,30,0.712020218372345,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A baseball game is underway on a grass and dirt field with three players and one pitcher, the background is blurred."
+000000002157,10,30,0.4488237798213959,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,I have a cake and grapes on the table.
+000000002261,7,30,0.329552561044693,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A person swimming in a wave.
+000000002299,15,30,0.5566916465759277,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A black and white photo of a group of children posing for a picture.
+000000002431,14,30,0.6058205962181091,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,"A plate with bread, wine, and a knife contains a sauce."
+000000002473,8,30,0.3160035014152527,HuggingFaceTB/SmolVLM-256M-Instruct,caption_short,A skiier jumps in the sky.

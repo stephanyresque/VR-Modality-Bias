@@ -1,0 +1,6 @@
+2026-05-29T11:30:28 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113023
+2026-05-29T11:30:28 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-256M-Instruct on cuda (dtype=torch.float16)…
+2026-05-29T11:30:31 INFO __main__ :: Loaded. n_layers=30
+2026-05-29T11:30:31 INFO __main__ :: Loaded 1 reference captions.
+2026-05-29T11:30:31 INFO __main__ :: [000000000139] saved (time=0.36 s, vram_peak=619.48 MB, disk=7.99 MB)
+2026-05-29T11:30:31 INFO __main__ :: scripts/04 rollup — 1 pair(s), total=0.36 s, median/pair=0.36 s, VRAM peak=619.48 MB, disk total=7.99 MB (median/pair=7.99 MB)

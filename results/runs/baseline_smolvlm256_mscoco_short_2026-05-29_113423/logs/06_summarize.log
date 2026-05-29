@@ -1,0 +1,6 @@
+2026-05-29T11:34:47 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423
+2026-05-29T11:34:47 INFO __main__ :: Loaded 30 metric row(s) from /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/metrics.parquet.
+2026-05-29T11:34:47 INFO __main__ :: Wrote 30 row(s) to /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/summary.csv.
+2026-05-29T11:34:47 INFO __main__ :: Wrote /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/summary.json.
+2026-05-29T11:34:47 INFO __main__ :: residual_ratio summary — n_finite_in_range=29/30, median=0.5913683176040649, q25=0.4488237798213959, q75=0.6475165486335754, iqr=0.19869276881217957
+2026-05-29T11:34:47 INFO __main__ :: Diagnostics — pairs=30, total=6.31 s, median/pair=0.20 s, VRAM peak=619.50 MB, disk pairs=243.79 MB (median/pair=8.02 MB), disk run=243.96 MB

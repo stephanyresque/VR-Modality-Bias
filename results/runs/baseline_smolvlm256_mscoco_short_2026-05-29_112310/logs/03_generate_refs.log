@@ -1,0 +1,4 @@
+2026-05-29T11:23:10 INFO __main__ :: Run dir: results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_112310
+2026-05-29T11:23:10 INFO __main__ :: Prompt key: caption_short
+2026-05-29T11:23:10 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-256M-Instruct on cuda (dtype=torch.float16)…
+2026-05-29T11:23:14 INFO __main__ :: Loaded. n_layers=30

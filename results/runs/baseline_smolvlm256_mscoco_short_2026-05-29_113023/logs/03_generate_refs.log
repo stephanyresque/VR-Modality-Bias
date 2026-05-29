@@ -1,0 +1,6 @@
+2026-05-29T11:30:23 INFO __main__ :: Run dir: results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113023
+2026-05-29T11:30:23 INFO __main__ :: Prompt key: caption_short
+2026-05-29T11:30:23 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-256M-Instruct on cuda (dtype=torch.float16)…
+2026-05-29T11:30:27 INFO __main__ :: Loaded. n_layers=30
+2026-05-29T11:30:27 INFO vr_modality_bias.experiment.reference :: [000000000139] caption_ref: A yellow room has a television and a table with chairs.
+2026-05-29T11:30:27 INFO __main__ :: Wrote 1 caption(s) to results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113023/ref_captions.jsonl.
