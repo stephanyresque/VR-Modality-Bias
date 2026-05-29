@@ -1,9 +1,4 @@
-"""VR-Modality-Bias — Baseline (Stage 2).
-
-Vertical slice of the diagnostic pipeline for modality bias in VLMs applied
-to VR accessibility. See EXPERIMENT.md at the repository root for the full
-specification.
-"""
+"""VR-Modality-Bias — Baseline"""
 
 from __future__ import annotations
 

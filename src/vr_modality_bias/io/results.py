@@ -1,10 +1,4 @@
-"""Per-run result writers — ``metrics.parquet``, ``summary.csv``, ``summary.json``.
-
-Schema choices follow the user's call: KL and cosine matrices land as typed
-nested lists (``list<list<float32>>``) so downstream tooling can inspect
-them without a deserialiser. Scalar columns are kept narrow (``int32`` /
-``float32``) to keep the file compact.
-"""
+"""Per-run result writers — ``metrics.parquet``, ``summary.csv``, ``summary.json``"""
 
 from __future__ import annotations
 
@@ -58,12 +52,7 @@ def _matrix_to_nested_list(arr: np.ndarray | None) -> list[list[float]]:
 
 
 def write_metrics_table(rows: Iterable[dict[str, Any]], path: Path) -> int:
-    """Write ``rows`` to ``path`` as a single Parquet file.
-
-    Each row dict must contain at least the canonical keys listed in
-    :data:`METRICS_SCHEMA`. KL and cosine matrices may be passed as either
-    NumPy arrays or Python lists-of-lists.
-    """
+    
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -84,9 +73,6 @@ def write_metrics_table(rows: Iterable[dict[str, Any]], path: Path) -> int:
 def read_metrics_table(path: Path) -> list[dict[str, Any]]:
     """Read a Parquet file written by :func:`write_metrics_table` into row dicts."""
     return pq.read_table(Path(path)).to_pylist()
-
-
-# ---------------------------------------------------------------- summary
 
 
 _SUMMARY_CSV_COLUMNS: tuple[str, ...] = (
@@ -120,14 +106,7 @@ def compute_summary_stats(
     range_lo: float = 0.0,
     range_hi: float = 1.0,
 ) -> dict[str, Any]:
-    """Aggregate per-image rows into the summary.json payload.
 
-    Statistics (median, IQR, etc.) are computed over the *finite-and-in-range*
-    subset of ``residual_ratio``. The full counts (``n_images``,
-    ``n_residual_ratio_finite_in_range``, ``n_residual_ratio_finite``) are
-    reported separately so the §7 Phase 4 criterion ("residual_ratio finite
-    and in [0, 1] for > 25 of 30 images") is directly auditable.
-    """
     rows = list(rows)
     values = np.asarray(
         [row.get("residual_ratio") for row in rows], dtype=np.float64

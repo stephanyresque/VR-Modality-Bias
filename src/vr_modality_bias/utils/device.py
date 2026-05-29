@@ -1,8 +1,4 @@
-"""Device and dtype helpers.
-
-Defaults to CUDA when available (the canonical execution target — see
-EXPERIMENT.md §3.1) and falls back to CPU otherwise.
-"""
+"""Device and dtype helpers"""
 
 from __future__ import annotations
 
@@ -15,15 +11,7 @@ __all__ = ["select_device", "resolve_dtype"]
 
 
 def select_device(prefer: str = "cuda") -> "torch.device":
-    """Return the best torch device available, honouring ``prefer``.
-
-    Args:
-        prefer: ``"cuda"`` (default), ``"mps"``, or ``"cpu"``. If the
-            preferred device is unavailable, falls back to CPU.
-
-    Returns:
-        A ``torch.device`` instance.
-    """
+    """Return the best torch device available, honouring ``prefer``"""
     import torch
 
     prefer = prefer.lower()

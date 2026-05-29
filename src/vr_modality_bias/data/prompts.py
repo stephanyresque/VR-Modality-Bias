@@ -1,9 +1,4 @@
-"""Prompt registry.
-
-Only ``caption_short`` is exercised by the baseline (EXPERIMENT.md §4.7).
-The remaining keys are registered but left inactive (``None``) for the full
-Stage 2 experiment — see EXPERIMENT.md §9 (non-objectives) and §4.7.
-"""
+"""Prompt registry."""
 
 from __future__ import annotations
 
@@ -16,16 +11,36 @@ CAPTION_SHORT: str = (
     "sentence."
 )
 
-# Inactive in the baseline. Kept here so the prompt key set is stable for
-# downstream code; populate before enabling the corresponding task.
-CAPTION_MEDIUM: str | None = None  # TODO: deferred (Stage 2 full)
-CAPTION_LONG: str | None = None  # TODO: deferred (Stage 2 full)
-VQA_COUNT: str | None = None  # TODO: deferred (Stage 2 full)
-VQA_SPATIAL: str | None = None  # TODO: deferred (Stage 2 full)
-VQA_RECOGNITION: str | None = None  # TODO: deferred (Stage 2 full)
+CAPTION_MEDIUM: str = (
+    "Describe the image in three to five sentences. Be objective and "
+    "specific. Mention the main subject, relevant objects, setting, and "
+    "visible actions or relationships. Do not add opinions or information "
+    "that cannot be inferred from the image."
+)
+CAPTION_LONG: str = (
+    "Describe the image in a detailed paragraph. Be objective and organized. "
+    "Cover the main subject, setting, visible objects, actions, spatial "
+    "relationships, and any important contextual details. Do not speculate "
+    "beyond what is visible."
+)
+VQA_COUNT: str = (
+    "Answer the counting question using only the image. Return a concise "
+    "answer with the number and, when helpful, the counted object. If the "
+    "quantity is not visible, answer that it cannot be determined."
+)
+VQA_SPATIAL: str = (
+    "Answer the spatial question using only the image. Be concise and refer "
+    "to visible positions, directions, or relationships between objects. If "
+    "the relationship is not visible, answer that it cannot be determined."
+)
+VQA_RECOGNITION: str = (
+    "Answer the recognition question using only the image. Identify the "
+    "visible object, person, place, attribute, or action as directly as "
+    "possible. If it is not visible, answer that it cannot be determined."
+)
 
 
-PROMPTS: dict[str, str | None] = {
+PROMPTS: dict[str, str] = {
     "caption_short": CAPTION_SHORT,
     "caption_medium": CAPTION_MEDIUM,
     "caption_long": CAPTION_LONG,
@@ -36,15 +51,9 @@ PROMPTS: dict[str, str | None] = {
 
 
 def get_prompt(key: str) -> str:
-    """Return the prompt text for ``key`` or raise if missing/inactive."""
+    """Return the prompt text for ``key`` or raise if missing."""
     if key not in PROMPTS:
         raise KeyError(
             f"Unknown prompt key {key!r}. Known keys: {sorted(PROMPTS)}"
         )
-    value = PROMPTS[key]
-    if value is None:
-        raise NotImplementedError(
-            f"Prompt {key!r} is registered but inactive in the baseline. "
-            "See EXPERIMENT.md §9."
-        )
-    return value
+    return PROMPTS[key]

@@ -1,9 +1,4 @@
-"""Simple key→wrapper-factory registry for VLMs.
-
-Allows ``experiment/`` scripts to ask for ``"smolvlm-256m"`` and receive a
-fresh, unloaded :class:`ModelWrapper`. Add new model families by registering
-their factories here (deferred per EXPERIMENT.md §9).
-"""
+"""Simple key→wrapper-factory registry for VLMs"""
 
 from __future__ import annotations
 
@@ -38,12 +33,7 @@ def list_models() -> list[str]:
 
 
 def _register_builtin() -> None:
-    """Eagerly register baseline wrappers without importing heavy deps.
-
-    The factory closures defer the ``from vr_modality_bias.models.smolvlm
-    import SmolVLMWrapper`` until ``build_model`` is actually called, so
-    importing ``registry`` does not pull in ``transformers``.
-    """
+    """Eagerly register baseline wrappers without importing heavy deps"""
 
     def _smolvlm_256m() -> ModelWrapper:
         from vr_modality_bias.models.smolvlm import SmolVLMWrapper

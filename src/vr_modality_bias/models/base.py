@@ -1,10 +1,4 @@
-"""Abstract interface for VLM wrappers.
-
-EXPERIMENT.md §6.1. Subclasses implement the concrete (load, generate,
-teacher-forced forward, lm_head/n_layers introspection) for a specific
-model. ``SmolVLMWrapper`` is the only concrete class active in the
-baseline.
-"""
+"""Abstract interface for VLM wrappers"""
 
 from __future__ import annotations
 
@@ -20,25 +14,6 @@ __all__ = ["HiddenStatesResult", "ModelWrapper"]
 
 @dataclass
 class HiddenStatesResult:
-    """Output of a single teacher-forced forward pass.
-
-    Attributes:
-        hidden_states: Stacked layer outputs with shape
-            ``(n_layers, seq_len, hidden_dim)`` (the embedding output at
-            index 0 of ``outputs.hidden_states`` is **dropped**, per
-            EXPERIMENT.md §4.4 which indexes layers in ``[1, L]``).
-            Typically fp16 on CPU by the time it is returned.
-        input_ids: 1-D ``int64`` token ids, length ``seq_len``.
-        caption_start: Index of the first caption token in ``input_ids``.
-            All comparisons in §4.4 read positions ``t - 1`` for
-            ``t in [caption_start, caption_start + caption_len)``.
-        caption_len: Number of caption tokens
-            (``len(input_ids) - caption_start``).
-        metadata: Free-form per-run metadata (``model_id``, ``prompt_key``,
-            seeds, etc.). Persisted to HDF5 attrs by ``io.storage``.
-        attention_mask: Optional 1-D attention mask matching ``input_ids``.
-    """
-
     hidden_states: torch.Tensor
     input_ids: torch.Tensor
     caption_start: int

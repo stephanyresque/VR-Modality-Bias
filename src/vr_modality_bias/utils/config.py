@@ -1,9 +1,4 @@
-"""Configuration loading and snapshotting.
-
-Light wrapper over ``yaml.safe_load`` so every script reads the config the
-same way. Not listed in EXPERIMENT.md §5 (the layout there is illustrative,
-see §6 preface) — added because every script needs it.
-"""
+"""Configuration loading and snapshotting"""
 
 from __future__ import annotations
 

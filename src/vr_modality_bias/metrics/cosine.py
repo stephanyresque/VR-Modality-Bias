@@ -1,10 +1,4 @@
-"""Cosine distance per (layer, token) — Metric 2 of EXPERIMENT.md §4.5.
-
-Computed directly on hidden states (no projection through ``lm_head``).
-Intermediate computation in fp32; the result is clamped to ``>= 0`` because
-floating-point artefacts can produce slightly negative values when the two
-vectors are nearly identical.
-"""
+"""Cosine distance per (layer, token)"""
 
 from __future__ import annotations
 
@@ -21,24 +15,7 @@ def compute_cosine_distance_matrix(
     caption_len: int,
     eps: float = 1e-8,
 ) -> np.ndarray:
-    """Cosine distance between A and B at every (layer, predictive position).
-
-    .. math::
-
-        \\text{cos\\_dist}^{l, t} = 1 - \\frac{\\langle h^{A,l}_{t-1},
-            h^{B,l}_{t-1} \\rangle}{\\|h^{A,l}_{t-1}\\| \\cdot
-            \\|h^{B,l}_{t-1}\\|}.
-
-    Args:
-        hidden_states_A: ``(n_layers, seq_len, hidden_dim)``.
-        hidden_states_B: same shape as ``hidden_states_A``.
-        caption_start: First caption token index in the input sequence.
-        caption_len: Number of caption tokens (output columns).
-        eps: Small floor for the norms to avoid division by zero.
-
-    Returns:
-        A ``(n_layers, caption_len)`` ``float32`` array.
-    """
+    """Cosine distance between A and B at every (layer, predictive position)"""
     if hidden_states_A.shape != hidden_states_B.shape:
         raise ValueError(
             f"hidden_states_A.shape={tuple(hidden_states_A.shape)} != "

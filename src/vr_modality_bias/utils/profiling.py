@@ -1,10 +1,4 @@
-"""Light-weight profiling primitives: timing, CUDA peak memory, disk size, formatting.
-
-Used by ``scripts/04_collect_hidden_states.py`` to measure per-pair cost and
-by ``scripts/06_summarize.py`` to consolidate the run-level diagnostics
-required by EXPERIMENT.md §7 Phase 6 (tempo total, tempo por par mediano,
-VRAM peak, tamanho em disco por par, tamanho total).
-"""
+"""Light-weight profiling primitives: timing, CUDA peak memory, disk size, formatting"""
 
 from __future__ import annotations
 
@@ -24,7 +18,6 @@ __all__ = [
 
 
 class Timer:
-    """Context manager that exposes elapsed wall-clock seconds in ``self.seconds``."""
 
     def __init__(self) -> None:
         self.seconds: float = 0.0
@@ -41,7 +34,7 @@ class Timer:
 
 
 def reset_cuda_peak() -> None:
-    """Reset ``torch.cuda.max_memory_allocated()``; no-op without CUDA / torch."""
+
     try:
         import torch
     except ImportError:
@@ -51,7 +44,7 @@ def reset_cuda_peak() -> None:
 
 
 def cuda_peak_bytes() -> int:
-    """Return ``torch.cuda.max_memory_allocated()`` or ``0`` if CUDA is unavailable."""
+
     try:
         import torch
     except ImportError:
@@ -62,11 +55,7 @@ def cuda_peak_bytes() -> int:
 
 
 def dir_size_bytes(path: Path) -> int:
-    """Recursive total byte size of every file under ``path``.
-
-    Returns ``0`` for missing paths and silently ignores files whose
-    ``stat()`` fails (e.g. a permission error mid-walk).
-    """
+    
     path = Path(path)
     if not path.exists():
         return 0
@@ -89,7 +78,7 @@ _BYTE_UNITS: tuple[str, ...] = ("B", "KB", "MB", "GB", "TB", "PB")
 
 
 def format_bytes(n: int | float) -> str:
-    """Human-friendly byte size, e.g. ``"1.34 GB"``."""
+
     value = float(n)
     for unit in _BYTE_UNITS[:-1]:
         if abs(value) < 1024.0:
@@ -99,11 +88,7 @@ def format_bytes(n: int | float) -> str:
 
 
 def format_seconds(n: float | None) -> str:
-    """Human-friendly seconds: ``"1.23 s"``, ``"45.00 s"``, ``"1m 15.0s"``, ``"2h 5m"``.
-
-    Accepts ``None`` and returns ``"n/a"`` — convenient for stats over empty
-    collections.
-    """
+    
     if n is None:
         return "n/a"
     if n < 0:
@@ -118,10 +103,7 @@ def format_seconds(n: float | None) -> str:
 
 
 def summarize_seconds(values: Iterable[float]) -> dict[str, float | int | None]:
-    """Aggregate timings into ``{n, total, median, mean, min, max}``.
-
-    Returns ``None`` for the central tendency stats when the input is empty.
-    """
+    
     import statistics
 
     arr = [float(v) for v in values]

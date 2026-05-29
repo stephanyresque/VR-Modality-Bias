@@ -1,9 +1,4 @@
-"""Centralised logging setup.
-
-Per EXPERIMENT.md §8, production code uses ``logging`` rather than
-``print``. Importing this module does not configure anything — call
-:func:`configure_logging` once from each script entry point.
-"""
+"""Centralised logging setup"""
 
 from __future__ import annotations
 
@@ -29,11 +24,7 @@ def configure_logging(
     fmt: str = _DEFAULT_FORMAT,
     datefmt: str = _DEFAULT_DATEFMT,
 ) -> None:
-    """Configure the root logger with a stderr handler and optional file handler.
-
-    Safe to call multiple times — any existing handlers on the root logger
-    are replaced.
-    """
+    
     root = logging.getLogger()
     if isinstance(level, str):
         level = getattr(logging, level.upper(), logging.INFO)

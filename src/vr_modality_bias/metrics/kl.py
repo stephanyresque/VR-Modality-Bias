@@ -1,20 +1,4 @@
-"""KL divergence per (layer, token) — Metric 1 of EXPERIMENT.md §4.5.
-
-For each layer ``l`` and each caption position ``t``, project the *predictive*
-hidden state ``h_{t-1}`` through the model's ``lm_head`` to obtain logits,
-softmax to probabilities, and compute the divergence
-
-.. math::
-
-    D_{KL}(P^{l,t}_B \\,\\|\\, P^{l,t}_A)
-       = \\sum_v P^{l,t}_B(v) \\log \\frac{P^{l,t}_B(v)}{P^{l,t}_A(v)}.
-
-The full softmax is replaced by the top-K + ``other-mass`` approximation
-described in §4.5 (``K = 50`` by default). All intermediate computation is
-performed in fp32 regardless of the input dtype. Results are clamped at
-``>= 0`` (a tiny negative value can arise when ``P_B`` is essentially zero
-on the union and we lose precision in the other-mass term).
-"""
+"""KL divergence per (layer, token)"""
 
 from __future__ import annotations
 
@@ -30,11 +14,7 @@ _DEFAULT_EPS = 1e-12
 def _infer_head_device_and_dtype(
     lm_head: torch.nn.Module,
 ) -> tuple[torch.device | None, torch.dtype | None]:
-    """Return ``(device, dtype)`` of ``lm_head``'s first parameter, or ``(None, None)``.
-
-    ``nn.Identity`` (used in tests) has no parameters; the caller falls back
-    to the hidden-states tensor's device and to fp32.
-    """
+    
     try:
         param = next(lm_head.parameters())
     except StopIteration:
@@ -52,31 +32,7 @@ def compute_kl_matrix(
     device: torch.device | None = None,
     eps: float = _DEFAULT_EPS,
 ) -> np.ndarray:
-    """KL(B || A) per (layer, token) via top-K + other-mass.
-
-    Args:
-        lm_head: The model's language-modelling head (e.g.
-            ``model.lm_head``), used to project hidden states into vocab
-            logits. Must be a callable :class:`torch.nn.Module` that maps
-            ``(..., hidden_dim) -> (..., vocab_size)``.
-        hidden_states_A: Tensor of shape ``(n_layers, seq_len, hidden_dim)``
-            from condition A (real image).
-        hidden_states_B: Tensor of shape ``(n_layers, seq_len, hidden_dim)``
-            from condition B (noise image). Must match ``hidden_states_A``.
-        caption_start: Index of the first caption token in the full input
-            sequence (so the predictive position for token ``caption_start``
-            is ``caption_start - 1``).
-        caption_len: Number of caption tokens; the output has
-            ``caption_len`` columns.
-        top_k: Vocabulary size of the top-K union used for the bulk-mass
-            estimate. Defaults to 50 per §4.5.
-        device: Compute device. If ``None``, uses the ``lm_head``'s device.
-        eps: Small constant added before logs and divisions for numerical
-            stability. Defaults to ``1e-12`` per §4.5.
-
-    Returns:
-        A ``(n_layers, caption_len)`` ``float32`` array.
-    """
+    """KL(B || A) per (layer, token) via top-K + other-mass"""
     if hidden_states_A.shape != hidden_states_B.shape:
         raise ValueError(
             f"hidden_states_A.shape={tuple(hidden_states_A.shape)} != "
@@ -105,8 +61,7 @@ def compute_kl_matrix(
     head_device, head_dtype = _infer_head_device_and_dtype(lm_head)
     if device is None:
         device = head_device if head_device is not None else hidden_states_A.device
-    # Project in the lm_head's native dtype (fp16/bf16 on GPU, fp32 on CPU);
-    # the softmax and KL accumulation are always promoted to fp32 below.
+
     project_dtype = head_dtype if head_dtype is not None else torch.float32
 
     kl_matrix = np.empty((n_layers, caption_len), dtype=np.float32)
@@ -124,7 +79,7 @@ def compute_kl_matrix(
         )
 
         with torch.no_grad():
-            logits_a = lm_head(h_a).float()  # (T, V) — promote to fp32
+            logits_a = lm_head(h_a).float() 
             logits_b = lm_head(h_b).float()
 
         vocab_size = logits_a.shape[-1]

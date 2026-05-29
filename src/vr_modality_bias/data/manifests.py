@@ -1,9 +1,4 @@
-"""Manifest read/write — one JSON Lines record per image.
-
-A manifest is a deterministic, run-independent description of the image
-subset used by the experiment. It is written by ``scripts/02_build_manifest.py``
-and consumed by ``scripts/03``–``scripts/07``.
-"""
+"""Manifest read/write --- one JSON Lines record per image."""
 
 from __future__ import annotations
 
@@ -17,16 +12,6 @@ __all__ = ["ImageRecord", "iter_manifest", "read_manifest", "write_manifest"]
 
 @dataclass(frozen=True)
 class ImageRecord:
-    """A single entry of the manifest.
-
-    Attributes:
-        image_id: Stable identifier (e.g. MSCOCO file stem ``"000000000139"``).
-        file_name: File name relative to the manifest's ``images_dir``.
-        width: Image width in pixels.
-        height: Image height in pixels.
-        source: Dataset key (e.g. ``"mscoco_baseline"``).
-    """
-
     image_id: str
     file_name: str
     width: int

@@ -1,16 +1,4 @@
-"""Run-directory management.
-
-A *run* materialises the artefacts of one execution of the baseline pipeline
-under ``results/runs/<run_name>_<YYYY-MM-DD_HHMMSS>/``. The first script that
-needs the run directory (``scripts/03_generate_refs.py``) creates it via
-:func:`make_run_dir`; downstream scripts (04–07) discover it via
-:func:`current_run_dir`.
-
-The active run for a given ``run_name`` is recorded in
-``results/runs/<run_name>_LATEST.txt`` — a single-line file containing the
-absolute path of the most recent run directory. Inspect or edit it to
-re-target subsequent scripts at a different run.
-"""
+"""Run-directory management"""
 
 from __future__ import annotations
 
@@ -33,16 +21,7 @@ def make_run_dir(
     *,
     timestamp: datetime | None = None,
 ) -> Path:
-    """Create a fresh ``<run_name>_<timestamp>/`` directory and update the pointer.
-
-    Args:
-        output_root: Parent directory (e.g. ``"results/runs"``).
-        run_name: Run identifier (from ``cfg["run"]["name"]``).
-        timestamp: Override (mainly for tests). Defaults to ``datetime.now()``.
-
-    Returns:
-        The absolute :class:`pathlib.Path` of the freshly-created directory.
-    """
+    
     output_root = Path(output_root)
     output_root.mkdir(parents=True, exist_ok=True)
     ts = (timestamp or datetime.now()).strftime(_TIMESTAMP_FMT)
@@ -55,12 +34,7 @@ def make_run_dir(
 
 
 def current_run_dir(output_root: Path | str, run_name: str) -> Path:
-    """Return the most recently created run directory for ``run_name``.
-
-    Raises:
-        FileNotFoundError: if no pointer exists or the path it points to
-            has been deleted.
-    """
+    
     output_root = Path(output_root)
     pointer = pointer_path(output_root, run_name)
     if not pointer.is_file():

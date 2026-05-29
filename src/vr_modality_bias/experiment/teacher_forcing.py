@@ -1,9 +1,4 @@
-"""Paired teacher-forced execution: real image (A) and uniform-noise image (B).
-
-EXPERIMENT.md §4.3 — each image is processed twice with the same
-``caption_ref``; the two resulting HDF5 files (one per condition) feed the
-metric pipeline downstream.
-"""
+"""Paired teacher-forced execution: real image (A) and uniform-noise image (B)"""
 
 from __future__ import annotations
 
@@ -45,15 +40,7 @@ def run_paired_for_image(
     compression: str | None = "gzip",
     compression_level: int = 4,
 ) -> tuple[Path, Path]:
-    """Run TF twice (A: real, B: noise) and persist both HDF5 files.
-
-    Raises:
-        RuntimeError: if ``input_ids`` differ between A and B (per
-            EXPERIMENT.md §4.3 sanity check).
-
-    Returns:
-        ``(path_A, path_B)`` — the two output file paths.
-    """
+    
     image_rgb = image.convert("RGB")
     noise_img = noise_image_uniform(image_rgb, seed=int(noise_seed))
 
@@ -114,11 +101,7 @@ def collect_paired_for_manifest(
     compression_level: int = 4,
     overwrite: bool = False,
 ) -> int:
-    """Iterate the manifest and call :func:`run_paired_for_image` for each entry.
-
-    Records whose ``image_id`` already has both ``*_A.h5`` and ``*_B.h5``
-    are skipped unless ``overwrite`` is set.
-    """
+    
     log = get_logger(__name__)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

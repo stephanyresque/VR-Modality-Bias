@@ -1,19 +1,4 @@
-"""HDF5 persistence for per-(image, condition) hidden states.
-
-Schema (EXPERIMENT.md §6.7)::
-
-    datasets:
-        /hidden_states     (n_layers, seq_len, hidden_dim)  f16  gzip
-        /input_ids         (seq_len,)                       i64
-        /attention_mask    (seq_len,)                       i8   (optional)
-    attrs:
-        image_id, condition (A|B), model_id, prompt_key,
-        caption_start, caption_len, seed_global, noise_seed,
-        caption_ref, timestamp_iso, hidden_dim
-
-One file per ``(image_id, condition)``; the canonical filename is
-``{image_id}__{condition}.h5``.
-"""
+"""HDF5 persistence for per-(image, condition) hidden states"""
 
 from __future__ import annotations
 
@@ -59,11 +44,7 @@ def save_hidden_states(
     compression: str | None = "gzip",
     compression_level: int = 4,
 ) -> Path:
-    """Persist a :class:`HiddenStatesResult` to ``path`` (HDF5).
-
-    ``extra_attrs`` is merged with ``result.metadata`` and written under the
-    canonical attr keys (any extra keys are also stored verbatim).
-    """
+   
     if condition not in {"A", "B"}:
         raise ValueError(f"condition must be 'A' or 'B', got {condition!r}.")
 
@@ -94,7 +75,6 @@ def save_hidden_states(
             )
             f.create_dataset("attention_mask", data=attn, dtype="int8")
 
-        # Compose attrs: canonical fields first, then any extras.
         attrs = dict(result.metadata)
         if extra_attrs:
             attrs.update(extra_attrs)
@@ -106,7 +86,7 @@ def save_hidden_states(
         for key in _ATTR_KEYS:
             if key in attrs and attrs[key] is not None:
                 f.attrs[key] = _coerce_attr_value(attrs[key])
-        # Persist any extras not in the canonical set too — useful for debug.
+
         for key, value in attrs.items():
             if key not in _ATTR_KEYS and value is not None and key not in f.attrs:
                 f.attrs[key] = _coerce_attr_value(value)
@@ -148,11 +128,7 @@ def load_hidden_states(path: Path) -> HiddenStatesResult:
 
 
 def _coerce_attr_value(value: Any) -> Any:
-    """Coerce a Python value into an HDF5-storable attr.
-
-    h5py accepts numpy scalars, bytes, strings, and numeric Python builtins
-    directly. ``pathlib.Path`` and other custom types are stringified.
-    """
+    
     if isinstance(value, (str, bytes, int, float, bool, np.generic)):
         return value
     return str(value)

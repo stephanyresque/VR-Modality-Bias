@@ -28,14 +28,17 @@ htmlcov/
 # Notebooks
 .ipynb_checkpoints/
 
-# Project data and outputs 
+# Project data and outputs
 data/raw/
 data/processed/*/images/
-results/runs/
 EXPERIMENT.md
 IEEE-conference-template-062824_ETAPA2.tex
 
-# Heavy artefacts that may be regenerated
+# Inside run directories, only heavy or regenerable artefacts are ignored.
+results/runs/*/hidden_states/
+results/runs/*/diagnostics_collect.jsonl
+
+# Heavy artefacts anywhere
 *.h5
 *.hdf5
 

@@ -1,8 +1,4 @@
-"""Free generation of ``caption_ref`` for every image in the manifest.
-
-EXPERIMENT.md §4.1. The output is a JSON Lines file (one record per image)
-that the teacher-forcing stage consumes as its forced target sequence.
-"""
+"""Free generation of ``caption_ref`` for every image in the manifest"""
 
 from __future__ import annotations
 
@@ -43,11 +39,7 @@ def generate_reference_captions(
     generation_kwargs: dict[str, Any] | None = None,
     overwrite: bool = False,
 ) -> int:
-    """Run free generation for every record in ``manifest``; write JSONL.
 
-    Returns the number of records written. Skips records whose ``image_id``
-    is already present in ``output_path`` unless ``overwrite`` is set.
-    """
     log = get_logger(__name__)
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
