@@ -1,14 +1,4 @@
-"""Concrete wrapper for ``HuggingFaceTB/SmolVLM-256M-Instruct``.
-
-Implements :class:`vr_modality_bias.models.base.ModelWrapper` for the
-Idefics3-based SmolVLM-256M architecture. Heavy imports (``transformers``,
-``accelerate``) are deferred to :meth:`SmolVLMWrapper.load` so the module
-remains importable without those installed.
-
-References:
-    EXPERIMENT.md §6.2 (implementation notes), §4.3 (TF protocol), §12
-    (known fragility around ``lm_head`` discovery).
-"""
+"""Concrete wrapper for ``HuggingFaceTB/SmolVLM-256M-Instruct``."""
 
 from __future__ import annotations
 
@@ -21,8 +11,7 @@ from vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
 
 __all__ = ["SmolVLMWrapper"]
 
-# Candidate attribute paths for the language-modelling head, ordered most→least
-# likely for Idefics3-derived architectures. Probed in order; first match wins.
+
 _LM_HEAD_CANDIDATES: tuple[str, ...] = (
     "lm_head",
     "language_model.lm_head",
@@ -33,8 +22,6 @@ _LM_HEAD_CANDIDATES: tuple[str, ...] = (
     "model.embed_out",
 )
 
-# Candidate paths for the number of language-decoder layers. The Idefics3
-# config nests text_config; some wrappers expose num_hidden_layers directly.
 _N_LAYERS_CANDIDATES: tuple[str, ...] = (
     "config.text_config.num_hidden_layers",
     "config.num_hidden_layers",
@@ -69,18 +56,14 @@ class SmolVLMWrapper(ModelWrapper):
         self._lm_head: torch.nn.Module | None = None
         self._n_layers: int | None = None
 
-    # ------------------------------------------------------------------ load
-
     def load(self, device: torch.device) -> None:
         """Load processor + model onto ``device`` and resolve ``lm_head``/``n_layers``."""
         from transformers import AutoModelForVision2Seq, AutoProcessor
 
         self._device = device
         self._processor = AutoProcessor.from_pretrained(self.model_id)
+        self._align_processor_size_to_max()
 
-        # bf16/fp16 are the canonical inference dtypes; on CPU we fall back to fp32
-        # because half-precision matmul on CPU is dramatically slower and rarely
-        # representative of the target hardware.
         effective_dtype = self._dtype if device.type == "cuda" else torch.float32
 
         model_kwargs: dict[str, Any] = {"torch_dtype": effective_dtype}
@@ -95,7 +78,22 @@ class SmolVLMWrapper(ModelWrapper):
         self._lm_head = self._discover_lm_head()
         self._n_layers = self._discover_n_layers()
 
-    # ----------------------------------------------------------- introspect
+    def _align_processor_size_to_max(self) -> None:
+        
+        if self._processor is None:
+            return
+        image_processor = getattr(self._processor, "image_processor", None)
+        if image_processor is None:
+            return
+        size = getattr(image_processor, "size", None)
+        max_size = getattr(image_processor, "max_image_size", None)
+        if not isinstance(size, dict) or not isinstance(max_size, dict):
+            return
+        if "longest_edge" not in size or "longest_edge" not in max_size:
+            return
+        if size["longest_edge"] > max_size["longest_edge"]:
+            image_processor.size = {"longest_edge": max_size["longest_edge"]}
+
 
     def _discover_lm_head(self) -> torch.nn.Module:
         for path in _LM_HEAD_CANDIDATES:
@@ -135,7 +133,6 @@ class SmolVLMWrapper(ModelWrapper):
             raise RuntimeError("Model not loaded — call .load() first.")
         return self._lm_head
 
-    # ------------------------------------------------------------ generate
 
     def generate_caption(
         self,
@@ -178,8 +175,6 @@ class SmolVLMWrapper(ModelWrapper):
         new_tokens = generated[0, prefix_len:]
         text = self._processor.tokenizer.decode(new_tokens, skip_special_tokens=True)
         return text.strip()
-
-    # ----------------------------------------------------- teacher forcing
 
     def run_teacher_forcing(
         self,
@@ -234,9 +229,6 @@ class SmolVLMWrapper(ModelWrapper):
                 return_dict=True,
             )
 
-        # outputs.hidden_states is a tuple of length (n_layers + 1):
-        # index 0 is the embedding output; indices 1..L are the layer outputs.
-        # Per EXPERIMENT.md §4.4 the comparison runs over l ∈ [1, L], so drop 0.
         layer_states = outputs.hidden_states[1:]
         if len(layer_states) != self.n_layers:
             raise RuntimeError(
@@ -265,8 +257,6 @@ class SmolVLMWrapper(ModelWrapper):
                 "n_layers": int(hidden.shape[0]),
             },
         )
-
-    # --------------------------------------------------------------- helpers
 
     @staticmethod
     def _build_messages(prompt: str) -> list[dict[str, Any]]:
