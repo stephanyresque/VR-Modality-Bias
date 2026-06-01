@@ -1,0 +1,17 @@
+image_id: 000000000872
+caption_len: 16
+n_layers: 30
+hidden_dim: 576
+residual_ratio: 0.501789
+
+model_id: HuggingFaceTB/SmolVLM-256M-Instruct
+prompt_key: caption_short
+seed_global: 42
+noise_seed: 4293022481
+timestamp_iso: 2026-05-29T11:34:36+00:00
+
+Prompt:
+Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.
+
+caption_ref:
+A baseball player is in the process of catching a pitch, surrounded by trees.

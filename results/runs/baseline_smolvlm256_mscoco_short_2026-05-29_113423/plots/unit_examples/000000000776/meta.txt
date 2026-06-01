@@ -1,0 +1,17 @@
+image_id: 000000000776
+caption_len: 12
+n_layers: 30
+hidden_dim: 576
+residual_ratio: 0.581615
+
+model_id: HuggingFaceTB/SmolVLM-256M-Instruct
+prompt_key: caption_short
+seed_global: 42
+noise_seed: 3711498354
+timestamp_iso: 2026-05-29T11:34:36+00:00
+
+Prompt:
+Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.
+
+caption_ref:
+A group of teddy bears are lying down on a couch.
