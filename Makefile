@@ -14,7 +14,7 @@ help:
 	@echo "  docker-build   build the reproducible Docker image"
 	@echo "  docker-run     open an interactive shell inside the Docker container"
 	@echo "  smoke          run the pipeline on a single image (--limit 1)"
-	@echo "  baseline       run the full 30-image baseline end-to-end"
+	@echo "  baseline       run the full N-image baseline end-to-end (N from configs/baseline.yaml)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -47,12 +47,13 @@ smoke:
 
 baseline:
 	$(PYTHON) scripts/01_prepare_data.py          --config $(CONFIG)
-	$(PYTHON) scripts/02_build_manifest.py        --config $(CONFIG)
+	$(PYTHON) scripts/02_build_manifest.py        --config $(CONFIG) --overwrite
 	$(PYTHON) scripts/03_generate_refs.py         --config $(CONFIG)
 	$(PYTHON) scripts/04_collect_hidden_states.py --config $(CONFIG)
 	$(PYTHON) scripts/05_compute_metrics.py       --config $(CONFIG)
 	$(PYTHON) scripts/06_summarize.py             --config $(CONFIG)
 	$(PYTHON) scripts/07_make_plots.py            --config $(CONFIG)
+	$(PYTHON) scripts/08_unit_example.py          --config $(CONFIG)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

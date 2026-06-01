@@ -18,6 +18,7 @@ __all__ = [
     "pad_to_max_caption_len",
     "plot_heatmap",
     "plot_token_curve",
+    "plot_unit_example_panel",
 ]
 
 
@@ -110,6 +111,95 @@ def plot_token_curve(
     ax.set_ylabel(y_label)
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def plot_unit_example_panel(
+    *,
+    path: Path,
+    image_id: str,
+    kl_matrix: np.ndarray,
+    deep_curve: np.ndarray,
+    prompt: str,
+    caption_ref: str,
+    residual_ratio: float,
+    image_array: np.ndarray | None = None,
+    cmap: str = "viridis",
+    cbar_label: str = "KL divergence (nats)",
+    dpi: int = 150,
+) -> Path:
+    
+    if kl_matrix.ndim != 2:
+        raise ValueError(f"kl_matrix must be 2-D; got {kl_matrix.shape}")
+    if deep_curve.ndim != 1:
+        raise ValueError(f"deep_curve must be 1-D; got {deep_curve.shape}")
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig = plt.figure(figsize=(10.0, 12.0), dpi=dpi)
+    gs = fig.add_gridspec(
+        3, 2, height_ratios=[1.0, 1.2, 0.8], width_ratios=[1.0, 1.4]
+    )
+
+    ax_img = fig.add_subplot(gs[0, 0])
+    if image_array is not None:
+        ax_img.imshow(np.asarray(image_array))
+    else:
+        ax_img.text(
+            0.5,
+            0.5,
+            f"(image {image_id} not available)",
+            ha="center",
+            va="center",
+            transform=ax_img.transAxes,
+            fontsize=11,
+            color="gray",
+            style="italic",
+        )
+    ax_img.set_xticks([])
+    ax_img.set_yticks([])
+    ax_img.set_title(f"image_id = {image_id}")
+
+    ax_text = fig.add_subplot(gs[0, 1])
+    ax_text.axis("off")
+    rr_str = f"{residual_ratio:.4f}" if np.isfinite(residual_ratio) else "nan"
+    context = (
+        f"Prompt:\n{prompt}\n\n"
+        f"caption_ref:\n{caption_ref}\n\n"
+        f"residual_ratio = {rr_str}"
+    )
+    ax_text.text(
+        0.0,
+        1.0,
+        context,
+        ha="left",
+        va="top",
+        transform=ax_text.transAxes,
+        fontsize=10,
+        wrap=True,
+        family="monospace",
+    )
+
+    ax_hm = fig.add_subplot(gs[1, :])
+    im = ax_hm.imshow(kl_matrix, aspect="auto", origin="lower", cmap=cmap)
+    ax_hm.set_xlabel("Token index (caption position)")
+    ax_hm.set_ylabel("Layer index")
+    ax_hm.set_title(f"KL(B || A) per (layer, token) — single image {image_id}")
+    cbar = fig.colorbar(im, ax=ax_hm)
+    cbar.set_label(cbar_label)
+
+    ax_cv = fig.add_subplot(gs[2, :])
+    x = np.arange(deep_curve.shape[0])
+    ax_cv.plot(x, deep_curve, marker="o", markersize=3, linewidth=1.5)
+    ax_cv.set_xlabel("Token index")
+    ax_cv.set_ylabel("Mean KL (deep block, last third)")
+    ax_cv.set_title("Deep-block mean KL vs. token — single image")
+    ax_cv.grid(True, alpha=0.3)
+
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
