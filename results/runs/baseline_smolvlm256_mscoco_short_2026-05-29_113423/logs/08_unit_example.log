@@ -1,0 +1,6 @@
+2026-06-01T22:18:47 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423
+2026-06-01T22:18:47 INFO __main__ :: [000000001584] panel saved: caption_len=26, residual_ratio=0.8472, path=/aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/plots/unit_example_000000001584.png
+2026-06-01T22:19:33 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423
+2026-06-01T22:19:34 INFO __main__ :: [000000002149] panel saved: caption_len=6, residual_ratio=0.1700, path=/aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/plots/unit_example_000000002149.png
+2026-06-01T22:19:43 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423
+2026-06-01T22:19:43 INFO __main__ :: [000000000139] panel saved: caption_len=12, residual_ratio=0.5712, path=/aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423/plots/unit_example_000000000139.png
