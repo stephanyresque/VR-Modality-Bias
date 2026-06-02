@@ -40,7 +40,19 @@ def _register_builtin() -> None:
 
         return SmolVLMWrapper(model_id="HuggingFaceTB/SmolVLM-256M-Instruct")
 
+    def _smolvlm_2_2b() -> ModelWrapper:
+        from vr_modality_bias.models.smolvlm import SmolVLMWrapper
+
+        return SmolVLMWrapper(model_id="HuggingFaceTB/SmolVLM-Instruct")
+
+    def _qwen2_5_vl_7b() -> ModelWrapper:
+        from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+
+        return QwenVLWrapper(model_id="Qwen/Qwen2.5-VL-7B-Instruct")
+
     register_model("smolvlm-256m", _smolvlm_256m)
+    register_model("smolvlm-2.2b", _smolvlm_2_2b)
+    register_model("qwen2.5-vl-7b", _qwen2_5_vl_7b)
 
 
 _register_builtin()

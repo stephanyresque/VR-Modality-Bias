@@ -17,11 +17,12 @@ CAPTION_MEDIUM: str = (
     "visible actions or relationships. Do not add opinions or information "
     "that cannot be inferred from the image."
 )
+
 CAPTION_LONG: str = (
-    "Describe the image in a detailed paragraph. Be objective and organized. "
-    "Cover the main subject, setting, visible objects, actions, spatial "
-    "relationships, and any important contextual details. Do not speculate "
-    "beyond what is visible."
+    "Describe the image in a long, detailed paragraph. Be thorough and "
+    "cover the main subject, the setting, all visible objects, actions, "
+    "spatial relationships, colors, and contextual details. Aim for a "
+    "rich, complete description of the scene."
 )
 VQA_COUNT: str = (
     "Answer the counting question using only the image. Return a concise "

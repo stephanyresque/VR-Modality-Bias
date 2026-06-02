@@ -38,6 +38,7 @@ METRICS_SCHEMA = pa.schema(
         pa.field("seed_global", pa.int32()),
         pa.field("noise_seed", pa.int64()),
         pa.field("timestamp_iso", pa.string()),
+        pa.field("caption_tokens", pa.list_(pa.string()), nullable=True),
     ]
 )
 
@@ -63,6 +64,12 @@ def write_metrics_table(rows: Iterable[dict[str, Any]], path: Path) -> int:
             value = row.get(field.name)
             if field.name in ("kl", "cos_dist"):
                 value = _matrix_to_nested_list(value) if value is not None else []
+            elif field.name == "caption_tokens":
+
+                if value is None:
+                    pass
+                else:
+                    value = [str(t) for t in value]
             columns[field.name].append(value)
 
     table = pa.Table.from_pydict(columns, schema=METRICS_SCHEMA)
