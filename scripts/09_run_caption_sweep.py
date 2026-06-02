@@ -104,9 +104,15 @@ def main() -> int:
     manifest_path = Path(cfg["dataset"]["manifest_path"])
     images_dir = Path(cfg["dataset"]["images_dir"])
     manifest = list(iter_manifest(manifest_path))
+    # Respect cfg.dataset.n_images: the shared manifest can hold more entries
+    # (e.g. the baseline kept 100), but each sweep cell should process exactly
+    # the first n_images for cross-cell comparability.
+    n_images = int(cfg["dataset"].get("n_images", len(manifest)))
+    if n_images < len(manifest):
+        manifest = manifest[:n_images]
     if args.limit:
         manifest = manifest[: args.limit]
-    log.info("Processing %d image(s).", len(manifest))
+    log.info("Processing %d image(s) (cfg.n_images=%d).", len(manifest), n_images)
 
     # ---- output paths ----
     hidden_states_dir = run_dir / "hidden_states"
