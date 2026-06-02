@@ -1,6 +1,0 @@
-2026-05-29T11:30:32 INFO __main__ :: Run dir: /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113023
-2026-05-29T11:30:32 INFO __main__ :: Found 1 complete (A, B) pair(s).
-2026-05-29T11:30:32 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-256M-Instruct on cuda (dtype=torch.float16)…
-2026-05-29T11:30:35 INFO __main__ :: Loaded. n_layers=30
-2026-05-29T11:30:36 INFO __main__ :: [000000000139] residual_ratio=0.5712
-2026-05-29T11:30:36 INFO __main__ :: Wrote 1 row(s) to /aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113023/metrics.parquet.

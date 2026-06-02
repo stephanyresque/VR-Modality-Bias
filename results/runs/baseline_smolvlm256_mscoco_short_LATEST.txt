@@ -1,1 +1,0 @@
-/aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/baseline_smolvlm256_mscoco_short_2026-05-29_113423
