@@ -23,7 +23,7 @@ from vr_modality_bias.io.results import (
 from vr_modality_bias.io.storage import hidden_states_filename, load_hidden_states
 from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
 from vr_modality_bias.metrics.kl import compute_kl_matrix
-from vr_modality_bias.metrics.residual import residual_drift_ratio
+from vr_modality_bias.metrics.residual import head_tail_ratio, residual_drift_ratio
 from vr_modality_bias.models.registry import build_model
 from vr_modality_bias.utils.config import load_config, snapshot_config
 from vr_modality_bias.utils.device import resolve_dtype, select_device
@@ -206,6 +206,7 @@ def main() -> int:
             caption_len=int(result_A.caption_len),
         )
         rr = residual_drift_ratio(kl, t0=t0)
+        htr = head_tail_ratio(kl, t0=t0)
 
         caption_tokens = decode_caption_tokens(
             model,
@@ -224,6 +225,7 @@ def main() -> int:
                 "kl": kl,
                 "cos_dist": cos,
                 "residual_ratio": float(rr),
+                "head_tail_ratio": float(htr),
                 "model_id": str(meta.get("model_id", model.model_id)),
                 "prompt_key": prompt_key,
                 "seed_global": int(seed_global),
@@ -244,12 +246,13 @@ def main() -> int:
             fh.write(json.dumps(entry) + "\n")
 
         log.info(
-            "[%s] saved (time=%s, vram_peak=%s, disk=%s, rr=%.4f, caption_len=%d)",
+            "[%s] saved (time=%s, vram_peak=%s, disk=%s, rr=%.4f, htr=%.4f, caption_len=%d)",
             record.image_id,
             format_seconds(timer.seconds),
             format_bytes(peak_bytes),
             format_bytes(bytes_pair),
-            rr if rr == rr else float("nan"),  
+            rr if rr == rr else float("nan"),
+            htr if htr == htr else float("nan"),
             int(result_A.caption_len),
         )
 
@@ -269,11 +272,20 @@ def main() -> int:
     stats = compute_summary_stats(rows)
     write_summary_json(stats, summary_json_path)
     log.info(
-        "residual_ratio summary — n_finite_in_range=%d/%d, median=%s, iqr=%s",
+        "residual_ratio   — n_finite_in_range=%d/%d, median=%s, iqr=%s",
         stats["n_residual_ratio_finite_in_range"],
         stats["n_images"],
         stats["residual_ratio"].get("median"),
         stats["residual_ratio"].get("iqr"),
+    )
+    log.info(
+        "head_tail_ratio  — n_finite=%d/%d, median=%s, iqr=%s, min=%s, max=%s",
+        stats["n_head_tail_ratio_finite"],
+        stats["n_images"],
+        stats["head_tail_ratio"].get("median"),
+        stats["head_tail_ratio"].get("iqr"),
+        stats["head_tail_ratio"].get("min"),
+        stats["head_tail_ratio"].get("max"),
     )
 
     if per_pair_stats:

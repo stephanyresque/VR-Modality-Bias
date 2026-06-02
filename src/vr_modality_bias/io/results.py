@@ -33,6 +33,11 @@ METRICS_SCHEMA = pa.schema(
         pa.field("kl", pa.list_(pa.list_(pa.float32()))),
         pa.field("cos_dist", pa.list_(pa.list_(pa.float32()))),
         pa.field("residual_ratio", pa.float32()),
+        # Length-invariant attenuation indicator (mean(tail) / mean(head) on
+        # the deep-block KL curve). Complements residual_ratio, which
+        # saturates near 1 for long captions even on flat curves. Nullable
+        # so older parquets (baseline scripts/05) remain readable.
+        pa.field("head_tail_ratio", pa.float32(), nullable=True),
         pa.field("model_id", pa.string()),
         pa.field("prompt_key", pa.string()),
         pa.field("seed_global", pa.int32()),
@@ -87,6 +92,7 @@ _SUMMARY_CSV_COLUMNS: tuple[str, ...] = (
     "caption_len",
     "n_layers",
     "residual_ratio",
+    "head_tail_ratio",
     "model_id",
     "prompt_key",
     "caption_ref",
@@ -105,6 +111,28 @@ def write_summary_csv(rows: Iterable[dict[str, Any]], path: Path) -> int:
             writer.writerow({k: row.get(k) for k in _SUMMARY_CSV_COLUMNS})
             n += 1
     return n
+
+
+def _finite_stats(values: np.ndarray) -> dict[str, Any]:
+    """Median/IQR/min/max/mean/std over the finite subset of ``values``."""
+    finite = values[np.isfinite(values)]
+    if finite.size == 0:
+        return {
+            "median": None, "q25": None, "q75": None, "iqr": None,
+            "min": None, "max": None, "mean": None, "std": None,
+        }
+    q25 = float(np.quantile(finite, 0.25))
+    q75 = float(np.quantile(finite, 0.75))
+    return {
+        "median": float(np.median(finite)),
+        "q25": q25,
+        "q75": q75,
+        "iqr": q75 - q25,
+        "min": float(np.min(finite)),
+        "max": float(np.max(finite)),
+        "mean": float(np.mean(finite)),
+        "std": float(np.std(finite, ddof=1)) if finite.size > 1 else None,
+    }
 
 
 def compute_summary_stats(
@@ -133,12 +161,22 @@ def compute_summary_stats(
     median = _safe(np.median)
     iqr = (q75 - q25) if (q25 is not None and q75 is not None) else None
 
+    # head_tail_ratio is unbounded above (any positive value); we don't
+    # apply a [range_lo, range_hi] filter to it — just compute stats over
+    # the finite subset. ``None``s and missing keys are tolerated.
+    htr_values = np.asarray(
+        [row.get("head_tail_ratio") for row in rows], dtype=np.float64
+    )
+    htr_stats = _finite_stats(htr_values)
+    n_htr_finite = int(np.isfinite(htr_values).sum())
+
     head_row = rows[0] if rows else {}
 
     return {
         "n_images": int(len(rows)),
         "n_residual_ratio_finite": int(finite_mask.sum()),
         "n_residual_ratio_finite_in_range": int(in_range_mask.sum()),
+        "n_head_tail_ratio_finite": n_htr_finite,
         "range": {"lo": float(range_lo), "hi": float(range_hi)},
         "residual_ratio": {
             "median": median,
@@ -150,6 +188,7 @@ def compute_summary_stats(
             "mean": _safe(np.mean),
             "std": _safe(lambda a: np.std(a, ddof=1)) if eligible.size > 1 else None,
         },
+        "head_tail_ratio": htr_stats,
         "model_id": head_row.get("model_id"),
         "prompt_key": head_row.get("prompt_key"),
         "seed_global": head_row.get("seed_global"),

@@ -112,6 +112,51 @@ def test_compute_summary_stats_on_known_values():
     assert math.isclose(rr["max"], 0.5, rel_tol=1e-9)
 
 
+def test_compute_summary_stats_includes_head_tail_ratio():
+    """head_tail_ratio stats should be reported alongside residual_ratio."""
+    rows = [
+        {"residual_ratio": 0.5, "head_tail_ratio": v, "model_id": "m"}
+        for v in [0.2, 0.4, 0.6, 0.8, 1.0]
+    ]
+    stats = compute_summary_stats(rows)
+    htr = stats["head_tail_ratio"]
+    assert stats["n_head_tail_ratio_finite"] == 5
+    assert math.isclose(htr["median"], 0.6, rel_tol=1e-9)
+    assert math.isclose(htr["min"], 0.2, rel_tol=1e-9)
+    assert math.isclose(htr["max"], 1.0, rel_tol=1e-9)
+
+
+def test_compute_summary_stats_head_tail_ratio_no_range_filter():
+    """head_tail_ratio is unbounded above; values >1 must be kept in stats."""
+    rows = [
+        {"residual_ratio": 0.5, "head_tail_ratio": v}
+        for v in [0.5, 1.0, 1.5, 3.0]
+    ]
+    stats = compute_summary_stats(rows)
+    htr = stats["head_tail_ratio"]
+    assert stats["n_head_tail_ratio_finite"] == 4
+    assert math.isclose(htr["max"], 3.0, rel_tol=1e-9)
+    assert math.isclose(htr["median"], 1.25, rel_tol=1e-9)
+
+
+def test_compute_summary_stats_head_tail_ratio_handles_nan():
+    rows = [
+        {"residual_ratio": 0.5, "head_tail_ratio": v}
+        for v in [0.3, float("nan"), 0.7, float("nan"), 0.9]
+    ]
+    stats = compute_summary_stats(rows)
+    assert stats["n_head_tail_ratio_finite"] == 3
+    assert math.isclose(stats["head_tail_ratio"]["median"], 0.7, rel_tol=1e-9)
+
+
+def test_compute_summary_stats_head_tail_ratio_missing_column_is_none_safe():
+    """Old-style rows without head_tail_ratio shouldn't crash compute_summary_stats."""
+    rows = [{"residual_ratio": 0.5, "model_id": "m"} for _ in range(3)]
+    stats = compute_summary_stats(rows)
+    assert stats["n_head_tail_ratio_finite"] == 0
+    assert stats["head_tail_ratio"]["median"] is None
+
+
 def test_compute_summary_stats_excludes_nan_and_out_of_range():
     rows = [{"residual_ratio": v} for v in [0.1, float("nan"), 0.5, 1.5, -0.3, 0.7]]
     stats = compute_summary_stats(rows)
@@ -145,6 +190,8 @@ def test_write_summary_csv_emits_expected_columns(tmp_path: Path):
         out_rows = list(reader)
     assert {r["image_id"] for r in out_rows} == {"img_001", "img_002"}
     assert "residual_ratio" in out_rows[0]
+    # head_tail_ratio must be in summary.csv alongside residual_ratio.
+    assert "head_tail_ratio" in out_rows[0]
     # Matrices must not appear in summary.csv (scalar-only)
     assert "kl" not in out_rows[0]
     assert "cos_dist" not in out_rows[0]
