@@ -23,7 +23,9 @@ generation:
   do_sample: true
   temperature: 0.8
   top_p: 0.9
-  repetition_penalty: 1.0
+  # 1.1 (vs 1.0 in short) discourages degenerate loops in longer generations.
+  # Qwen2.5-VL-7B is especially sensitive to this in 512-token captions.
+  repetition_penalty: 1.1
 
 teacher_forcing:
   output_hidden_states: true

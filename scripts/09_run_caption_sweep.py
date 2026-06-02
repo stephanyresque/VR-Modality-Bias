@@ -138,6 +138,17 @@ def main() -> int:
             seed=noise_seed,
             generation_kwargs=gen_kwargs,
         )
+
+        # Defensive skip: if the model collapsed to an empty string (seen
+        # occasionally in long-form Qwen sampling), there is nothing to
+        # teacher-force. Log and move on instead of crashing.
+        if not caption_ref.strip():
+            log.warning(
+                "[%s] generation collapsed to empty caption_ref — skipping image.",
+                record.image_id,
+            )
+            continue
+
         with ref_captions_path.open("a", encoding="utf-8") as fh:
             fh.write(
                 json.dumps(
