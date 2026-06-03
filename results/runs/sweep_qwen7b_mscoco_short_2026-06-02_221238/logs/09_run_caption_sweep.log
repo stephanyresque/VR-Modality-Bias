@@ -1,0 +1,4 @@
+2026-06-02T22:12:38 INFO __main__ :: Run dir: results/runs/sweep_qwen7b_mscoco_short_2026-06-02_221238
+2026-06-02T22:12:38 INFO __main__ :: Config: configs/run_qwen7b_short.yaml
+2026-06-02T22:12:38 INFO __main__ :: Prompt key: caption_short
+2026-06-02T22:12:38 INFO __main__ :: Loading model Qwen/Qwen2.5-VL-7B-Instruct on cuda (dtype=torch.float16)…

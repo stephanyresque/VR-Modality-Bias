@@ -1,0 +1,11 @@
+{
+  "n_pairs": 50,
+  "time_total_seconds": 164.39421645738184,
+  "time_median_seconds_per_pair": 3.1598833072930574,
+  "time_mean_seconds_per_pair": 3.2878843291476367,
+  "vram_peak_bytes": 17236558848,
+  "disk_total_bytes_pairs": 7987196739,
+  "disk_median_bytes_per_pair": 160919755.0,
+  "disk_total_bytes_run": 405170,
+  "discard_hidden_states_after_metrics": true
+}

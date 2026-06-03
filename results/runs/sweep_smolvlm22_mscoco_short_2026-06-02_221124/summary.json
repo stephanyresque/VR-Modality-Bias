@@ -1,0 +1,22 @@
+{
+  "n_images": 1,
+  "n_residual_ratio_finite": 1,
+  "n_residual_ratio_finite_in_range": 1,
+  "range": {
+    "lo": 0.0,
+    "hi": 1.0
+  },
+  "residual_ratio": {
+    "median": 0.20295678640742573,
+    "q25": 0.20295678640742573,
+    "q75": 0.20295678640742573,
+    "iqr": 0.0,
+    "min": 0.20295678640742573,
+    "max": 0.20295678640742573,
+    "mean": 0.20295678640742573,
+    "std": null
+  },
+  "model_id": "HuggingFaceTB/SmolVLM-Instruct",
+  "prompt_key": "caption_short",
+  "seed_global": 42
+}

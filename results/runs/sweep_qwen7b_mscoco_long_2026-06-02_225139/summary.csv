@@ -1,0 +1,47 @@
+image_id,caption_len,n_layers,residual_ratio,model_id,prompt_key,caption_ref
+000000000139,410,28,0.9716295795063682,Qwen/Qwen2.5-VL-7B-Instruct,caption_long,"<tool_call>
+ 自动生成的图片描述如下：
+
+这张照片展示了一个充满活力和色彩的室内空间。整个房间的颜色搭配大胆，以黄色为主色调，墙壁采用了明亮且温暖的黄色，给人一种明亮舒适的感觉。
+
+**主要场景：**
+1. **客厅区域**：
+   - 左边有一个白色的电视柜，上面放置了一台黑色的大屏幕电视。
+   - 电视柜旁边还有一个装饰性的酒杯形状的紫色花瓶。
+   - 地板是木质地板，呈深色，与墙面颜色形成对比，增加了整体的空间感。
+   
+2. **餐厅区域**：
+   - 中部是一个用餐区，有一张木制餐桌，周围摆放着四把椅子，椅背呈橙色，显得温馨且协调。
+   - 餐桌旁还放着一个装饰用的小花盆里插着几朵粉色花朵，给空间增添了一丝自然的气息。
+   - 墙上挂着一些艺术品或镜子等装饰品，在背景中隐约可见一个人影站在桌子的一侧，似乎正在忙碌地整理餐桌上的物品。
+   
+3. **厨房部分**：
+   - 在靠右的位置可以看到一部分厨房的设计，有橱柜、水槽以及一个冰箱。
+   - 橱柜门呈现出复古风格，带有一些花纹装饰。
+   - 灯光设计简约而实用，天花板上有三盏圆形吊灯照亮整个房间。
+
+4. **其他细节**：
+   - 右下角有一块带有几何图案的地毯铺在地板上。
+   - 座位右侧的墙上有个绿色的部分，可能是装饰或是墙漆的颜色选择。
+   - 柔和灯光下的家具摆设整齐有序，营造出一种现代而又居家的氛围。
+
+这个室内空间不仅光线充足（由窗户投射进来的自然光照亮了大部分房间），而且各种配饰巧妙地提升了房间的整体美感。鲜艳的颜色、宽敞的空间布局以及精心挑选的家居装饰使得它看起来既现代又富有生活气息。"
+000000000285,427,28,0.9806947275800195,Qwen/Qwen2.5-VL-7B-Instruct,caption_long,"The photograph centers on an adult brown bear, captured up close to emphasize its features while providing just enough context about its immediate surroundings to convey a sense of its natural habitat.
+
+The bear's fur is predominantly light golden-brown with subtle darker streaks running through it, particularly noticeable along the edges and lower neck area where some deeper reddish-brown colorations blend subtly into the lighter tones. Its thick, shaggy coat covers almost every visible surface, including the top of its head, cheeks, muzzle, and chest. The fur appears somewhat coarse and rough to the touch; it seems well-suited for warmth and protection from elements such as wind or cold temperatures found naturally in its environment. 
+
+The bear’s face dominates much of the frame, showcasing its large, rounded ears that stand upright alertly. Darker brown fur accents around the eyes and nose add contrast against the lighter fur covering most of the rest of his face. His mouth remains closed but slightly open, revealing faint traces of pink skin beneath, giving him a calm yet attentive demeanor.
+
+In terms of background, the bear stands amidst grassy terrain. The ground appears freshly cut, indicating regular grazing activity by wildlife like this bear. In places, small tufts of vegetation protrude from underfoot, suggesting a mix of short grasses interspersed with patches of soil or other organic debris. There isn't any snow or ice present which might suggest colder weather conditions, reinforcing the idea of a temperate climate suitable for bears. The overall impression left by these environmental clues is one of a quiet, undisturbed moment in nature, likely taken during daylight hours given the brightness illuminating the scene uniformly without harsh shadows.
+
+
+There don’t appear to be any human-made objects or signs of human presence directly in view. The focus remains entirely on capturing the serene presence of the bear within its natural world, offering no distractions from the central subject matter itself—the majestic majesty of the brown bear. The image thus paints a vivid picture not only of the animal itself but also subtly conveys information about its living space—a testament to both beauty and balance inherent in wild ecosystems."
+000000000632,323,28,0.970940583809467,Qwen/Qwen2.5-VL-7B-Instruct,caption_long,"The image showcases a cozy, well-lit bedroom bathed in soft natural light filtering through a large window draped with sheer white curtains. The room is adorned with floral-patterned wallpaper that adds an element of charm to its overall appearance. At the center of the room lies a neatly made bed covered by a plush blue comforter, adding warmth and inviting tones.
+
+To the right side of the bed stands a wooden bookshelf brimming with books and other miscellaneous items like baskets, creating a personal and lived-in ambiance. On the lower shelf sits a wicker basket, perhaps used as storage or decor. Next to it hangs what appears to be fabric or garments on a makeshift rack, contributing further to the room's casual atmosphere.
+
+The window frames a serene view outside; vibrant green foliage fills the background, suggesting the presence of trees possibly located just outside. The sunlight streaming in illuminates these plants while gently highlighting the various textures within this intimate space.
+
+A round mirror rests atop a small dresser against the wall adjacent to the bed, reflecting parts of the room itself and doubling the perceived size and depth of the space. A lamp with a simple shade sits near the mirror, ready to provide additional light when needed. 
+
+A potted plant occupies part of the floor next to the window, introducing a touch of nature indoors and adding vibrancy amid the wooden and metallic furnishings. The furniture placement – including the bed, bookcase, dresser, and window seat – feels deliberate yet relaxed, fostering functionality and comfort without appearing cluttered. The harmonious arrangement of elements lends this bedroom an appealing blend of practicality and aesthetic appeal."

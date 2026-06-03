@@ -1,0 +1,111 @@
+2026-06-02T23:07:15 INFO __main__ :: Run dir: results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_230715
+2026-06-02T23:07:15 INFO __main__ :: Config: configs/run_smolvlm22_short.yaml
+2026-06-02T23:07:15 INFO __main__ :: Prompt key: caption_short
+2026-06-02T23:07:15 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…
+2026-06-02T23:07:20 INFO __main__ :: Loaded. n_layers=24
+2026-06-02T23:07:20 INFO __main__ :: discard_hidden_states_after_metrics = True
+2026-06-02T23:07:20 INFO __main__ :: Processing 50 image(s) (cfg.n_images=50).
+2026-06-02T23:07:20 INFO __main__ :: [000000000139] caption_ref: Woman standing in dining room.
+2026-06-02T23:07:21 INFO __main__ :: [000000000139] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.28 MB, rr=0.1989, htr=0.6207, caption_len=7)
+2026-06-02T23:07:21 INFO __main__ :: [000000000285] caption_ref: Brown bear.
+2026-06-02T23:07:21 INFO __main__ :: [000000000285] saved (time=0.48 s, vram_peak=4.28 GB, disk=24.57 MB, rr=nan, htr=nan, caption_len=3)
+2026-06-02T23:07:22 INFO __main__ :: [000000000632] caption_ref: Bedroom with books and a tree outside the window.
+2026-06-02T23:07:22 INFO __main__ :: [000000000632] saved (time=0.50 s, vram_peak=4.28 GB, disk=25.95 MB, rr=0.1694, htr=0.1700, caption_len=11)
+2026-06-02T23:07:22 INFO __main__ :: [000000000724] caption_ref: Stop sign in the middle of an empty street.
+2026-06-02T23:07:23 INFO __main__ :: [000000000724] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.79 MB, rr=0.2734, htr=0.3762, caption_len=10)
+2026-06-02T23:07:23 INFO __main__ :: [000000000776] caption_ref: Three teddy bears hugging each other.
+2026-06-02T23:07:24 INFO __main__ :: [000000000776] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.1067, htr=0.1991, caption_len=8)
+2026-06-02T23:07:24 INFO __main__ :: [000000000785] caption_ref: Woman skiing down a snowy hill.
+2026-06-02T23:07:24 INFO __main__ :: [000000000785] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.1974, htr=0.4100, caption_len=8)
+2026-06-02T23:07:24 INFO __main__ :: [000000000802] caption_ref: Kitchen.
+2026-06-02T23:07:25 INFO __main__ :: [000000000802] saved (time=0.47 s, vram_peak=4.28 GB, disk=24.56 MB, rr=nan, htr=nan, caption_len=3)
+2026-06-02T23:07:25 INFO __main__ :: [000000000872] caption_ref: Baseball player catches baseball in field.
+2026-06-02T23:07:26 INFO __main__ :: [000000000872] saved (time=0.50 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.1841, htr=0.3760, caption_len=8)
+2026-06-02T23:07:26 INFO __main__ :: [000000000885] caption_ref: Man playing tennis in front of J.P. Morgan.
+2026-06-02T23:07:27 INFO __main__ :: [000000000885] saved (time=0.50 s, vram_peak=4.28 GB, disk=26.13 MB, rr=0.5737, htr=0.9612, caption_len=12)
+2026-06-02T23:07:27 INFO __main__ :: [000000001000] caption_ref: Tennis group holding trophy.
+2026-06-02T23:07:27 INFO __main__ :: [000000001000] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.06 MB, rr=0.0354, htr=0.1837, caption_len=6)
+2026-06-02T23:07:27 INFO __main__ :: [000000001268] caption_ref: Woman on sidewalk watching a swan.
+2026-06-02T23:07:28 INFO __main__ :: [000000001268] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.3082, htr=0.5570, caption_len=9)
+2026-06-02T23:07:28 INFO __main__ :: [000000001296] caption_ref: A girl looking at her cell phone that says hello kitty on it.
+2026-06-02T23:07:29 INFO __main__ :: [000000001296] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.67 MB, rr=0.5298, htr=0.5634, caption_len=15)
+2026-06-02T23:07:29 INFO __main__ :: [000000001353] caption_ref: The children are on the train on the train track.
+2026-06-02T23:07:30 INFO __main__ :: [000000001353] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.96 MB, rr=0.5975, htr=1.2370, caption_len=11)
+2026-06-02T23:07:30 INFO __main__ :: [000000001425] caption_ref: Picture of a sandwich on a plate.
+2026-06-02T23:07:30 INFO __main__ :: [000000001425] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.1181, htr=0.2232, caption_len=8)
+2026-06-02T23:07:30 INFO __main__ :: [000000001490] caption_ref: Person paddleboarding.
+2026-06-02T23:07:31 INFO __main__ :: [000000001490] saved (time=0.47 s, vram_peak=4.28 GB, disk=24.74 MB, rr=nan, htr=nan, caption_len=4)
+2026-06-02T23:07:31 INFO __main__ :: [000000001503] caption_ref: Computer desk with computer and laptop on it.
+2026-06-02T23:07:32 INFO __main__ :: [000000001503] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.61 MB, rr=0.1332, htr=0.1922, caption_len=9)
+2026-06-02T23:07:32 INFO __main__ :: [000000001532] caption_ref: Highway under signs with cars driving underneath.
+2026-06-02T23:07:33 INFO __main__ :: [000000001532] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.61 MB, rr=0.3294, htr=0.6141, caption_len=9)
+2026-06-02T23:07:33 INFO __main__ :: [000000001584] caption_ref: Red double-decker bus is on the road.
+2026-06-02T23:07:33 INFO __main__ :: [000000001584] saved (time=0.50 s, vram_peak=4.28 GB, disk=25.95 MB, rr=0.4927, htr=0.8094, caption_len=11)
+2026-06-02T23:07:33 INFO __main__ :: [000000001675] caption_ref: Cat in oven.
+2026-06-02T23:07:34 INFO __main__ :: [000000001675] saved (time=0.47 s, vram_peak=4.28 GB, disk=24.73 MB, rr=nan, htr=nan, caption_len=4)
+2026-06-02T23:07:34 INFO __main__ :: [000000001761] caption_ref: Airplanes flying above the Sydney Opera House.
+2026-06-02T23:07:35 INFO __main__ :: [000000001761] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.4920, htr=1.2108, caption_len=9)
+2026-06-02T23:07:35 INFO __main__ :: [000000001818] caption_ref: Black and white image of a zebra suckling her foal.
+2026-06-02T23:07:36 INFO __main__ :: [000000001818] saved (time=0.50 s, vram_peak=4.28 GB, disk=26.30 MB, rr=0.5905, htr=0.9013, caption_len=13)
+2026-06-02T23:07:36 INFO __main__ :: [000000001993] caption_ref: Bedroom with a bed, table, lamp, chair and glass door.
+2026-06-02T23:07:36 INFO __main__ :: [000000001993] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.67 MB, rr=0.5637, htr=0.6459, caption_len=15)
+2026-06-02T23:07:36 INFO __main__ :: [000000002006] caption_ref: Purple bus on the street.
+2026-06-02T23:07:37 INFO __main__ :: [000000002006] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.27 MB, rr=0.1206, htr=0.3428, caption_len=7)
+2026-06-02T23:07:37 INFO __main__ :: [000000002149] caption_ref: Green apples in bowl.
+2026-06-02T23:07:38 INFO __main__ :: [000000002149] saved (time=0.47 s, vram_peak=4.28 GB, disk=24.91 MB, rr=nan, htr=nan, caption_len=5)
+2026-06-02T23:07:38 INFO __main__ :: [000000002153] caption_ref: Baseball batter getting ready to swing.
+2026-06-02T23:07:38 INFO __main__ :: [000000002153] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.4582, htr=1.4095, caption_len=8)
+2026-06-02T23:07:39 INFO __main__ :: [000000002157] caption_ref: Table with food and cake on it.
+2026-06-02T23:07:39 INFO __main__ :: [000000002157] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.45 MB, rr=0.3129, htr=0.7590, caption_len=8)
+2026-06-02T23:07:39 INFO __main__ :: [000000002261] caption_ref: A man surfing on a boogie board in the ocean.
+2026-06-02T23:07:40 INFO __main__ :: [000000002261] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.30 MB, rr=0.4991, htr=0.6227, caption_len=13)
+2026-06-02T23:07:40 INFO __main__ :: [000000002299] caption_ref: Black and white group photo of children posing in front of a brick building.
+2026-06-02T23:07:41 INFO __main__ :: [000000002299] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.67 MB, rr=0.4893, htr=0.4791, caption_len=15)
+2026-06-02T23:07:41 INFO __main__ :: [000000002431] caption_ref: Tray of bread with knife and glass.
+2026-06-02T23:07:42 INFO __main__ :: [000000002431] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.4977, htr=1.2383, caption_len=9)
+2026-06-02T23:07:42 INFO __main__ :: [000000002473] caption_ref: Skier with colorful outfit in mid air.
+2026-06-02T23:07:42 INFO __main__ :: [000000002473] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.4137, htr=0.8819, caption_len=9)
+2026-06-02T23:07:42 INFO __main__ :: [000000002532] caption_ref: Man skiing in a snowy mountain.
+2026-06-02T23:07:43 INFO __main__ :: [000000002532] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.28 MB, rr=0.1387, htr=0.4027, caption_len=7)
+2026-06-02T23:07:43 INFO __main__ :: [000000002587] caption_ref: Donut and banana are in plastic bag.
+2026-06-02T23:07:44 INFO __main__ :: [000000002587] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.61 MB, rr=0.4058, htr=0.8537, caption_len=9)
+2026-06-02T23:07:44 INFO __main__ :: [000000002592] caption_ref: White coffee mug with pirate skull and crossbones next to a knife.
+2026-06-02T23:07:45 INFO __main__ :: [000000002592] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.67 MB, rr=0.6223, htr=0.8238, caption_len=15)
+2026-06-02T23:07:45 INFO __main__ :: [000000002685] caption_ref: Several people in a wine shop looking at a wine display.
+2026-06-02T23:07:45 INFO __main__ :: [000000002685] saved (time=0.50 s, vram_peak=4.28 GB, disk=26.13 MB, rr=0.5698, htr=0.9462, caption_len=12)
+2026-06-02T23:07:45 INFO __main__ :: [000000002923] caption_ref: Grass field with birds.
+2026-06-02T23:07:46 INFO __main__ :: [000000002923] saved (time=0.47 s, vram_peak=4.28 GB, disk=25.07 MB, rr=0.3018, htr=2.1616, caption_len=6)
+2026-06-02T23:07:46 INFO __main__ :: [000000003156] caption_ref: Man is in the bathroom and has his hands in his pants pocket.
+2026-06-02T23:07:47 INFO __main__ :: [000000003156] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.45 MB, rr=0.3949, htr=0.3625, caption_len=14)
+2026-06-02T23:07:47 INFO __main__ :: [000000003255] caption_ref: Many people on snowy mountain.
+2026-06-02T23:07:48 INFO __main__ :: [000000003255] saved (time=0.47 s, vram_peak=4.28 GB, disk=25.06 MB, rr=0.1102, htr=0.6194, caption_len=6)
+2026-06-02T23:07:48 INFO __main__ :: [000000003501] caption_ref: White bowl with rice, broccoli, and soup.
+2026-06-02T23:07:48 INFO __main__ :: [000000003501] saved (time=0.50 s, vram_peak=4.28 GB, disk=25.79 MB, rr=0.3925, htr=0.6462, caption_len=10)
+2026-06-02T23:07:48 INFO __main__ :: [000000003553] caption_ref: Person skateboarding on wooden ramp.
+2026-06-02T23:07:49 INFO __main__ :: [000000003553] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.27 MB, rr=0.1580, htr=0.4691, caption_len=7)
+2026-06-02T23:07:49 INFO __main__ :: [000000003661] caption_ref: Three bananas on table.
+2026-06-02T23:07:50 INFO __main__ :: [000000003661] saved (time=0.47 s, vram_peak=4.28 GB, disk=24.91 MB, rr=nan, htr=nan, caption_len=5)
+2026-06-02T23:07:50 INFO __main__ :: [000000003845] caption_ref: Plate of chicken and rice.
+2026-06-02T23:07:51 INFO __main__ :: [000000003845] saved (time=0.47 s, vram_peak=4.28 GB, disk=25.06 MB, rr=0.0988, htr=0.5484, caption_len=6)
+2026-06-02T23:07:51 INFO __main__ :: [000000003934] caption_ref: Woman playing wii with men in background.
+2026-06-02T23:07:51 INFO __main__ :: [000000003934] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.79 MB, rr=0.4450, htr=0.8019, caption_len=10)
+2026-06-02T23:07:51 INFO __main__ :: [000000004134] caption_ref: Asian man shakes hand with man in suit.
+2026-06-02T23:07:52 INFO __main__ :: [000000004134] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.79 MB, rr=0.5391, htr=1.1698, caption_len=10)
+2026-06-02T23:07:52 INFO __main__ :: [000000004395] caption_ref: Asian man in shirt and tie, hand to face.
+2026-06-02T23:07:53 INFO __main__ :: [000000004395] saved (time=0.50 s, vram_peak=4.28 GB, disk=25.96 MB, rr=0.4072, htr=0.5723, caption_len=11)
+2026-06-02T23:07:53 INFO __main__ :: [000000004495] caption_ref: Television and chair in room with whiteboard.
+2026-06-02T23:07:54 INFO __main__ :: [000000004495] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.1932, htr=0.2993, caption_len=9)
+2026-06-02T23:07:54 INFO __main__ :: [000000004765] caption_ref: Man surfing in a rough sea.
+2026-06-02T23:07:54 INFO __main__ :: [000000004765] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.28 MB, rr=0.1037, htr=0.2894, caption_len=7)
+2026-06-02T23:07:54 INFO __main__ :: [000000004795] caption_ref: Black cat staring at computer monitor.
+2026-06-02T23:07:55 INFO __main__ :: [000000004795] saved (time=0.48 s, vram_peak=4.28 GB, disk=25.27 MB, rr=0.1500, htr=0.4410, caption_len=7)
+2026-06-02T23:07:55 INFO __main__ :: [000000005001] caption_ref: Photograph of several adults cutting a ribbon in front of a store.
+2026-06-02T23:07:56 INFO __main__ :: [000000005001] saved (time=0.51 s, vram_peak=4.28 GB, disk=26.45 MB, rr=0.5964, htr=0.8209, caption_len=14)
+2026-06-02T23:07:56 INFO __main__ :: [000000005037] caption_ref: Bus with first group written on front.
+2026-06-02T23:07:57 INFO __main__ :: [000000005037] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.44 MB, rr=0.4492, htr=1.3593, caption_len=8)
+2026-06-02T23:07:57 INFO __main__ :: [000000005060] caption_ref: A man sitting in front of a mirror.
+2026-06-02T23:07:57 INFO __main__ :: [000000005060] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.62 MB, rr=0.4281, htr=0.9358, caption_len=9)
+2026-06-02T23:07:57 INFO __main__ :: Wrote 50 row(s) to results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_230715/metrics.parquet.
+2026-06-02T23:07:57 INFO __main__ :: residual_ratio   — n_finite_in_range=44/50, median=0.39371502175507644, iqr=0.3273790448323759
+2026-06-02T23:07:57 INFO __main__ :: head_tail_ratio  — n_finite=44/50, median=0.6200314320122642, iqr=0.4906793303422837, min=0.16998088138572268, max=2.1616497987277308
+2026-06-02T23:07:57 INFO __main__ :: Diagnostics — pairs=50, total=24.49 s, median/pair=0.49 s, VRAM peak=4.28 GB, disk run=167.71 KB

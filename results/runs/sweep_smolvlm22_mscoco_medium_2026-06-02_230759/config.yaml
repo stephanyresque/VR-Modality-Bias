@@ -1,0 +1,46 @@
+run:
+  name: "sweep_smolvlm22_mscoco_medium"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "mscoco_baseline"
+  manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
+  images_dir: "data/processed/mscoco_baseline/images"
+  n_images: 50
+
+model:
+  key: "smolvlm-2.2b"
+  model_id: "HuggingFaceTB/SmolVLM-Instruct"
+  dtype: "float16"
+
+task:
+  name: "caption_medium"
+  prompt_key: "caption_medium"
+
+generation:
+  max_new_tokens: 200
+  do_sample: true
+  temperature: 0.8
+  top_p: 0.9
+  # 1.1 (vs 1.0 in short) discourages degenerate loops in longer generations
+  # without affecting the rich, fluent captions we actually want.
+  repetition_penalty: 1.1
+
+teacher_forcing:
+  output_hidden_states: true
+  use_cache: false
+
+metrics:
+  logits_top_k: 50
+  deep_block_rule: "last_third"
+
+residual:
+  t0: 5
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4
+  discard_hidden_states_after_metrics: true

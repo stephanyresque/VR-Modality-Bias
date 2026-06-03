@@ -1,0 +1,22 @@
+{
+  "n_images": 1,
+  "n_residual_ratio_finite": 1,
+  "n_residual_ratio_finite_in_range": 1,
+  "range": {
+    "lo": 0.0,
+    "hi": 1.0
+  },
+  "residual_ratio": {
+    "median": 0.46097155261070905,
+    "q25": 0.46097155261070905,
+    "q75": 0.46097155261070905,
+    "iqr": 0.0,
+    "min": 0.46097155261070905,
+    "max": 0.46097155261070905,
+    "mean": 0.46097155261070905,
+    "std": null
+  },
+  "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+  "prompt_key": "caption_short",
+  "seed_global": 42
+}

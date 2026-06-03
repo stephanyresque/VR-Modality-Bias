@@ -1,0 +1,12 @@
+2026-06-02T22:23:57 INFO __main__ :: Run dir: results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_222357
+2026-06-02T22:23:57 INFO __main__ :: Config: configs/run_smolvlm22_short.yaml
+2026-06-02T22:23:57 INFO __main__ :: Prompt key: caption_short
+2026-06-02T22:23:57 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…
+2026-06-02T22:24:02 INFO __main__ :: Loaded. n_layers=24
+2026-06-02T22:24:02 INFO __main__ :: discard_hidden_states_after_metrics = True
+2026-06-02T22:24:02 INFO __main__ :: Processing 1 image(s) (cfg.n_images=50).
+2026-06-02T22:24:02 INFO __main__ :: [000000000139] caption_ref: Woman standing in dining room.
+2026-06-02T22:24:03 INFO __main__ :: [000000000139] saved (time=0.49 s, vram_peak=4.28 GB, disk=25.28 MB, rr=0.1989, caption_len=7)
+2026-06-02T22:24:03 INFO __main__ :: Wrote 1 row(s) to results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_222357/metrics.parquet.
+2026-06-02T22:24:03 INFO __main__ :: residual_ratio summary — n_finite_in_range=1/1, median=0.1988988593636715, iqr=0.0
+2026-06-02T22:24:03 INFO __main__ :: Diagnostics — pairs=1, total=0.49 s, median/pair=0.49 s, VRAM peak=4.28 GB, disk run=9.43 KB

@@ -1,0 +1,51 @@
+image_id,caption_len,n_layers,residual_ratio,head_tail_ratio,model_id,prompt_key,caption_ref
+000000000139,27,28,0.46097155261070905,0.19436128550246298,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A brightly colored modern living room featuring a yellow and green palette, a TV on a console, a dining area, and a fireplace."
+000000000285,13,28,0.7240386695976648,1.6398100699064864,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A close-up image of a large brown bear resting on grass.
+000000000632,26,28,0.5020234849759431,0.24003019736578132,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A cozy bedroom with a blue quilted bed, a wooden dresser, a large bookshelf, and a window overlooking greenery."
+000000000724,27,28,0.6161887054265783,0.3648743264645119,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A red stop sign is prominently displayed on a metal pole in a well-maintained urban area with trees and buildings in the background.
+000000000776,12,28,0.25182512170585036,0.2404185066235694,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,Three brown teddy bears of different sizes cuddle together.
+000000000785,20,28,0.6086903711466453,0.5185070221163706,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A person wearing a red jacket and black pants skis down a snowy slope, holding ski poles."
+000000000802,23,28,0.7094260990862654,0.6781848083467216,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A kitchen setup featuring wooden cabinets, a white refrigerator, and a built-in white oven with stovetop."
+000000000872,24,28,0.7255825330070758,0.6958112904995607,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A baseball player in a white uniform runs on the field, while a teammate in a green shirt holds a baseball glove."
+000000000885,27,28,0.731342598489794,0.618684711439764,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A tennis player prepares to hit the ball on a court near a ""J.P. Morgan"" and ""Polo"" sponsor banner."
+000000001000,21,28,0.5673021750189631,0.40971301323549625,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A group of children and a man gather on a tennis court, holding trophies and smiling for a photo."
+000000001268,20,28,0.7734833852907235,1.138229067337147,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A woman taking a photo of a swan on a riverbank under a bridge in a city.
+000000001296,19,28,0.5865426532498889,0.5066532755177392,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A person wearing a Hello Kitty-themed phone case is holding it up, focusing on the screen."
+000000001353,25,28,0.6811924941111283,0.5341722524787224,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"Children are seated in a vintage-style bumper car on a track, likely enjoying a fun ride at an event or amusement setting."
+000000001425,20,28,0.492179305411802,0.3230663307324252,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A partially eaten hamburger on a plate, accompanied by a cup, is shown in black and white."
+000000001490,31,28,0.7306686786626914,0.5217113506793192,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A person in a wetsuit stands on a paddleboard and paddles across calm waters, with a distant shoreline and overcast sky in the background."
+000000001503,22,28,0.5090994497143971,0.30502131680607286,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A computer workstation setup includes a desktop monitor, laptop, speakers, and keyboard on a desk by a window."
+000000001532,26,28,0.7748630177714239,0.8194619688033854,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A highway with directional road signs pointing to North 101, Ventura, Hollywood Blvd, and Sunset Blvd under a bridge."
+000000001584,23,28,0.48448419302051876,0.26105686903031505,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A red double-decker bus with ""ALDWYCH"" on the sign is driving on a city street."
+000000001675,19,28,0.41470199576885247,0.25304691723028977,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A black and white cat rests on top of a laptop keyboard, partially obscuring the view."
+000000001761,17,28,0.5829724657173775,0.5824680005044675,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,Two airplanes soar above Sydney Harbour Bridge with the iconic Sydney Opera House in the background.
+000000001818,11,28,0.5172555038240804,0.8929076490799672,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A zebra nursing its calf in a natural setting.
+000000001993,31,28,0.7136021959790213,0.4791628623115244,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A cozy room features a single bed with a colorful patterned cover, a round wooden table, and a chair by a window overlooking an urban stone wall."
+000000002006,20,28,0.6115351017083301,0.5247450536694939,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A purple South Tyne bus marked route 96 to Metrocentre passes by a pedestrian crossing.
+000000002149,18,28,0.659965466250055,0.746491448487113,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A bowl contains a close-up view of several shiny, unripe green apples piled together."
+000000002153,13,28,0.3485245281086142,0.3343607541132419,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A batter is preparing to hit a pitch during a baseball game.
+000000002157,25,28,0.6212850242047179,0.41012705062695975,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A festive table setup includes a cake with fruit toppings, cheese, grapes, and wine glasses for a celebratory meal outdoors."
+000000002261,15,28,0.4271862770127561,0.37288411561175994,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A surfer paddles out in the ocean, navigating a small wave."
+000000002299,24,28,0.7487921876240182,0.7844126097304895,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A group of schoolchildren, both boys and girls, are gathered in a line, posing formally in a school setting."
+000000002431,32,28,0.4753195353179096,0.16776331900086436,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A rustic meal setup features grilled bread slices, a wooden-handled knife, a glass of red wine, and a white tablecloth in a cozy dining setting."
+000000002473,20,28,0.4935629277259984,0.32485966157638246,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A skier jumps dramatically in mid-air against a clear blue sky, surrounded by evergreen trees."
+000000002532,17,28,0.41476159319158756,0.2952938981550291,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A skier pauses atop a snowy mountain under a bright blue sky with scattered clouds.
+000000002587,17,28,0.6012783027651538,0.6283395859558257,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A banana and a chocolate-covered donut are partially obscured by a transparent plastic bag.
+000000002592,14,28,0.45147798125725985,0.45726715086730935,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A pirate-themed mug and a kitchen knife sit on a cutting board.
+000000002685,15,28,0.38039195942652054,0.3069617681804516,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"People are interacting at a wine tasting event in a casual, social setting."
+000000002923,17,28,0.6949561982215615,0.9492573882967676,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,Two white birds stand amidst tall grass near docked fishing boats under a cloudy sky.
+000000003156,19,28,0.7275347794041546,0.9536404287452767,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A man in work clothes adjusts a toilet seat while kneeling on a protective cloth, wearing gloves."
+000000003255,17,28,0.5787173937449015,0.5723764613431405,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A group of skiers ascends a snow-covered mountain under a clear blue sky.
+000000003501,19,28,0.7483249518086796,1.0619205729011147,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A bowl contains rice, beans, and vegetables, including broccoli, on a dark wooden table."
+000000003553,17,28,0.5797589065343556,0.5748276758558599,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A person is balancing on a skateboard on a wooden ledge in a grassy area.
+000000003661,18,28,0.4007016964888031,0.25716080991408763,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,Bananas are stacked on a wooden surface with a computer screen and cup in the background.
+000000003845,28,28,0.7329396744198006,0.5966244199104834,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A plate of mixed vegetables and chicken stir-fry with white rice is served on a decorative plate with a fork and glass of water nearby.
+000000003934,23,28,0.6966805402817269,0.638015023764798,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A young girl in a hula skirt dances joyfully in a living room where others are also enjoying casual gatherings.
+000000004134,25,28,0.5440798723925443,0.2983416608780395,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A formally dressed man in a suit and tie is shaking hands with another man in a patterned shirt at a formal event.
+000000004395,25,28,0.5776031094493016,0.34186041751884916,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A person wearing a light-colored shirt and a striped tie holds a drink, possibly during a casual or semi-formal gathering."
+000000004495,32,28,0.8599043969541714,1.1366634750087161,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A cozy room with a plaid sofa, a plaid armchair, a small television on a stand, and a whiteboard with writing on the wall."
+000000004765,17,28,0.39549138478185053,0.27259839288307014,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A surfer in a yellow jacket skillfully rides a wave on a surfboard.
+000000004795,19,28,0.615044582582238,0.5706083602280576,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A fluffy cat rests on a desk, partially obscuring a computer monitor and other office equipment."
+000000005001,16,28,0.5861533184405145,0.6437971800568217,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A group of people, including children, gather around a ribbon-cutting ceremony."
+000000005037,21,28,0.547885866744675,0.37869714915773284,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A First Group bus with free Wi-Fi advertised is parked near a bus stop, ready to transport passengers."
+000000005060,17,28,0.6084305687899995,0.6474272933217634,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,A person takes a selfie in a large wooden-framed mirror on a hardwood floor.

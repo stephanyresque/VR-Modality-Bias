@@ -1,0 +1,230 @@
+2026-06-02T23:25:28 INFO __main__ :: Run dir: results/runs/sweep_qwen7b_mscoco_long_2026-06-02_232528
+2026-06-02T23:25:28 INFO __main__ :: Config: configs/run_qwen7b_long.yaml
+2026-06-02T23:25:28 INFO __main__ :: Prompt key: caption_long
+2026-06-02T23:25:28 INFO __main__ :: Loading model Qwen/Qwen2.5-VL-7B-Instruct on cuda (dtype=torch.float16)…
+2026-06-02T23:25:35 INFO __main__ :: Loaded. n_layers=28
+2026-06-02T23:25:35 INFO __main__ :: discard_hidden_states_after_metrics = True
+2026-06-02T23:25:35 INFO __main__ :: Processing 50 image(s) (cfg.n_images=50).
+2026-06-02T23:25:43 INFO __main__ :: [000000000139] caption_ref: <tool_call>
+ 自动生成的图片描述如下：
+
+这张照片展示了一个充满活力和色彩的室内空间。整个房间的颜色搭配大胆，以黄色为主色调，墙壁采用了明亮且温暖的...
+2026-06-02T23:25:52 INFO __main__ :: [000000000139] saved (time=6.89 s, vram_peak=16.05 GB, disk=292.44 MB, rr=0.9716, htr=0.4228, caption_len=410)
+2026-06-02T23:26:00 INFO __main__ :: [000000000285] caption_ref: The photograph centers on an adult brown bear, captured up close to emphasize it...
+2026-06-02T23:26:11 INFO __main__ :: [000000000285] saved (time=8.80 s, vram_peak=16.16 GB, disk=347.42 MB, rr=0.9807, htr=0.6019, caption_len=427)
+2026-06-02T23:26:18 INFO __main__ :: [000000000632] caption_ref: The image showcases a cozy, well-lit bedroom bathed in soft natural light filter...
+2026-06-02T23:26:26 INFO __main__ :: [000000000632] saved (time=6.63 s, vram_peak=16.03 GB, disk=278.03 MB, rr=0.9709, htr=0.5253, caption_len=323)
+2026-06-02T23:26:33 INFO __main__ :: [000000000724] caption_ref: The image depicts an outdoor street scene dominated by a large "STOP" sign mount...
+2026-06-02T23:26:40 INFO __main__ :: [000000000724] saved (time=5.37 s, vram_peak=15.93 GB, disk=229.07 MB, rr=0.9204, htr=0.1716, caption_len=342)
+2026-06-02T23:26:48 INFO __main__ :: [000000000776] caption_ref: The image captures an intimate and cozy arrangement of three plush teddy bears n...
+2026-06-02T23:26:57 INFO __main__ :: [000000000776] saved (time=7.03 s, vram_peak=16.06 GB, disk=297.41 MB, rr=0.9612, htr=0.2956, caption_len=424)
+2026-06-02T23:27:02 INFO __main__ :: [000000000785] caption_ref: <tool_call>
+ addCriterion
+
+ addCriterion
+
+matchCondition
+
+ 自动生成的描述如下：
+
+这是一幅展示一个人...
+2026-06-02T23:27:08 INFO __main__ :: [000000000785] saved (time=5.45 s, vram_peak=15.94 GB, disk=229.15 MB, rr=0.8989, htr=0.1967, caption_len=231)
+2026-06-02T23:27:17 INFO __main__ :: [000000000802] caption_ref: The image portrays a modest kitchen space with a simple layout and neutral tones...
+2026-06-02T23:27:26 INFO __main__ :: [000000000802] saved (time=7.12 s, vram_peak=16.07 GB, disk=303.11 MB, rr=0.9541, htr=0.2390, caption_len=440)
+2026-06-02T23:27:36 INFO __main__ :: [000000000872] caption_ref: The image captures an intense moment during a baseball game on a sunny day in wh...
+2026-06-02T23:27:49 INFO __main__ :: [000000000872] saved (time=9.77 s, vram_peak=16.23 GB, disk=385.67 MB, rr=0.9379, htr=0.1490, caption_len=512)
+2026-06-02T23:27:56 INFO __main__ :: [000000000885] caption_ref: The image captures an intense moment on a professional tennis court during what ...
+2026-06-02T23:28:05 INFO __main__ :: [000000000885] saved (time=6.64 s, vram_peak=16.03 GB, disk=280.44 MB, rr=0.9475, htr=0.2433, caption_len=376)
+2026-06-02T23:28:10 INFO __main__ :: [000000001000] caption_ref: <tool_call>
+ addCriterion
+
+ 自动生成的图片描述如下：
+
+这是一张在户外网球场上拍摄的照片，背景是郁郁葱葱的绿色树木。照片中心是一位年...
+2026-06-02T23:28:17 INFO __main__ :: [000000001000] saved (time=5.95 s, vram_peak=15.98 GB, disk=251.74 MB, rr=0.9285, htr=0.2661, caption_len=249)
+2026-06-02T23:28:27 INFO __main__ :: [000000001268] caption_ref: addCriterion
+
+ addCriterion
+
+matchCondition
+
+matchCondition
+
+matchCondition
+
+mat...
+2026-06-02T23:28:31 INFO __main__ :: [000000001268] saved (time=3.10 s, vram_peak=15.79 GB, disk=151.12 MB, rr=0.6287, htr=1.2093, caption_len=12)
+2026-06-02T23:28:41 INFO __main__ :: [000000001296] caption_ref: <tool_call>
+ addCriterion
+
+ addCriterion
+
+ addCriterion
+
+matchCondition
+
+matchCo...
+2026-06-02T23:28:45 INFO __main__ :: [000000001296] saved (time=3.11 s, vram_peak=15.79 GB, disk=151.45 MB, rr=0.4577, htr=0.5274, caption_len=13)
+2026-06-02T23:28:52 INFO __main__ :: [000000001353] caption_ref: The image captures a lively indoor event centered around a whimsical, children's...
+2026-06-02T23:29:00 INFO __main__ :: [000000001353] saved (time=5.71 s, vram_peak=15.96 GB, disk=243.86 MB, rr=0.9113, htr=0.1356, caption_len=384)
+2026-06-02T23:29:07 INFO __main__ :: [000000001425] caption_ref: The black-and-white photograph presents an up-close view that centers on a parti...
+2026-06-02T23:29:16 INFO __main__ :: [000000001425] saved (time=7.07 s, vram_peak=16.07 GB, disk=298.78 MB, rr=0.9682, htr=0.4295, caption_len=359)
+2026-06-02T23:29:24 INFO __main__ :: [000000001490] caption_ref: The black-and-white photograph captures a serene moment on a body of water, like...
+2026-06-02T23:29:32 INFO __main__ :: [000000001490] saved (time=6.08 s, vram_peak=16.00 GB, disk=261.47 MB, rr=0.9645, htr=0.3318, caption_len=415)
+2026-06-02T23:29:40 INFO __main__ :: [000000001503] caption_ref: The image showcases an office or workstation setup featuring two primary compute...
+2026-06-02T23:29:47 INFO __main__ :: [000000001503] saved (time=5.12 s, vram_peak=15.91 GB, disk=217.73 MB, rr=0.8735, htr=0.0785, caption_len=445)
+2026-06-02T23:29:52 INFO __main__ :: [000000001532] caption_ref: 自动生成的详细描述如下：
+
+这是一幅在洛杉矶市中心拍摄的照片，照片中展示了一条繁忙的城市高速公路入口处。天空晴朗湛蓝，阳光明媚，没有云彩遮挡。画面中央有一个高架...
+2026-06-02T23:30:00 INFO __main__ :: [000000001532] saved (time=6.07 s, vram_peak=15.99 GB, disk=257.77 MB, rr=0.9728, htr=0.6858, caption_len=266)
+2026-06-02T23:30:04 INFO __main__ :: [000000001584] caption_ref: addCriterion
+
+ 自动生成的图片内容描述如下：
+
+这是一张展示红色双层巴士的图片。照片中的公交车是经典的伦敦双层巴士，车身鲜亮的红色在灰色的天空和城...
+2026-06-02T23:30:13 INFO __main__ :: [000000001584] saved (time=6.58 s, vram_peak=16.02 GB, disk=272.98 MB, rr=0.9286, htr=0.3080, caption_len=216)
+2026-06-02T23:30:13 INFO __main__ :: [000000001675] caption_ref: addCriterion
+
+ addCriterion
+
+matchCondition
+
+ 自动生成的图片字幕
+2026-06-02T23:30:18 INFO __main__ :: [000000001675] saved (time=3.57 s, vram_peak=15.84 GB, disk=167.52 MB, rr=0.5516, htr=0.8788, caption_len=12)
+2026-06-02T23:30:21 INFO __main__ :: [000000001761] caption_ref: 自动生成的描述可能会有偏差，以下是一个基于原始文本生成的结果：
+
+这张照片展示了一个城市地标性的建筑场景。主体是悉尼海港大桥（Sydney Harbour Br...
+2026-06-02T23:30:28 INFO __main__ :: [000000001761] saved (time=5.07 s, vram_peak=15.90 GB, disk=212.03 MB, rr=0.9085, htr=0.2788, caption_len=183)
+2026-06-02T23:30:35 INFO __main__ :: [000000001818] caption_ref: The black-and-white photograph captures an intimate moment between two zebras, l...
+2026-06-02T23:30:43 INFO __main__ :: [000000001818] saved (time=6.56 s, vram_peak=16.03 GB, disk=276.83 MB, rr=0.9573, htr=0.3102, caption_len=366)
+2026-06-02T23:30:47 INFO __main__ :: [000000001993] caption_ref: addCriterion
+
+ 自动生成的图像描述如下：
+
+这张图片展示了一个室内环境，空间布局相对紧凑。画面中央是一张铺着彩色图案床单的小型床，床头部分稍微倾斜...
+2026-06-02T23:30:54 INFO __main__ :: [000000001993] saved (time=5.08 s, vram_peak=15.91 GB, disk=212.96 MB, rr=0.9418, htr=0.4498, caption_len=185)
+2026-06-02T23:30:58 INFO __main__ :: [000000002006] caption_ref: addCriterion
+
+ 自动生成的图片描述如下：
+
+这张照片展示了一辆停靠在路边的公共汽车，车牌号为NA52 BUU。车身主要是紫色，并带有蓝色和白色的文...
+2026-06-02T23:31:05 INFO __main__ :: [000000002006] saved (time=5.71 s, vram_peak=15.96 GB, disk=240.71 MB, rr=0.9667, htr=0.6813, caption_len=218)
+2026-06-02T23:31:10 INFO __main__ :: [000000002149] caption_ref: <tool_call>
+ addCriterion
+
+matchCondition
+
+ 自动生成的图片描述如下：
+
+这是一张展示绿色苹果堆叠在白色碗里的特写照片...
+2026-06-02T23:31:17 INFO __main__ :: [000000002149] saved (time=5.37 s, vram_peak=15.93 GB, disk=226.16 MB, rr=0.9061, htr=0.2212, caption_len=223)
+2026-06-02T23:31:23 INFO __main__ :: [000000002153] caption_ref: The image captures an intense moment during a baseball game viewed from behind p...
+2026-06-02T23:31:31 INFO __main__ :: [000000002153] saved (time=6.65 s, vram_peak=16.03 GB, disk=279.32 MB, rr=0.9448, htr=0.2655, caption_len=327)
+2026-06-02T23:31:32 WARNING __main__ :: [000000002157] generation collapsed to empty caption_ref — skipping image.
+2026-06-02T23:31:38 INFO __main__ :: [000000002261] caption_ref: The image captures a dynamic moment in the ocean where an individual is attempti...
+2026-06-02T23:31:46 INFO __main__ :: [000000002261] saved (time=6.26 s, vram_peak=16.00 GB, disk=263.08 MB, rr=0.9540, htr=0.3219, caption_len=327)
+2026-06-02T23:31:53 INFO __main__ :: [000000002299] caption_ref: The black-and-white photograph depicts what appears to be a group portrait of ch...
+2026-06-02T23:32:00 INFO __main__ :: [000000002299] saved (time=5.31 s, vram_peak=15.93 GB, disk=227.91 MB, rr=0.9507, htr=0.2605, caption_len=375)
+2026-06-02T23:32:05 INFO __main__ :: [000000002431] caption_ref: addCriterion
+
+ 自动生成的图片描述如下：
+
+这幅图像展示了一桌精致的餐点，主要聚焦在一个装有烤面包片的小盘子上。盘子里摆满了几片看起来是自制的烤面...
+2026-06-02T23:32:12 INFO __main__ :: [000000002431] saved (time=5.64 s, vram_peak=15.95 GB, disk=237.26 MB, rr=0.9273, htr=0.2821, caption_len=231)
+2026-06-02T23:32:16 INFO __main__ :: [000000002473] caption_ref: addCriterion
+
+ addCriterion
+
+matchCondition
+
+ 自动生成的描述如下：
+
+这张照片捕捉到了一名滑雪者在蓝天下的空中表演...
+2026-06-02T23:32:23 INFO __main__ :: [000000002473] saved (time=5.19 s, vram_peak=15.92 GB, disk=218.21 MB, rr=0.8399, htr=0.1345, caption_len=200)
+2026-06-02T23:32:33 INFO __main__ :: [000000002532] caption_ref: The image captures a serene winter landscape featuring a solitary skier position...
+2026-06-02T23:32:44 INFO __main__ :: [000000002532] saved (time=8.69 s, vram_peak=16.15 GB, disk=344.92 MB, rr=0.8704, htr=0.0662, caption_len=512)
+2026-06-02T23:32:52 INFO __main__ :: [000000002587] caption_ref: The image captures a close-up view of a single banana lying horizontally beneath...
+2026-06-02T23:33:01 INFO __main__ :: [000000002587] saved (time=6.24 s, vram_peak=16.00 GB, disk=265.66 MB, rr=0.9398, htr=0.1774, caption_len=445)
+2026-06-02T23:33:09 INFO __main__ :: [000000002592] caption_ref: addCriterion
+
+matchCondition
+
+ 自动生成的描述如下：
+
+这张图片展示了厨房台面上的一组物品。画面中的主要元素包括一个白色的咖啡杯和...
+2026-06-02T23:33:17 INFO __main__ :: [000000002592] saved (time=6.50 s, vram_peak=16.02 GB, disk=274.84 MB, rr=0.9698, htr=0.4006, caption_len=406)
+2026-06-02T23:33:27 INFO __main__ :: [000000002685] caption_ref: The photograph depicts what appears to be a lively social gathering or wine tast...
+2026-06-02T23:33:39 INFO __main__ :: [000000002685] saved (time=9.39 s, vram_peak=16.20 GB, disk=369.43 MB, rr=0.9873, htr=0.7666, caption_len=512)
+2026-06-02T23:33:46 INFO __main__ :: [000000002923] caption_ref: The image portrays an expansive coastal marshland, characterized by its dense gr...
+2026-06-02T23:33:53 INFO __main__ :: [000000002923] saved (time=5.37 s, vram_peak=15.93 GB, disk=229.36 MB, rr=0.9054, htr=0.1415, caption_len=343)
+2026-06-02T23:33:59 INFO __main__ :: [000000003156] caption_ref: The black-and-white photograph captures an intimate moment inside what appears t...
+2026-06-02T23:34:08 INFO __main__ :: [000000003156] saved (time=6.55 s, vram_peak=16.02 GB, disk=276.38 MB, rr=0.9815, htr=0.7875, caption_len=341)
+2026-06-02T23:34:18 INFO __main__ :: [000000003255] caption_ref: <tool_call>
+ addCriterion
+
+ addCriterion
+
+matchCondition
+
+GuidId
+2026-06-02T23:34:22 INFO __main__ :: [000000003255] saved (time=3.25 s, vram_peak=15.76 GB, disk=133.65 MB, rr=0.3032, htr=0.5439, caption_len=9)
+2026-06-02T23:34:28 INFO __main__ :: [000000003501] caption_ref: The image features a close-up view of a meal served on a white bowl with rounded...
+2026-06-02T23:34:39 INFO __main__ :: [000000003501] saved (time=8.18 s, vram_peak=16.10 GB, disk=318.05 MB, rr=0.9552, htr=0.3155, caption_len=343)
+2026-06-02T23:34:44 INFO __main__ :: [000000003553] caption_ref: addCriterion
+
+ 自动生成的图片内容描述如下：
+
+这是一张展示户外滑板场景的照片。照片的主要焦点是一个人的下半身，具体是站在滑板上的脚和腿。可以看到...
+2026-06-02T23:34:52 INFO __main__ :: [000000003553] saved (time=5.79 s, vram_peak=15.97 GB, disk=246.00 MB, rr=0.9141, htr=0.1943, caption_len=279)
+2026-06-02T23:34:52 INFO __main__ :: [000000003661] caption_ref: addCriterion
+
+matchCondition
+
+matchCondition
+
+
+ !***
+2026-06-02T23:34:56 INFO __main__ :: [000000003661] saved (time=3.44 s, vram_peak=15.77 GB, disk=141.42 MB, rr=0.3888, htr=1.0604, caption_len=8)
+2026-06-02T23:35:03 INFO __main__ :: [000000003845] caption_ref: The photograph showcases a colorful plate of food served on an intricately desig...
+2026-06-02T23:35:10 INFO __main__ :: [000000003845] saved (time=5.26 s, vram_peak=15.92 GB, disk=223.67 MB, rr=0.9371, htr=0.2315, caption_len=327)
+2026-06-02T23:35:17 INFO __main__ :: [000000003934] caption_ref: The image captures a lively indoor gathering that seems to be taking place durin...
+2026-06-02T23:35:25 INFO __main__ :: [000000003934] saved (time=5.73 s, vram_peak=15.97 GB, disk=246.45 MB, rr=0.9674, htr=0.3847, caption_len=391)
+2026-06-02T23:35:29 INFO __main__ :: [000000004134] caption_ref: <tool_call>
+ 自动生成的图像描述如下：
+
+这张照片展示了一对男人在室内社交场合握手交谈的情景。画面主体是前景中的两位男性，左边穿着条纹衬衫和棕色外套...
+2026-06-02T23:35:35 INFO __main__ :: [000000004134] saved (time=5.17 s, vram_peak=15.91 GB, disk=216.07 MB, rr=0.9004, htr=0.2393, caption_len=194)
+2026-06-02T23:35:41 INFO __main__ :: [000000004395] caption_ref: addCriterion
+
+ 自动生成的图片描述如下：
+
+这是一张拍摄角度较为独特的照片，画面中的人物占据了大部分视角。照片主要聚焦于一位穿着商务服装的人，镜头...
+2026-06-02T23:35:49 INFO __main__ :: [000000004395] saved (time=5.87 s, vram_peak=15.97 GB, disk=250.09 MB, rr=0.8878, htr=0.1388, caption_len=290)
+2026-06-02T23:35:55 INFO __main__ :: [000000004495] caption_ref: The image depicts an interior space that appears to be either a lounge or waitin...
+2026-06-02T23:36:02 INFO __main__ :: [000000004495] saved (time=5.32 s, vram_peak=15.93 GB, disk=226.55 MB, rr=0.9646, htr=0.4125, caption_len=335)
+2026-06-02T23:36:09 INFO __main__ :: [000000004765] caption_ref: The photograph captures an exhilarating moment of a surfer riding a wave. The ce...
+2026-06-02T23:36:19 INFO __main__ :: [000000004765] saved (time=8.07 s, vram_peak=16.10 GB, disk=313.80 MB, rr=0.9772, htr=0.6565, caption_len=331)
+2026-06-02T23:36:25 INFO __main__ :: [000000004795] caption_ref: addCriterion
+
+ 自动生成
+
+The photograph centers on an adorable, fluffy gray cat perc...
+2026-06-02T23:36:34 INFO __main__ :: [000000004795] saved (time=6.77 s, vram_peak=16.04 GB, disk=283.99 MB, rr=0.9393, htr=0.2309, caption_len=340)
+2026-06-02T23:36:38 INFO __main__ :: [000000005001] caption_ref: addCriterion
+
+ 自动生成的图片描述如下：
+
+这张照片展示了一个热闹的剪彩仪式。主体是一群人正在一起切割一条红色的丝带，象征性的揭开某个事件或项目的...
+2026-06-02T23:36:45 INFO __main__ :: [000000005001] saved (time=5.60 s, vram_peak=15.95 GB, disk=234.71 MB, rr=0.9224, htr=0.3034, caption_len=201)
+2026-06-02T23:36:51 INFO __main__ :: [000000005037] caption_ref: 自动生成的描述如下：
+
+这张照片展示了一辆停靠在路边的巴士，这是一辆现代化的城市公交车。车身主要是白色的，并带有粉红色和紫色的装饰线条，显得时尚且充满活力。
+
+...
+2026-06-02T23:36:59 INFO __main__ :: [000000005037] saved (time=5.99 s, vram_peak=15.98 GB, disk=254.97 MB, rr=0.9793, htr=0.7912, caption_len=304)
+2026-06-02T23:37:06 INFO __main__ :: [000000005060] caption_ref: The image features an individual seated on a wooden floor reflecting within a la...
+2026-06-02T23:37:14 INFO __main__ :: [000000005060] saved (time=6.74 s, vram_peak=16.04 GB, disk=283.33 MB, rr=0.9824, htr=0.8376, caption_len=338)
+2026-06-02T23:37:14 INFO __main__ :: Wrote 49 row(s) to results/runs/sweep_qwen7b_mscoco_long_2026-06-02_232528/metrics.parquet.
+2026-06-02T23:37:14 INFO __main__ :: residual_ratio   — n_finite_in_range=49/49, median=0.9397981115412037, iqr=0.06064068613968299
+2026-06-02T23:37:14 INFO __main__ :: head_tail_ratio  — n_finite=49/49, median=0.3080406257519088, iqr=0.29646716473340745, min=0.06622503522219036, max=1.2093064969442742
+2026-06-02T23:37:14 INFO __main__ :: Diagnostics — pairs=49, total=4m 56.8s, median/pair=5.95 s, VRAM peak=16.23 GB, disk run=4.53 MB
