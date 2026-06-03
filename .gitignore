@@ -30,7 +30,6 @@ htmlcov/
 
 # Project data and outputs
 data/raw/
-data/processed/*/images/
 EXPERIMENT.md
 IEEE-conference-template-062824_ETAPA2.tex
 
