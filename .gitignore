@@ -31,7 +31,7 @@ htmlcov/
 # Project data and outputs
 data/raw/
 EXPERIMENT.md
-IEEE-conference-template-062824_ETAPA2.tex
+template_experimento.tex
 
 # Inside run directories, only heavy or regenerable artefacts are ignored.
 results/runs/*/hidden_states/
