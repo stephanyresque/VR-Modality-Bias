@@ -1,0 +1,21 @@
+[project]
+name = "vr-modality-bias"
+version = "0.1.0"
+description = "Baseline (Stage 2) for the VR-Modality-Bias diagnostic pipeline."
+readme = "README.md"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = [
+    "h5py>=3.10",
+    "matplotlib>=3.8",
+    "numpy>=2.2.6",
+    "pillow>=10.0",
+    "pyarrow>=14.0",
+    "pyyaml>=6.0",
+    "requests>=2.31",
+    "tqdm>=4.66",
+    "transformers==4.46.*",
+]
+
+

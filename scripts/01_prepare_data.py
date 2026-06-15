@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import sys
 import argparse
 import shutil
 import zipfile
@@ -10,9 +11,20 @@ from pathlib import Path
 
 import requests
 from tqdm import tqdm
+from pyprojroot import here
 
-from vr_modality_bias.utils.config import load_config
-from vr_modality_bias.utils.logging import configure_logging, get_logger
+try: 
+
+    from vr_modality_bias.utils.config import load_config
+    from vr_modality_bias.utils.logging import configure_logging, get_logger
+
+except ModuleNotFoundError: 
+
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.utils.config import load_config
+    from src.vr_modality_bias.utils.logging import configure_logging, get_logger
+
 
 MSCOCO_VAL2017_URL = "http://images.cocodataset.org/zips/val2017.zip"
 MSCOCO_VAL2017_FILENAME = "val2017.zip"
@@ -105,7 +117,9 @@ def main() -> int:
     log = get_logger(__name__)
 
     cfg = load_config(args.config)
+    
     n_images = int(args.limit) if args.limit is not None else int(cfg["dataset"]["n_images"])
+
     images_dir = Path(cfg["dataset"]["images_dir"])
     zip_path = RAW_ROOT / MSCOCO_VAL2017_FILENAME
 

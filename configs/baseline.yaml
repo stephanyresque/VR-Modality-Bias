@@ -1,22 +1,24 @@
 run:
-  name: "baseline_smolvlm256_mscoco_short"
-  seed_global: 42
+  seed_global: 10 
+  name: "baseline_qwen_sparc"
   output_root: "results/runs"
 
 dataset:
   name: "mscoco_baseline"
   manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
   images_dir: "data/processed/mscoco_baseline/images"
-  n_images: 100
+  n_images: 50 
 
 model:
-  key: "smolvlm-256m"
-  model_id: "HuggingFaceTB/SmolVLM-256M-Instruct"
-  dtype: "float16"
+  # key: "smolvlm-256m"
+  key: "qwen2.5-vl-7b"
+  model_id: "Qwen/Qwen2.5-VL-7B-Instruct"
+  # model_id: "HuggingFaceTB/SmolVLM-256M-Instruct"
+  dtype: "bfloat16"
 
 task:
-  name: "caption_short"
-  prompt_key: "caption_short"
+  name: "caption_long"
+  prompt_key: "caption_long"
 
 generation:
   max_new_tokens: 64

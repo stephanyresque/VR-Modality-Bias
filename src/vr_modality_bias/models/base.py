@@ -8,6 +8,7 @@ from typing import Any
 
 import torch
 from PIL import Image
+from pyprojroot import here
 
 __all__ = ["HiddenStatesResult", "ModelWrapper"]
 

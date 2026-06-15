@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 import torch
+from loguru import logger
 from PIL import Image
+from pyprojroot import here
 
-from vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
+try:
+    from vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
 
 __all__ = ["QwenVLWrapper"]
 
@@ -46,6 +54,7 @@ class QwenVLWrapper(ModelWrapper):
         dtype: torch.dtype = torch.float16,
         attn_implementation: str = "eager",
     ) -> None:
+
         self.model_id = model_id
         self._dtype = dtype
         self._attn_implementation = attn_implementation
@@ -140,7 +149,6 @@ class QwenVLWrapper(ModelWrapper):
             raise RuntimeError("Model not loaded — call .load() first.")
         return self._lm_head
 
-
     def generate_caption(
         self,
         image: Image.Image,
@@ -156,6 +164,7 @@ class QwenVLWrapper(ModelWrapper):
         prompt_text = self._processor.apply_chat_template(
             messages, add_generation_prompt=True, tokenize=False
         )
+
         inputs = self._processor(
             text=[prompt_text],
             images=[image.convert("RGB")],
@@ -169,6 +178,7 @@ class QwenVLWrapper(ModelWrapper):
             "top_p": 0.9,
             "repetition_penalty": 1.0,
         }
+
         if generation_kwargs:
             gen_kwargs.update(generation_kwargs)
 
@@ -176,17 +186,21 @@ class QwenVLWrapper(ModelWrapper):
         if self._device is not None and self._device.type == "cuda":
             torch.cuda.manual_seed_all(int(seed))
 
+        # for k, v in inputs.items(): 
+        #     logger.debug(f"k: {k} -- {v.device, v.dtype}")
+
         with torch.no_grad():
             generated = self._model.generate(**inputs, **gen_kwargs)
 
         prefix_len = inputs["input_ids"].shape[-1]
         new_tokens = generated[0, prefix_len:]
+
         text = self._processor.tokenizer.decode(
             new_tokens, skip_special_tokens=True
         )
+        
         return text.strip()
-
-
+    
     def run_teacher_forcing(
         self,
         image: Image.Image,

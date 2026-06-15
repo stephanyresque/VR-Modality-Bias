@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg", force=True)
-import matplotlib.pyplot as plt  
-import numpy as np  
+import matplotlib.pyplot as plt
+import numpy as np
+from pyprojroot import here
 
-from vr_modality_bias.metrics.residual import deep_block  
+try:
+    from vr_modality_bias.metrics.residual import deep_block
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.metrics.residual import deep_block
 
 __all__ = [
     "average_matrices",

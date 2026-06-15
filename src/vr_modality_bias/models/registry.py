@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 
-from vr_modality_bias.models.base import ModelWrapper
+from pyprojroot import here
+
+try:
+    from vr_modality_bias.models.base import ModelWrapper
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.models.base import ModelWrapper
 
 __all__ = ["build_model", "list_models", "register_model"]
 
@@ -36,17 +44,26 @@ def _register_builtin() -> None:
     """Eagerly register baseline wrappers without importing heavy deps"""
 
     def _smolvlm_256m() -> ModelWrapper:
-        from vr_modality_bias.models.smolvlm import SmolVLMWrapper
+        try:
+            from vr_modality_bias.models.smolvlm import SmolVLMWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.smolvlm import SmolVLMWrapper
 
         return SmolVLMWrapper(model_id="HuggingFaceTB/SmolVLM-256M-Instruct")
 
     def _smolvlm_2_2b() -> ModelWrapper:
-        from vr_modality_bias.models.smolvlm import SmolVLMWrapper
+        try:
+            from vr_modality_bias.models.smolvlm import SmolVLMWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.smolvlm import SmolVLMWrapper
 
         return SmolVLMWrapper(model_id="HuggingFaceTB/SmolVLM-Instruct")
 
     def _qwen2_5_vl_7b() -> ModelWrapper:
-        from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+        try:
+            from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.qwen_vl import QwenVLWrapper
 
         return QwenVLWrapper(model_id="Qwen/Qwen2.5-VL-7B-Instruct")
 

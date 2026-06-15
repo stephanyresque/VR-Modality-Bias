@@ -11,6 +11,8 @@ dist/
 wheels/
 .installed.cfg
 
+uv.lock
+
 # Virtual environments
 .venv/
 venv/

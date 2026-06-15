@@ -2,22 +2,37 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 
 import torch
 from PIL import Image
+from pyprojroot import here
 
-from vr_modality_bias.data.manifests import ImageRecord
-from vr_modality_bias.data.perturbations import noise_image_uniform
-from vr_modality_bias.io.storage import (
-    hidden_states_filename,
-    save_hidden_states,
-)
-from vr_modality_bias.models.base import ModelWrapper
-from vr_modality_bias.utils.logging import get_logger
-from vr_modality_bias.utils.seeds import derive_image_seed
+try:
+    from vr_modality_bias.data.manifests import ImageRecord
+    from vr_modality_bias.data.perturbations import noise_image_uniform
+    from vr_modality_bias.io.storage import (
+        hidden_states_filename,
+        save_hidden_states,
+    )
+    from vr_modality_bias.models.base import ModelWrapper
+    from vr_modality_bias.utils.logging import get_logger
+    from vr_modality_bias.utils.seeds import derive_image_seed
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.data.manifests import ImageRecord
+    from src.vr_modality_bias.data.perturbations import noise_image_uniform
+    from src.vr_modality_bias.io.storage import (
+        hidden_states_filename,
+        save_hidden_states,
+    )
+    from src.vr_modality_bias.models.base import ModelWrapper
+    from src.vr_modality_bias.utils.logging import get_logger
+    from src.vr_modality_bias.utils.seeds import derive_image_seed
 
 __all__ = ["run_paired_for_image", "collect_paired_for_manifest"]
 

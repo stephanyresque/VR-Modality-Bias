@@ -1,0 +1,16 @@
+run:
+  name: "baseline_smolvlm256_mscoco_short"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "mscoco_baseline"
+  manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
+  images_dir: "data/processed/mscoco_baseline/images"
+  n_images: 100
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4

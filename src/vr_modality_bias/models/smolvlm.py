@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 import torch
 from PIL import Image
+from pyprojroot import here
 
-from vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
+try:
+    from vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.models.base import HiddenStatesResult, ModelWrapper
 
 __all__ = ["SmolVLMWrapper"]
 

@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 from PIL import Image
+from pyprojroot import here
 
-from vr_modality_bias.utils.seeds import derive_image_seed
+try:
+    from vr_modality_bias.utils.seeds import derive_image_seed
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.utils.seeds import derive_image_seed
 
 __all__ = ["derive_image_seed", "noise_image_uniform"]
 

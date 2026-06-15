@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
 import h5py
 import numpy as np
 import torch
+from pyprojroot import here
 
-from vr_modality_bias.models.base import HiddenStatesResult
+try:
+    from vr_modality_bias.models.base import HiddenStatesResult
+except ModuleNotFoundError:
+    sys.path.insert(0, str(here()))
+
+    from src.vr_modality_bias.models.base import HiddenStatesResult
 
 __all__ = ["save_hidden_states", "load_hidden_states", "hidden_states_filename"]
 

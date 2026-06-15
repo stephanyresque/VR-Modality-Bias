@@ -1,0 +1,9 @@
+transformers==4.46.*
+numpy
+Pillow>=10.0
+h5py>=3.10
+pyarrow>=14.0
+pyyaml>=6.0
+tqdm>=4.66
+requests>=2.31
+matplotlib>=3.8
