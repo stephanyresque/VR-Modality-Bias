@@ -1,21 +1,27 @@
 [project]
 name = "vr-modality-bias"
 version = "0.1.0"
-description = "Baseline (Stage 2) for the VR-Modality-Bias diagnostic pipeline."
+description = "Etapa 3: SPARC evaluation on top of the Etapa 2 diagnostic pipeline."
 readme = "README.md"
 requires-python = ">=3.10"
 
 [dependency-groups]
+# Compat range pinned for SPARC (rope_parameters / new Cache API) while still
+# keeping AutoModelForVision2Seq alive for the SmolVLM port (Phase 4).
 dev = [
     "h5py>=3.10",
     "matplotlib>=3.8",
-    "numpy>=2.2.6",
+    "numpy>=1.26,<3.0",
     "pillow>=10.0",
     "pyarrow>=14.0",
     "pyyaml>=6.0",
     "requests>=2.31",
     "tqdm>=4.66",
-    "transformers==4.46.*",
+    "transformers>=4.55,<5.0",
+    "accelerate>=0.34,<2.0",
+    "tokenizers>=0.20,<1.0",
+    "huggingface-hub>=0.26,<1.0",
+    "timm>=0.9",
+    "loguru>=0.7",
+    "pyprojroot>=0.3",
 ]
-
-

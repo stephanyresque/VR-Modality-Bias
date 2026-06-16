@@ -33,7 +33,6 @@ htmlcov/
 # Project data and outputs
 data/raw/
 EXPERIMENT.md
-template_experimento.tex
 
 # Inside run directories, only heavy or regenerable artefacts are ignored.
 results/runs/*/hidden_states/
