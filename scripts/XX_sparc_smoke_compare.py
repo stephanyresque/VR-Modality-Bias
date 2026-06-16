@@ -1,42 +1,5 @@
 #!/usr/bin/env python
-"""Phase-0 SPARC smoke: prove that ``alpha > 1`` actually changes the caption.
-
-Reads a config (e.g. ``configs/baseline.yaml`` — the one Arthur reoriented
-for ``baseline_qwen_sparc``), iterates the first ``--limit`` images of the
-dataset, and for each image generates the caption **twice** with the **same
-seed**:
-
-    1. SPARC OFF — vanilla ``model.generate_caption(...)`` on the unmodified
-       Qwen-2.5-VL forward.
-    2. SPARC ON  — after ``add_custom_attention_layers(...)`` with the
-       requested ``--alpha`` (defaults to ``1.5``). The selection layer,
-       ``tau``, ``beta`` and ``se_layers`` keep Arthur's defaults; the only
-       parameter being tuned here is ``alpha`` (the paper's calibration
-       coefficient — ``alpha=1`` is no-op).
-
-At the end the script reports how many captions changed. Acceptance for
-Phase 0 (per Stephany's instruction): **at least one caption must differ**
-between OFF and ON, otherwise SPARC is still inert and the rest of the
-pipeline is meaningless. The script exits with returncode 1 when nothing
-changes.
-
-Notes for the operator
-----------------------
-* Same probe + buffer reset cadence as ``scripts/XX_inference_sparc.py``.
-* All generations are deterministic per ``(seed_global, image_id)`` thanks
-  to ``derive_image_seed`` — the OFF/ON pair therefore samples from
-  identical RNG state, isolating the effect of the calibration.
-* SPARC is installed *after* the OFF passes so we don't have to undo the
-  monkey-patch (this script doesn't restore the original forwards). If you
-  need to call ``generate_caption`` again with SPARC OFF after this
-  smoke test, reload the model.
-
-CLI
----
-    python scripts/XX_sparc_smoke_compare.py --config configs/baseline.yaml
-    python scripts/XX_sparc_smoke_compare.py --config configs/baseline.yaml \
-        --alpha 2.0 --limit 4
-"""
+"""Phase-0 SPARC smoke: prove that ``alpha > 1`` actually changes the caption."""
 
 from __future__ import annotations
 

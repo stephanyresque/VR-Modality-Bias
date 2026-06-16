@@ -21,13 +21,13 @@ classifiers = [
 ]
 dependencies = [
     "torch",
-    # Etapa 3 SPARC needs new transformers APIs that landed in 4.51+
-    # (config.rope_parameters and DynamicCache.layers[idx].values used by
-    # vr_modality_bias/utils/attn.py::forward_qwen25vl). The upper bound stays
-    # under 5.x because transformers 5.0 removed AutoModelForVision2Seq, which
-    # SmolVLMWrapper still imports — porting SmolVLM to the new auto class is
-    # Phase 4 work.
-    "transformers>=4.55,<5.0",
+    # Etapa 3 SPARC reads ``config.rope_parameters["mrope_section"]`` (the
+    # text-config attribute that replaced ``rope_scaling`` only in
+    # transformers 5.x — 4.57 still has the old name). We therefore pin to
+    # the 5.x series; SmolVLMWrapper was migrated from AutoModelForVision2Seq
+    # (removed in 5.0) to AutoModelForImageTextToText, which works for the
+    # whole Idefics3 family.
+    "transformers>=5.0,<6.0",
     "accelerate>=0.34,<2.0",
     "tokenizers>=0.20,<1.0",
     "huggingface-hub>=0.26,<1.0",

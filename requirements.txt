@@ -1,6 +1,6 @@
 # Pinned for Etapa 3 (SPARC evaluation). See pyproject.toml for rationale.
 torch
-transformers>=4.55,<5.0
+transformers>=5.0,<6.0
 accelerate>=0.34,<2.0
 tokenizers>=0.20,<1.0
 huggingface-hub>=0.26,<1.0

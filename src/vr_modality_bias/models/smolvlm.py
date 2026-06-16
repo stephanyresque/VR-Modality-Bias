@@ -65,7 +65,17 @@ class SmolVLMWrapper(ModelWrapper):
 
     def load(self, device: torch.device) -> None:
         """Load processor + model onto ``device`` and resolve ``lm_head``/``n_layers``."""
-        from transformers import AutoModelForVision2Seq, AutoProcessor
+        # ``AutoModelForVision2Seq`` was removed in transformers 5.0;
+        # ``AutoModelForImageTextToText`` is the modern entry point and
+        # works across the Idefics3 family (SmolVLM 256M, 2.2B, ...).
+        # The except branch keeps backward-compat with 4.x in case the env
+        # somehow still has the old class around.
+        from transformers import AutoProcessor
+
+        try:
+            from transformers import AutoModelForImageTextToText as _AutoModel
+        except ImportError:  # pragma: no cover (legacy 4.x path)
+            from transformers import AutoModelForVision2Seq as _AutoModel
 
         self._device = device
         self._processor = AutoProcessor.from_pretrained(self.model_id)
@@ -77,7 +87,7 @@ class SmolVLMWrapper(ModelWrapper):
         if device.type == "cuda":
             model_kwargs["_attn_implementation"] = self._attn_implementation
 
-        self._model = AutoModelForVision2Seq.from_pretrained(
+        self._model = _AutoModel.from_pretrained(
             self.model_id, **model_kwargs
         ).to(device)
         self._model.eval()
