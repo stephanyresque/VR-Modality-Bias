@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke chair-report clean
 
 help:
 	@echo "Targets:"
@@ -17,6 +17,9 @@ help:
 	@echo "  baseline       run the full N-image baseline end-to-end (N from configs/baseline.yaml)"
 	@echo "  phase2-smoke   quick Phase-2 smoke (1 img, short, alpha=1.3) — confirms entrypoint + IO + log path"
 	@echo "  phase2         full Phase-2 sweep (50 imgs * 3 lengths * (OFF + 5 alphas)). Resumable; safe under tmux."
+	@echo "  phase3-smoke   quick Phase-3 smoke (1 img, short, OFF + SPARC alpha=1.1) — confirms entrypoint + IO"
+	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
+	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -73,6 +76,27 @@ phase2-smoke:
 
 phase2:
 	$(PYTHON) scripts/15_phase2_sweep.py --run-name $(PHASE2_RUN_NAME) $(PHASE2_FLAGS)
+
+# Phase 3 — free caption generation for CHAIR evaluation (baseline vs SPARC α=1.1).
+#   * Logs to results/runs/<run-name>/logs/phase3.log
+#   * Re-running skips already-generated (image, length, condition) cells
+#   * Add OVERWRITE=1 to force regenerate
+# Override the run dir name via: make phase3 PHASE3_RUN_NAME=my_run
+PHASE3_RUN_NAME ?= phase3
+PHASE3_FLAGS ?=
+ifeq ($(OVERWRITE),1)
+    PHASE3_FLAGS += --overwrite
+endif
+
+phase3-smoke:
+	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke
+
+phase3:
+	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)
+
+# CHAIR report — auto-downloads COCO val2017 annotations if missing.
+chair-report:
+	$(PYTHON) scripts/17_chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
