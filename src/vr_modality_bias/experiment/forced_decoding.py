@@ -43,24 +43,39 @@ any index arithmetic on either side.
 mRoPE / position bookkeeping
 ----------------------------
 We do **not** assemble ``position_ids`` by hand. The model derives them
-internally from ``cache_position`` and the ``rope_deltas`` it computed
-during prefill (see ``Qwen2_5_VLForConditionalGeneration``, where
-``rope_deltas`` lives in the output dataclass next to ``past_key_values``).
-Our loop:
+internally from the KV cache length and the ``rope_deltas`` it cached on
+``self`` during prefill (see ``Qwen2_5_VLModel.compute_3d_position_ids``):
 
-    1. PREFILL — feed the prefix with ``cache_position = arange(caption_start)``
-       and capture ``outputs.rope_deltas``.
-    2. STEP j — feed **only the new token** (one column) with
-       ``cache_position = tensor([caption_start + j])`` plus the cached
-       ``rope_deltas``. The model derives the mRoPE-correct
-       ``position_ids`` from those two and runs through its KV cache.
+    elif self.rope_deltas is not None and (past_key_values_length > 0 ...):
+        ...
+        if attention_mask is not None:
+            position_ids = attention_mask.long().cumsum(-1) - 1      # <-- BUG path
+            position_ids = ... .view(1, batch_size, -1).repeat(3, 1, 1)
+        else:
+            position_ids = torch.arange(
+                past_key_values_length, past_key_values_length + seq_length
+            )                                                         # <-- correct path
+        position_ids = position_ids + delta
 
-This is what ``.generate``'s internal sampling loop does after
-``_update_model_kwargs_for_generation`` rolls ``rope_deltas`` forward —
-we just inline that one piece of state so we don't depend on
-``prepare_inputs_for_generation`` (which in ``transformers`` 5.x slices
-``input_ids`` only when ``cache_position`` is passed *to it*, a contract
-that already bit us once).
+If we pass ``attention_mask`` at step time, the model sizes
+``position_ids`` from ``attention_mask.shape[1]`` (the cumulative length),
+not from ``inputs_embeds.shape[1]`` (= 1). The cos/sin pair then has the
+wrong rotary length, ``key_states`` come out with seq_len = cumulative
+length, and after ``past_key_values.update(...)`` the KV side ends up
+~2 × cumulative — which is exactly the ``827 vs 414`` shape mismatch we
+saw at ``attn_weights + attention_mask`` in eager attention.
+
+Our loop therefore:
+
+    1. PREFILL — feed the prefix with its attention_mask (length
+       caption_start). The model takes the ``past_key_values_length == 0``
+       branch, calls ``get_rope_index``, and caches ``self.rope_deltas``.
+    2. STEP j — feed **only the new token** (one column), **no
+       attention_mask**, no ``cache_position``, no ``rope_deltas`` kwarg
+       (Qwen-2.5-VL doesn't take those — they're consumed by
+       ``GenerationMixin`` infra, not by the model itself). The model takes
+       the ``else`` branch above and derives the correct mRoPE position
+       from the cache length plus the cached ``self.rope_deltas``.
 """
 
 from __future__ import annotations
@@ -85,6 +100,17 @@ __all__ = ["collect_forced_decoding"]
 
 def _iso_now() -> str:
     return datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
+
+
+def _new_dynamic_cache():
+    """Instantiate a fresh ``DynamicCache`` for the prefill forward.
+
+    Lazy import: ``DynamicCache`` lives in ``transformers.cache_utils``
+    (stable across the 4.x and 5.x APIs we target).
+    """
+    from transformers.cache_utils import DynamicCache
+
+    return DynamicCache()
 
 
 def collect_forced_decoding(
@@ -205,12 +231,13 @@ def collect_forced_decoding(
     )
 
     # ---- prefill -------------------------------------------------------
-    # We pass ``past_key_values=None`` so the model instantiates its own
-    # cache exactly the way ``.generate`` does internally (and so we avoid
-    # version-specific surprises around ``DynamicCache()``'s initial state).
-    # ``cache_position`` is also omitted on prefill — the model derives it
-    # from ``input_ids.shape[1]`` when no cache exists yet.
+    # We instantiate a fresh ``DynamicCache`` and pass it in so the
+    # returned cache is the same object — useful for both the real model
+    # and the test mock, which only fills a cache when it's not None.
+    # ``cache_position`` is omitted: with an empty cache the model derives
+    # it from ``input_ids.shape[1]`` (mirrors ``.generate`` at prefill).
     prefill_attention_mask = attention_mask_full[:, :caption_start]
+    past_key_values = _new_dynamic_cache()
 
     with torch.no_grad():
         prefill_outputs = model(
@@ -218,7 +245,7 @@ def collect_forced_decoding(
             attention_mask=prefill_attention_mask,
             pixel_values=pixel_values,
             image_grid_thw=image_grid_thw,
-            past_key_values=None,
+            past_key_values=past_key_values,
             use_cache=True,
             output_hidden_states=True,
             return_dict=True,
@@ -226,47 +253,36 @@ def collect_forced_decoding(
 
     _scatter_prefill_into(hidden, prefill_outputs.hidden_states, n_layers, caption_start)
 
-    # Pick up the cache and the mRoPE deltas that the prefill computed so
-    # we can roll them forward across the per-token steps.
+    # Pick up the cache. mRoPE deltas were cached on the model by
+    # ``compute_3d_position_ids`` during prefill (``self.rope_deltas = ...``),
+    # so we don't need to thread them ourselves.
     past_key_values = prefill_outputs.past_key_values
-    rope_deltas = getattr(prefill_outputs, "rope_deltas", None)
 
     # ---- generation steps ---------------------------------------------
-    # Feed exactly one new token per call. The model uses cache_position +
-    # rope_deltas (captured above) to derive the mRoPE-correct position_ids
-    # internally; we do NOT assemble position_ids by hand.
-    running_attention = prefill_attention_mask
-
+    # Feed exactly one new token per call.
+    #
+    # We deliberately pass **no attention_mask** at step time. With a single
+    # new token, no padding, and a populated KV cache, the model derives
+    # the right position from ``past_key_values.get_seq_length() + 1``
+    # (see the ``else`` branch in ``compute_3d_position_ids`` above).
+    # Passing the cumulative attention_mask triggers the buggy
+    # ``attention_mask.cumsum(-1)`` path that puts rotary cos/sin at the
+    # wrong sequence length and explodes downstream.
     for j in range(caption_len):
         abs_pos = caption_start + j
         new_token = full_ids[abs_pos].view(1, 1).to(device)
-        running_attention = torch.cat(
-            [
-                running_attention,
-                torch.ones((1, 1), dtype=running_attention.dtype, device=device),
-            ],
-            dim=1,
-        )
-        cache_position_step = torch.tensor([abs_pos], device=device)
-
-        step_kwargs: dict[str, Any] = {
-            "input_ids": new_token,
-            "attention_mask": running_attention,
-            "past_key_values": past_key_values,
-            "cache_position": cache_position_step,
-            "use_cache": True,
-            "output_hidden_states": True,
-            "return_dict": True,
-        }
-        if rope_deltas is not None:
-            step_kwargs["rope_deltas"] = rope_deltas
 
         with torch.no_grad():
-            step_outputs = model(**step_kwargs)
+            step_outputs = model(
+                input_ids=new_token,
+                past_key_values=past_key_values,
+                use_cache=True,
+                output_hidden_states=True,
+                return_dict=True,
+            )
 
         _scatter_step_into(hidden, step_outputs.hidden_states, n_layers, abs_pos)
         past_key_values = step_outputs.past_key_values
-        # rope_deltas is invariant per (image, prompt) — no need to refresh.
 
     # ---- pack the result mirroring run_teacher_forcing ----------------
     input_ids_cpu = full_ids.to(device="cpu", dtype=torch.int64).contiguous()

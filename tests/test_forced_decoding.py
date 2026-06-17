@@ -156,7 +156,6 @@ class _MockModel(nn.Module):
         self,
         input_ids,
         past_key_values=None,
-        cache_position=None,
         attention_mask=None,
         use_cache=False,
         output_hidden_states=False,
@@ -168,10 +167,12 @@ class _MockModel(nn.Module):
         assert output_hidden_states, "Forced decoding must request hidden states."
         assert return_dict, "Forced decoding must request return_dict."
         seq_len = input_ids.shape[1]
-        positions = cache_position.tolist() if cache_position is not None else list(range(seq_len))
-        assert len(positions) == seq_len, (
-            f"cache_position length {len(positions)} != seq_len {seq_len}"
-        )
+        # Mirror what the real Qwen-2.5-VL model does: derive the absolute
+        # position of each new token from the cache length plus an arange.
+        # This is what ``compute_3d_position_ids`` does in the ``else`` branch
+        # (no attention_mask) — see the module docstring of forced_decoding.
+        cache_len = past_key_values.get_seq_length() if past_key_values is not None else 0
+        positions = list(range(cache_len, cache_len + seq_len))
 
         # Embedding output (we never read this).
         embedding = torch.zeros((1, seq_len, self._hidden_dim))
