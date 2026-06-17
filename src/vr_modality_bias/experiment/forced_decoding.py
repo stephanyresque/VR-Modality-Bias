@@ -42,12 +42,25 @@ any index arithmetic on either side.
 
 mRoPE / position bookkeeping
 ----------------------------
-We do **not** assemble ``position_ids`` by hand. Instead we route every
-forward through ``model.prepare_inputs_for_generation`` (the same machinery
-``.generate`` uses), so the multimodal RoPE deltas, ``cache_position`` and
-the image-grid bookkeeping match the model's own internal contract.
-Reverse-engineering that for Qwen2.5-VL by hand is a classic source of
-silent divergence that would only surface on the equivalence test.
+We do **not** assemble ``position_ids`` by hand. The model derives them
+internally from ``cache_position`` and the ``rope_deltas`` it computed
+during prefill (see ``Qwen2_5_VLForConditionalGeneration``, where
+``rope_deltas`` lives in the output dataclass next to ``past_key_values``).
+Our loop:
+
+    1. PREFILL — feed the prefix with ``cache_position = arange(caption_start)``
+       and capture ``outputs.rope_deltas``.
+    2. STEP j — feed **only the new token** (one column) with
+       ``cache_position = tensor([caption_start + j])`` plus the cached
+       ``rope_deltas``. The model derives the mRoPE-correct
+       ``position_ids`` from those two and runs through its KV cache.
+
+This is what ``.generate``'s internal sampling loop does after
+``_update_model_kwargs_for_generation`` rolls ``rope_deltas`` forward —
+we just inline that one piece of state so we don't depend on
+``prepare_inputs_for_generation`` (which in ``transformers`` 5.x slices
+``input_ids`` only when ``cache_position`` is passed *to it*, a contract
+that already bit us once).
 """
 
 from __future__ import annotations
@@ -205,43 +218,39 @@ def collect_forced_decoding(
     )
 
     # ---- prefill -------------------------------------------------------
-    prefill_input_ids_full = prefix_input_ids
     prefill_attention_mask = attention_mask_full[:, :caption_start]
+    prefill_cache_position = torch.arange(caption_start, device=device)
 
-    prefill_inputs = model.prepare_inputs_for_generation(
-        input_ids=prefill_input_ids_full,
-        past_key_values=past_key_values,
-        attention_mask=prefill_attention_mask,
-        pixel_values=pixel_values,
-        image_grid_thw=image_grid_thw,
-        use_cache=True,
-        is_first_iteration=True,
-    )
     with torch.no_grad():
         prefill_outputs = model(
-            **prefill_inputs,
+            input_ids=prefix_input_ids,
+            attention_mask=prefill_attention_mask,
+            pixel_values=pixel_values,
+            image_grid_thw=image_grid_thw,
+            past_key_values=past_key_values,
+            cache_position=prefill_cache_position,
+            use_cache=True,
             output_hidden_states=True,
             return_dict=True,
         )
 
     _scatter_prefill_into(hidden, prefill_outputs.hidden_states, n_layers, caption_start)
 
-    # The cache instance that the model actually used may not be the one we
-    # passed in (some implementations replace it). Pick up whichever is
-    # current via the outputs.
+    # Pick up the cache and the mRoPE deltas that the prefill computed so
+    # we can roll them forward across the per-token steps. Some models may
+    # replace the cache instance; we don't assume we still own the original.
     past_key_values = prefill_outputs.past_key_values
+    rope_deltas = getattr(prefill_outputs, "rope_deltas", None)
 
     # ---- generation steps ---------------------------------------------
-    # We accumulate input_ids and grow attention_mask one column per step,
-    # then let ``prepare_inputs_for_generation`` slice everything to the
-    # single new token + the right cache_position + rope_deltas.
-    running_input_ids = prefill_input_ids_full
+    # Feed exactly one new token per call. The model uses cache_position +
+    # rope_deltas (captured above) to derive the mRoPE-correct position_ids
+    # internally; we do NOT assemble position_ids by hand.
     running_attention = prefill_attention_mask
 
     for j in range(caption_len):
         abs_pos = caption_start + j
         new_token = full_ids[abs_pos].view(1, 1).to(device)
-        running_input_ids = torch.cat([running_input_ids, new_token], dim=1)
         running_attention = torch.cat(
             [
                 running_attention,
@@ -249,25 +258,26 @@ def collect_forced_decoding(
             ],
             dim=1,
         )
+        cache_position_step = torch.tensor([abs_pos], device=device)
 
-        step_inputs = model.prepare_inputs_for_generation(
-            input_ids=running_input_ids,
-            past_key_values=past_key_values,
-            attention_mask=running_attention,
-            pixel_values=None,            # vision was already prefilled
-            image_grid_thw=None,
-            use_cache=True,
-            is_first_iteration=False,
-        )
+        step_kwargs: dict[str, Any] = {
+            "input_ids": new_token,
+            "attention_mask": running_attention,
+            "past_key_values": past_key_values,
+            "cache_position": cache_position_step,
+            "use_cache": True,
+            "output_hidden_states": True,
+            "return_dict": True,
+        }
+        if rope_deltas is not None:
+            step_kwargs["rope_deltas"] = rope_deltas
+
         with torch.no_grad():
-            step_outputs = model(
-                **step_inputs,
-                output_hidden_states=True,
-                return_dict=True,
-            )
+            step_outputs = model(**step_kwargs)
 
         _scatter_step_into(hidden, step_outputs.hidden_states, n_layers, abs_pos)
         past_key_values = step_outputs.past_key_values
+        # rope_deltas is invariant per (image, prompt) — no need to refresh.
 
     # ---- pack the result mirroring run_teacher_forcing ----------------
     input_ids_cpu = full_ids.to(device="cpu", dtype=torch.int64).contiguous()
