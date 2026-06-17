@@ -221,6 +221,21 @@ def collect_forced_decoding(
         if "image_grid_thw" in prefix_inputs
         else None
     )
+    # ``mm_token_type_ids`` is the gate for ``can_compute_mrope`` in
+    # ``Qwen2_5_VLModel.compute_3d_position_ids``. Without it the model
+    # falls back to ``position_ids=None`` and the inner language model
+    # uses a plain ``arange`` — which silently mis-positions every text
+    # token AFTER the image because the mRoPE offset is dropped. That's
+    # exactly the bug that made the SPARC-OFF forced-decoding path
+    # disagree with run_teacher_forcing by ~19% on the §4.4 equivalence
+    # check. run_teacher_forcing avoids this by passing ``**full_inputs``,
+    # which forwards mm_token_type_ids straight from the processor; we
+    # do the same here.
+    mm_token_type_ids = (
+        prefix_inputs["mm_token_type_ids"].to(device)
+        if "mm_token_type_ids" in prefix_inputs
+        else None
+    )
 
     # Allocate the absolute-layout output tensor on CPU; we copy each slice
     # over as it becomes available.
@@ -239,17 +254,21 @@ def collect_forced_decoding(
     prefill_attention_mask = attention_mask_full[:, :caption_start]
     past_key_values = _new_dynamic_cache()
 
+    prefill_kwargs: dict[str, Any] = {
+        "input_ids": prefix_input_ids,
+        "attention_mask": prefill_attention_mask,
+        "pixel_values": pixel_values,
+        "image_grid_thw": image_grid_thw,
+        "past_key_values": past_key_values,
+        "use_cache": True,
+        "output_hidden_states": True,
+        "return_dict": True,
+    }
+    if mm_token_type_ids is not None:
+        prefill_kwargs["mm_token_type_ids"] = mm_token_type_ids
+
     with torch.no_grad():
-        prefill_outputs = model(
-            input_ids=prefix_input_ids,
-            attention_mask=prefill_attention_mask,
-            pixel_values=pixel_values,
-            image_grid_thw=image_grid_thw,
-            past_key_values=past_key_values,
-            use_cache=True,
-            output_hidden_states=True,
-            return_dict=True,
-        )
+        prefill_outputs = model(**prefill_kwargs)
 
     _scatter_prefill_into(hidden, prefill_outputs.hidden_states, n_layers, caption_start)
 
