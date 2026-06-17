@@ -140,6 +140,18 @@ def main() -> int:
              "length config. Default: greedy (do_sample=False, num_beams=1) "
              "— matches the official SPARC COCO setup and is REQUIRED for "
              "SPARC stability on long captions.")
+    parser.add_argument("--repetition-penalty", type=float, default=None,
+        help="Override repetition_penalty in gen_kwargs (default: 1.0 in "
+             "greedy mode). Use ~1.1-1.3 to test whether Qwen-7B greedy "
+             "repetition is what's bootstrapping SPARC's degeneration.")
+    parser.add_argument("--no-repeat-ngram-size", type=int, default=None,
+        help="If set, pass no_repeat_ngram_size to generate() — bans any "
+             "n-gram from appearing twice. Hard guard against 'the room. "
+             "the room.' style loops in greedy.")
+    parser.add_argument("--image-ids", type=str, nargs="+", default=None,
+        help="Specific COCO image IDs (zero-padded 12-digit stems) to use, "
+             "in order. Overrides the auto-pick of the first --limit images. "
+             "Used by the isolation tests in the SPARC degeneration audit.")
     parser.add_argument("--print-captions", action="store_true",
         help="Print each generated caption to stdout (in addition to the log). "
              "Useful for eyeball coherence checks.")
@@ -270,15 +282,28 @@ def main() -> int:
                 "num_beams": 1,
                 "repetition_penalty": 1.0,
             }
+        # CLI overrides (used by the SPARC degeneration audit experiments).
+        if args.repetition_penalty is not None:
+            gen_kwargs["repetition_penalty"] = float(args.repetition_penalty)
+        if args.no_repeat_ngram_size is not None:
+            gen_kwargs["no_repeat_ngram_size"] = int(args.no_repeat_ngram_size)
 
         images_dir = cfg["dataset"]["images_dir"]
-        image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
+        if args.image_ids:
+            # Explicit IDs override the auto-pick (used by the audit experiments).
+            image_files = [str(Path(images_dir) / f"{i}.jpg") for i in args.image_ids]
+            missing = [p for p in image_files if not Path(p).exists()]
+            if missing:
+                logger.error(f"[{length}] missing image files: {missing}")
+                continue
+        else:
+            image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
         if not image_files:
             logger.error(f"[{length}] no images under {images_dir}; skipping length.")
             continue
         logger.info(
             f"[{length}] {len(image_files)} image(s), prompt_key={prompt_key}, "
-            f"max_new_tokens={max_new_tokens}"
+            f"max_new_tokens={max_new_tokens}, gen_kwargs={gen_kwargs}"
         )
 
         for image_path in image_files:
