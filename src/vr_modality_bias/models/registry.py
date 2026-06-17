@@ -67,8 +67,20 @@ def _register_builtin() -> None:
 
         return QwenVLWrapper(model_id="Qwen/Qwen2.5-VL-7B-Instruct")
 
+    def _qwen2_5_vl_3b() -> ModelWrapper:
+        # Smallest variant in the Qwen2.5-VL family — same forward / mRoPE /
+        # mm_token_type_ids code path as 7B. Used by scripts/13 for the fp32
+        # architectural-exactness gate (Phase 1, item 1).
+        try:
+            from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.qwen_vl import QwenVLWrapper
+
+        return QwenVLWrapper(model_id="Qwen/Qwen2.5-VL-3B-Instruct")
+
     register_model("smolvlm-256m", _smolvlm_256m)
     register_model("smolvlm-2.2b", _smolvlm_2_2b)
+    register_model("qwen2.5-vl-3b", _qwen2_5_vl_3b)
     register_model("qwen2.5-vl-7b", _qwen2_5_vl_7b)
 
 

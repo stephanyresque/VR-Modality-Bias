@@ -77,15 +77,15 @@ class QwenVLWrapper(ModelWrapper):
         if device.type == "cuda":
             model_kwargs["_attn_implementation"] = self._attn_implementation
 
-        self._model = self._load_model(model_kwargs).to(device)
+        self._model = self._load_model(self.model_id, model_kwargs).to(device)
         self._model.eval()
 
         self._lm_head = self._discover_lm_head()
         self._n_layers = self._discover_n_layers()
 
     @staticmethod
-    def _load_model(model_kwargs: dict[str, Any]):
-       
+    def _load_model(model_id: str, model_kwargs: dict[str, Any]):
+
         import transformers
 
         candidate_classes = (
@@ -99,14 +99,12 @@ class QwenVLWrapper(ModelWrapper):
             if cls is None:
                 continue
             try:
-                return cls.from_pretrained(
-                    "Qwen/Qwen2.5-VL-7B-Instruct", **model_kwargs
-                )
-            except Exception as exc:  
+                return cls.from_pretrained(model_id, **model_kwargs)
+            except Exception as exc:
                 last_exc = exc
                 continue
         raise RuntimeError(
-            "Could not load Qwen2.5-VL via any of "
+            f"Could not load {model_id} via any of "
             f"{candidate_classes}. Last error: {last_exc!r}"
         )
 
