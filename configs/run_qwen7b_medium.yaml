@@ -12,7 +12,11 @@ dataset:
 model:
   key: "qwen2.5-vl-7b"
   model_id: "Qwen/Qwen2.5-VL-7B-Instruct"
-  dtype: "float16"
+  # bfloat16 (NOT float16): Qwen-2.5-VL logits overflow float16's ~65504
+  # range during sampling — probs tensor gets inf/nan and multinomial dies
+  # with a CUDA device-side assert. bfloat16 has fp32's dynamic range and
+  # is the only safe choice for this family.
+  dtype: "bfloat16"
 
 task:
   name: "caption_medium"
