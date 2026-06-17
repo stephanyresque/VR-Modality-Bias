@@ -48,12 +48,25 @@ except ModuleNotFoundError:
 
 
 # Map length name → length-specific config file. The configs share the
-# model (Qwen2.5-VL-7B / bf16) — only prompt and max_new_tokens differ.
+# model (Qwen2.5-VL-7B / bf16 OR SmolVLM-2.2B) — only prompt and
+# max_new_tokens differ. Use ``--length-config-pattern`` to swap families
+# (e.g. ``configs/run_smolvlm22_{length}.yaml`` for the SmolVLM smoke).
 LENGTH_CONFIGS = {
     "short":  "configs/run_qwen7b_short.yaml",
     "medium": "configs/run_qwen7b_medium.yaml",
     "long":   "configs/run_qwen7b_long.yaml",
 }
+
+
+def _resolve_length_configs(pattern: str | None) -> dict[str, str]:
+    """Build the {length: cfg_path} dict from a pattern with ``{length}``."""
+    if pattern is None:
+        return dict(LENGTH_CONFIGS)
+    if "{length}" not in pattern:
+        raise ValueError(
+            f"--length-config-pattern must contain '{{length}}', got {pattern!r}"
+        )
+    return {name: pattern.format(length=name) for name in LENGTH_CONFIGS}
 
 
 def _iso_now() -> str:
@@ -152,6 +165,10 @@ def main() -> int:
         help="Specific COCO image IDs (zero-padded 12-digit stems) to use, "
              "in order. Overrides the auto-pick of the first --limit images. "
              "Used by the isolation tests in the SPARC degeneration audit.")
+    parser.add_argument("--length-config-pattern", type=str, default=None,
+        help="Pattern with '{length}' placeholder for length-specific configs. "
+             "Default: configs/run_qwen7b_{length}.yaml. For the SmolVLM smoke, "
+             "use 'configs/run_smolvlm22_{length}.yaml'.")
     parser.add_argument("--print-captions", action="store_true",
         help="Print each generated caption to stdout (in addition to the log). "
              "Useful for eyeball coherence checks.")
@@ -225,8 +242,12 @@ def main() -> int:
     done = _read_done(jsonl_path)
     logger.info(f"Resume state: {len(done)} cells already in {jsonl_path}")
 
+    # Resolve which length-config dict to use (Qwen default or SmolVLM override).
+    length_configs = _resolve_length_configs(args.length_config_pattern)
+    logger.info(f"length_configs: {length_configs}")
+
     # Load model once from the first length config (they share the model spec).
-    first_cfg_path = Path(LENGTH_CONFIGS[args.lengths[0]])
+    first_cfg_path = Path(length_configs[args.lengths[0]])
     cfg_first = load_config(first_cfg_path)
     model_key = str(cfg_first["model"]["key"])
     model_id = str(cfg_first["model"]["model_id"])
@@ -260,7 +281,7 @@ def main() -> int:
     t_start = time.time()
 
     for length in args.lengths:
-        cfg = load_config(LENGTH_CONFIGS[length])
+        cfg = load_config(length_configs[length])
         prompt_key = str(cfg["task"]["prompt_key"])
         prompt = get_prompt(prompt_key)
         seed_global = int(cfg["run"]["seed_global"])

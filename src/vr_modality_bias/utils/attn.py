@@ -17,6 +17,67 @@ from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import (
 )
 from transformers.cache_utils import Cache
 
+
+# ------------------------------------------------------------------------
+# Family detection — looks at the top-level model class name to choose the
+# right SPARC forward + the right path to the decoder layers.
+#
+# qwen   : Qwen2.5-VL (mRoPE, model.model.language_model.layers)
+# llama  : Idefics3 / SmolVLM (standard 1D RoPE, model.model.text_model.layers)
+# ------------------------------------------------------------------------
+
+
+_QWEN_MARKERS = ("Qwen2_5_VL", "Qwen2VL", "QwenVL")
+_LLAMA_MARKERS = ("Idefics3", "SmolVLM", "Llava", "Mllama")
+
+
+def detect_model_family(model) -> str:
+    """Return ``"qwen"`` or ``"llama"`` for the SPARC forward dispatch.
+
+    Primary signal is the top-level model class name. As a fallback
+    (covers test mocks and any future wrapper that doesn't match the
+    markers), we look at which inner attribute holds the decoder:
+
+        model.model.language_model → qwen (Qwen2.5-VL convention)
+        model.model.text_model     → llama (Idefics3 / SmolVLM convention)
+    """
+    cls = type(model).__name__
+    if any(cls.startswith(m) for m in _QWEN_MARKERS):
+        return "qwen"
+    if any(cls.startswith(m) for m in _LLAMA_MARKERS):
+        return "llama"
+    # Attribute-based fallback.
+    inner = getattr(model, "model", model)
+    if getattr(inner, "language_model", None) is not None:
+        return "qwen"
+    if getattr(inner, "text_model", None) is not None:
+        return "llama"
+    raise ValueError(
+        f"Unknown model family for {cls}. Add a marker in _QWEN_MARKERS / "
+        f"_LLAMA_MARKERS in utils/attn.py or pass family= explicitly to "
+        f"add_custom_attention_layers."
+    )
+
+
+def decoder_of(model) -> object:
+    """Return the decoder module (the one with ``.layers``) for SPARC patching.
+
+    Qwen : model.model.language_model
+    Llama: model.model.text_model
+    Fallback: model.model (some checkpoints flatten the hierarchy)
+    """
+    inner = getattr(model, "model", model)
+    for attr in ("language_model", "text_model"):
+        candidate = getattr(inner, attr, None)
+        if candidate is not None and hasattr(candidate, "layers"):
+            return candidate
+    if hasattr(inner, "layers"):
+        return inner
+    raise AttributeError(
+        f"Could not find decoder.layers on {type(model).__name__}. "
+        "Looked at model.model.language_model and model.model.text_model."
+    )
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,19 +131,20 @@ class SelectedIndexBuffer:
         self.num_image_patches = num_image_patches
 
 
-# llama attention
-def forward(
+# Llama text-decoder attention (transformers 5.x).
+# Used for Idefics3 / SmolVLM, which embed a standard Llama text model.
+# Structurally identical to ``forward_qwen25vl`` below; the only difference
+# is the rotary-embedding call — Llama uses 1D RoPE, Qwen-2.5-VL uses mRoPE.
+def forward_llama(
     self,
     hidden_states: torch.Tensor,
     attention_mask: Optional[torch.Tensor] = None,
     position_ids: Optional[torch.LongTensor] = None,
-    past_key_value: Optional[Cache] = None,
+    past_key_values: Optional[Cache] = None,
     output_attentions: bool = False,
     use_cache: bool = False,
-    position_embeddings: Optional[
-        Tuple[torch.Tensor, torch.Tensor]
-    ] = None,  # will become mandatory in v4.46
-    image_token_index: Optional[int] = 35,
+    position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    image_token_index: Optional[int] = None,
     alpha: Optional[float] = 1.0,
     beta: Optional[float] = 0.0,
     tau: Optional[float] = 2,
@@ -90,103 +152,42 @@ def forward(
     se_layers: Optional[Tuple[int, int]] = None,
     indices_buffer: Optional[SelectedIndexBuffer] = None,
     **kwargs,
-) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
+) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
 
-    if self.config.pretraining_tp > 1:
-        key_value_slicing = (
-            self.num_key_value_heads * self.head_dim
-        ) // self.config.pretraining_tp
-        query_slices = self.q_proj.weight.split(
-            (self.num_heads * self.head_dim) // self.config.pretraining_tp, dim=0
-        )
-        key_slices = self.k_proj.weight.split(key_value_slicing, dim=0)
-        value_slices = self.v_proj.weight.split(key_value_slicing, dim=0)
+    query_states = self.q_proj(hidden_states)
+    key_states = self.k_proj(hidden_states)
+    value_states = self.v_proj(hidden_states)
 
-        query_states = [
-            F.linear(hidden_states, query_slices[i])
-            for i in range(self.config.pretraining_tp)
-        ]
-        query_states = torch.cat(query_states, dim=-1)
+    query_states = query_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
+    key_states = key_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
+    value_states = value_states.view(bsz, q_len, -1, self.head_dim).transpose(1, 2)
 
-        key_states = [
-            F.linear(hidden_states, key_slices[i])
-            for i in range(self.config.pretraining_tp)
-        ]
-        key_states = torch.cat(key_states, dim=-1)
-
-        value_states = [
-            F.linear(hidden_states, value_slices[i])
-            for i in range(self.config.pretraining_tp)
-        ]
-        value_states = torch.cat(value_states, dim=-1)
-
-    else:
-        query_states = self.q_proj(hidden_states)
-        key_states = self.k_proj(hidden_states)
-        value_states = self.v_proj(hidden_states)
-
-    query_states = query_states.view(
-        bsz, q_len, self.num_heads, self.head_dim
-    ).transpose(1, 2)
-    key_states = key_states.view(
-        bsz, q_len, self.num_key_value_heads, self.head_dim
-    ).transpose(1, 2)
-    value_states = value_states.view(
-        bsz, q_len, self.num_key_value_heads, self.head_dim
-    ).transpose(1, 2)
-
-    kv_seq_len = key_states.shape[-2]
-    if past_key_value is not None:
-        if self.layer_idx is None:
-            raise ValueError(
-                f"The cache structure has changed since version v4.36. If you are using {self.__class__.__name__} "
-                "for auto-regressive decoding with k/v caching, please make sure to initialize the attention class "
-                "with a layer index."
-            )
-        kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
-    cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-    query_states, key_states = apply_rotary_pos_emb(
-        query_states, key_states, cos, sin, position_ids
-    )
+    cos, sin = position_embeddings
+    query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
     if self.layer_idx == 0:
         indices_buffer.update_indices2()
 
+    gen_new_token = (
+        past_key_values is not None and past_key_values.get_seq_length(self.layer_idx) > 0
+    )
+
     if self.layer_idx >= se_layers[0] and self.layer_idx <= se_layers[1]:
         if len(indices_buffer.indices2) > 0:
-            indices_buffer.calibrate(past_key_value.value_cache[self.layer_idx], alpha)
+            indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
 
-    if len(past_key_value.key_cache) > self.layer_idx:
-        # generation
-        gen_new_token = True
-    else:
-        # pre-filling
-        gen_new_token = False
-
-    if past_key_value is not None:
-        cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
-        key_states, value_states = past_key_value.update(
-            key_states, value_states, self.layer_idx, cache_kwargs
+    if past_key_values is not None:
+        key_states, value_states = past_key_values.update(
+            key_states, value_states, self.layer_idx
         )
 
     key_states = repeat_kv(key_states, self.num_key_value_groups)
     value_states = repeat_kv(value_states, self.num_key_value_groups)
 
-    attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(
-        self.head_dim
-    )
-    if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
-        raise ValueError(
-            f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-            f" {attn_weights.size()}"
-        )
+    attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) * self.scaling
 
     if attention_mask is not None:
-        if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
-            raise ValueError(
-                f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
-            )
         attn_weights = attn_weights + attention_mask
 
     # upcast attention to fp32
@@ -226,36 +227,16 @@ def forward(
 
     attn_output = torch.matmul(attn_weights, value_states)
 
-    if attn_output.size() != (bsz, self.num_heads, q_len, self.head_dim):
-        raise ValueError(
-            f"`attn_output` should be of size {(bsz, self.num_heads, q_len, self.head_dim)}, but is"
-            f" {attn_output.size()}"
-        )
-
     attn_output = attn_output.transpose(1, 2).contiguous()
 
     attn_output = attn_output.reshape(bsz, q_len, -1)
 
-    if self.config.pretraining_tp > 1:
-        attn_output = attn_output.split(
-            self.hidden_size // self.config.pretraining_tp, dim=2
-        )
-        o_proj_slices = self.o_proj.weight.split(
-            self.hidden_size // self.config.pretraining_tp, dim=1
-        )
-        attn_output = sum(
-            [
-                F.linear(attn_output[i], o_proj_slices[i])
-                for i in range(self.config.pretraining_tp)
-            ]
-        )
-    else:
-        attn_output = self.o_proj(attn_output)
+    attn_output = self.o_proj(attn_output)
 
     if not output_attentions:
         attn_weights = None
 
-    return attn_output, attn_weights, past_key_value
+    return attn_output, attn_weights
 
 
 # qwen2.5-vl attention (current transformers Cache/rotary API)
@@ -365,6 +346,12 @@ def forward_qwen25vl(
     return attn_output, attn_weights
 
 
+_FORWARD_BY_FAMILY = {
+    "qwen":  forward_qwen25vl,
+    "llama": forward_llama,
+}
+
+
 def add_custom_attention_layers(
     model,
     alpha=1,
@@ -374,14 +361,27 @@ def add_custom_attention_layers(
     se_layers=(0, 31),
     image_token_index=None,
     indices_buffer=None,
+    family: Optional[str] = None,
 ):
-    decoder = getattr(model.model, "language_model", model.model)
+    """Monkey-patch every decoder layer's ``self_attn.forward`` with SPARC.
+
+    Args:
+        family: ``"qwen"``, ``"llama"``, or ``None`` to auto-detect from the
+            model class. The Qwen variant rotates Q/K via mRoPE; the Llama
+            variant uses standard 1D RoPE.
+    """
+    if family is None:
+        family = detect_model_family(model)
+    if family not in _FORWARD_BY_FAMILY:
+        raise ValueError(f"Unknown SPARC family {family!r}. "
+                         f"Known: {sorted(_FORWARD_BY_FAMILY)}.")
+
+    forward_fn = _FORWARD_BY_FAMILY[family]
+    decoder = decoder_of(model)
     for i, layer in enumerate(decoder.layers):
-
         selected = True if selected_layer == i else False
-
         forward_ = partial(
-            forward_qwen25vl,
+            forward_fn,
             alpha=alpha,
             beta=beta,
             tau=tau,
@@ -390,5 +390,4 @@ def add_custom_attention_layers(
             image_token_index=image_token_index,
             indices_buffer=indices_buffer,
         )
-
         layer.self_attn.forward = MethodType(forward_, layer.self_attn)

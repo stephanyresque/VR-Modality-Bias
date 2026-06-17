@@ -163,7 +163,7 @@ class SmolVLMWrapper(ModelWrapper):
         if self._model is None or self._processor is None:
             raise RuntimeError("Model not loaded — call .load() first.")
 
-        messages = self._build_messages(prompt)
+        messages = self._build_messages(prompt, image)
         prompt_text = self._processor.apply_chat_template(
             messages, add_generation_prompt=True, tokenize=False
         )
@@ -204,7 +204,7 @@ class SmolVLMWrapper(ModelWrapper):
             raise RuntimeError("Model not loaded — call .load() first.")
 
         image_rgb = image.convert("RGB")
-        messages = self._build_messages(prompt)
+        messages = self._build_messages(prompt, image_rgb)
         prefix_text = self._processor.apply_chat_template(
             messages, add_generation_prompt=True, tokenize=False
         )
@@ -276,7 +276,16 @@ class SmolVLMWrapper(ModelWrapper):
         )
 
     @staticmethod
-    def _build_messages(prompt: str) -> list[dict[str, Any]]:
+    def _build_messages(prompt: str, image: Image.Image | None = None) -> list[dict[str, Any]]:
+        """Polymorphic with ``QwenVLWrapper._build_messages(prompt, image)``.
+
+        The ``image`` arg is unused here — the Idefics3 chat template only
+        needs a ``{"type": "image"}`` placeholder, and the actual pixel data
+        rides through the processor's ``images=`` kwarg, not through the
+        chat-template messages. We accept it anyway so the cross-family
+        call sites in scripts/18 etc. don't need to branch on model type.
+        """
+        del image  # explicitly unused
         return [
             {
                 "role": "user",

@@ -27,6 +27,7 @@ try:
     from vr_modality_bias.utils.attn import (
         SelectedIndexBuffer,
         add_custom_attention_layers,
+        decoder_of,
     )
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.utils.attn import (
         SelectedIndexBuffer,
         add_custom_attention_layers,
+        decoder_of,
     )
 
 __all__ = [
@@ -103,8 +105,13 @@ def probe_image_token_index(
 
 
 def _decoder_of(model) -> object:
-    """Match Arthur's convention in ``add_custom_attention_layers``."""
-    return getattr(model.model, "language_model", model.model)
+    """Locate the decoder module (with ``.layers``) for Qwen and Idefics3.
+
+    Delegates to ``utils.attn.decoder_of``, which knows both the Qwen
+    (``model.model.language_model``) and SmolVLM / Idefics3
+    (``model.model.text_model``) paths.
+    """
+    return decoder_of(model)
 
 
 @contextmanager
