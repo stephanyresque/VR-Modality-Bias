@@ -194,6 +194,9 @@ def main() -> int:
             new_B = collect_forced_decoding(model_wrapper, noise_img, prompt, caption_ref)
         except Exception as exc:
             logger.error(f"[{image_id}] collect_forced_decoding failed: {exc}")
+            # Full traceback so we can localise prefill-vs-step failures
+            # without having to re-run with extra instrumentation.
+            logger.error(traceback.format_exc())
             continue
 
         # Sanity: shapes must match, otherwise the comparison is meaningless.

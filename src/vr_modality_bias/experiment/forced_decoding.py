@@ -87,17 +87,6 @@ def _iso_now() -> str:
     return datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
 
 
-def _new_dynamic_cache():
-    """Instantiate the model-side cache used during forced decoding.
-
-    Imported lazily because the symbol moved across transformers versions
-    (``DynamicCache`` lives in ``transformers.cache_utils`` since 4.x).
-    """
-    from transformers.cache_utils import DynamicCache
-
-    return DynamicCache()
-
-
 def collect_forced_decoding(
     model_wrapper,
     image: Image.Image,
@@ -207,8 +196,6 @@ def collect_forced_decoding(
         else None
     )
 
-    past_key_values = _new_dynamic_cache()
-
     # Allocate the absolute-layout output tensor on CPU; we copy each slice
     # over as it becomes available.
     hidden = torch.zeros(
@@ -218,8 +205,12 @@ def collect_forced_decoding(
     )
 
     # ---- prefill -------------------------------------------------------
+    # We pass ``past_key_values=None`` so the model instantiates its own
+    # cache exactly the way ``.generate`` does internally (and so we avoid
+    # version-specific surprises around ``DynamicCache()``'s initial state).
+    # ``cache_position`` is also omitted on prefill — the model derives it
+    # from ``input_ids.shape[1]`` when no cache exists yet.
     prefill_attention_mask = attention_mask_full[:, :caption_start]
-    prefill_cache_position = torch.arange(caption_start, device=device)
 
     with torch.no_grad():
         prefill_outputs = model(
@@ -227,8 +218,7 @@ def collect_forced_decoding(
             attention_mask=prefill_attention_mask,
             pixel_values=pixel_values,
             image_grid_thw=image_grid_thw,
-            past_key_values=past_key_values,
-            cache_position=prefill_cache_position,
+            past_key_values=None,
             use_cache=True,
             output_hidden_states=True,
             return_dict=True,
@@ -237,8 +227,7 @@ def collect_forced_decoding(
     _scatter_prefill_into(hidden, prefill_outputs.hidden_states, n_layers, caption_start)
 
     # Pick up the cache and the mRoPE deltas that the prefill computed so
-    # we can roll them forward across the per-token steps. Some models may
-    # replace the cache instance; we don't assume we still own the original.
+    # we can roll them forward across the per-token steps.
     past_key_values = prefill_outputs.past_key_values
     rope_deltas = getattr(prefill_outputs, "rope_deltas", None)
 
