@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke chair-report clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report clean
 
 help:
 	@echo "Targets:"
@@ -18,6 +18,7 @@ help:
 	@echo "  phase2-smoke   quick Phase-2 smoke (1 img, short, alpha=1.3) — confirms entrypoint + IO + log path"
 	@echo "  phase2         full Phase-2 sweep (50 imgs * 3 lengths * (OFF + 5 alphas)). Resumable; safe under tmux."
 	@echo "  phase3-smoke   quick Phase-3 smoke (1 img, short, OFF + SPARC alpha=1.1) — confirms entrypoint + IO"
+	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
 	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
 	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
@@ -90,6 +91,12 @@ endif
 
 phase3-smoke:
 	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke
+
+# Coherence smoke — 2 imgs on `long`, captions printed to stdout. Use this
+# to eyeball whether SPARC (with the official COCO hparams + greedy) stays
+# coherent on long captions BEFORE launching the full sweep.
+phase3-coherence:
+	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME)_coherence --coherence-smoke
 
 phase3:
 	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)

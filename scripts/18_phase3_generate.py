@@ -1,37 +1,16 @@
 #!/usr/bin/env python
 """Phase 3 — free caption generation: baseline (SPARC OFF) vs SPARC α=1.1.
 
-Why this exists
----------------
-Fase 2 showed htr is inflatable by SPARC itself, so CHAIR is the actual
-evaluation metric for hallucination. α=1.1 was the only regime that didn't
-degenerate the text in the fluency sample. This script generates the 50-image
-× 3-length × 2-condition (off, on α=1.1) caption matrix that scripts/17 reads
-to compute CHAIR.
+SPARC hyperparameters and decoding match the official paper's COCO recipe
+(captioning_coco.sh in the SPARC authors' repo): α=1.1, β=0.1, τ=1.5,
+selected_layer=20, se_layers=(0,31), greedy decoding (do_sample=False,
+num_beams=1, no repetition penalty).
 
-Properties
-----------
-* Same seed/prompt per image across OFF and ON, so the pair is directly
-  comparable for the side-by-side panel.
-* Idempotent + resumable. Each generation appends a single line to
-  captions.jsonl. Re-running picks up where it stopped (skips done cells).
-* tmux-safe: file logging via loguru with ``enqueue=True``, no terminal
-  dependence.
-* Loads the model exactly once and reuses it across all 3 lengths and
-  both conditions.
-
-Output layout
--------------
-    results/runs/<run-name>/
-        captions.jsonl           — one JSON line per generation
-        logs/phase3.log          — full log
-        run_params.json          — snapshot of the CLI args
-
-CLI
----
-    make phase3-smoke              # 1 image, short, both conditions
-    make phase3                    # full 50 × 3 × 2
-    python scripts/18_phase3_generate.py --run-name X --limit 5 --lengths short
+Greedy is mandatory: sampling from a SPARC-amplified distribution is what
+triggered the long-caption degeneration we saw before, NOT the
+implementation itself. The implementation was verified against the
+official repo (forward identical to the official Llama path, Qwen variant
+replicates the same mechanism).
 """
 
 from __future__ import annotations
@@ -140,21 +119,49 @@ def main() -> int:
         choices=list(LENGTH_CONFIGS.keys()),
         default=list(LENGTH_CONFIGS.keys()),
         help="Which lengths to generate (default: all three).")
+    # SPARC defaults match the OFFICIAL SPARC paper's COCO recipe
+    # (captioning_coco.sh). Earlier defaults (β=0, τ=2, selected_layer=15)
+    # were not what the authors validated and were partly responsible for
+    # the long-caption degeneration. Do NOT override these unless you're
+    # intentionally probing the SPARC hparams.
     parser.add_argument("--alpha", type=float, default=1.1,
-        help="SPARC α for the ON condition. Default 1.1 (the only safe regime per Phase 2).")
-    parser.add_argument("--tau", type=float, default=2.0)
-    parser.add_argument("--selected-layer", type=int, default=15)
-    parser.add_argument("--se-layers", type=int, nargs=2, default=(0, 31))
-    parser.add_argument("--beta", type=float, default=0.0)
+        help="SPARC α. Official COCO value: 1.1.")
+    parser.add_argument("--tau", type=float, default=1.5,
+        help="SPARC τ. Official COCO value: 1.5.")
+    parser.add_argument("--selected-layer", type=int, default=20,
+        help="SPARC selected_layer. Official COCO value: 20.")
+    parser.add_argument("--se-layers", type=int, nargs=2, default=(0, 31),
+        help="SPARC se_layers (lo hi). Official COCO value: (0, 31).")
+    parser.add_argument("--beta", type=float, default=0.1,
+        help="SPARC β. Official COCO value: 0.1 — smooths the reference "
+             "attention used for selection; β=0 makes selection erratic.")
+    parser.add_argument("--sampling", action="store_true",
+        help="Override greedy decoding with the sampling params in the "
+             "length config. Default: greedy (do_sample=False, num_beams=1) "
+             "— matches the official SPARC COCO setup and is REQUIRED for "
+             "SPARC stability on long captions.")
+    parser.add_argument("--print-captions", action="store_true",
+        help="Print each generated caption to stdout (in addition to the log). "
+             "Useful for eyeball coherence checks.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing captions.jsonl before starting (re-runs everything).")
     parser.add_argument("--smoke", action="store_true",
-        help="Smoke: --limit 1, --lengths short. Confirms entrypoint + IO + log path.")
+        help="Smoke: --limit 1, --lengths short. Confirms entrypoint + IO + log path. "
+             "Implies --print-captions.")
+    parser.add_argument("--coherence-smoke", action="store_true",
+        help="Coherence smoke: --limit 2, --lengths long, --print-captions. "
+             "Used to verify SPARC produces fluent text on long generation "
+             "after the official-config switch.")
     args = parser.parse_args()
 
     if args.smoke:
         args.limit = 1
         args.lengths = ["short"]
+        args.print_captions = True
+    if args.coherence_smoke:
+        args.limit = 2
+        args.lengths = ["long"]
+        args.print_captions = True
 
     run_dir = args.output_root / args.run_name
     log_file = run_dir / "logs" / "phase3.log"
@@ -165,8 +172,17 @@ def main() -> int:
 
     logger.info("=" * 70)
     logger.info(f"Phase 3 generation — run_name={args.run_name}")
-    logger.info(f"lengths={args.lengths}  alpha={args.alpha}  limit={args.limit}  "
-                f"overwrite={args.overwrite}  smoke={args.smoke}")
+    logger.info(f"lengths={args.lengths}  limit={args.limit}  "
+                f"overwrite={args.overwrite}  smoke={args.smoke}  "
+                f"coherence_smoke={args.coherence_smoke}")
+    logger.info(
+        f"SPARC official-COCO config: alpha={args.alpha} beta={args.beta} "
+        f"tau={args.tau} selected_layer={args.selected_layer} "
+        f"se_layers={tuple(args.se_layers)}"
+    )
+    logger.info(
+        f"decoding: {'GREEDY (do_sample=False, num_beams=1)' if not args.sampling else 'SAMPLING (from config)'}"
+    )
     logger.info(f"run dir : {run_dir}")
     logger.info(f"log file: {log_file}")
     logger.info("=" * 70)
@@ -237,12 +253,23 @@ def main() -> int:
         prompt = get_prompt(prompt_key)
         seed_global = int(cfg["run"]["seed_global"])
         max_new_tokens = int(cfg["generation"]["max_new_tokens"])
-        gen_kwargs = {
-            "do_sample": bool(cfg["generation"]["do_sample"]),
-            "temperature": float(cfg["generation"]["temperature"]),
-            "top_p": float(cfg["generation"]["top_p"]),
-            "repetition_penalty": float(cfg["generation"]["repetition_penalty"]),
-        }
+        # Greedy by default (Phase 3 spec): matches the official SPARC COCO
+        # config and is required for SPARC stability on long captions.
+        # Use --sampling to fall back to the config's sampling params (for
+        # diagnostic re-runs only — Phase 3 results must be greedy).
+        if args.sampling:
+            gen_kwargs = {
+                "do_sample": bool(cfg["generation"]["do_sample"]),
+                "temperature": float(cfg["generation"]["temperature"]),
+                "top_p": float(cfg["generation"]["top_p"]),
+                "repetition_penalty": float(cfg["generation"]["repetition_penalty"]),
+            }
+        else:
+            gen_kwargs = {
+                "do_sample": False,
+                "num_beams": 1,
+                "repetition_penalty": 1.0,
+            }
 
         images_dir = cfg["dataset"]["images_dir"]
         image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
@@ -300,6 +327,10 @@ def main() -> int:
                         f"({dt:.1f}s)  progress {cells_done + cells_skipped}/{total_planned}  "
                         f"ETA {eta_min:.1f}min"
                     )
+                    if args.print_captions:
+                        print(f"\n── [{length}|{image_id}|OFF] ─────────")
+                        print(caption)
+                        print()
                 except Exception as exc:
                     cells_failed += 1
                     logger.error(f"[{length}|{image_id}|off] FAILED: {exc}")
@@ -355,6 +386,10 @@ def main() -> int:
                     f"({dt:.1f}s)  progress {cells_done + cells_skipped}/{total_planned}  "
                     f"ETA {eta_min:.1f}min"
                 )
+                if args.print_captions:
+                    print(f"\n── [{length}|{image_id}|ON α={args.alpha:.1f}] ─────────")
+                    print(caption)
+                    print()
             except Exception as exc:
                 cells_failed += 1
                 logger.error(f"[{length}|{image_id}|on α={args.alpha:.1f}] FAILED: {exc}")
