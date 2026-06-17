@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke clean
 
 help:
 	@echo "Targets:"
@@ -13,8 +13,10 @@ help:
 	@echo "  format         ruff format (write changes)"
 	@echo "  docker-build   build the reproducible Docker image"
 	@echo "  docker-run     open an interactive shell inside the Docker container"
-	@echo "  smoke          run the pipeline on a single image (--limit 1)"
+	@echo "  smoke          run the baseline pipeline on a single image (--limit 1)"
 	@echo "  baseline       run the full N-image baseline end-to-end (N from configs/baseline.yaml)"
+	@echo "  phase2-smoke   quick Phase-2 smoke (1 img, short, alpha=1.3) — confirms entrypoint + IO + log path"
+	@echo "  phase2         full Phase-2 sweep (50 imgs * 3 lengths * (OFF + 5 alphas)). Resumable; safe under tmux."
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -54,6 +56,23 @@ baseline:
 	$(PYTHON) scripts/06_summarize.py             --config $(CONFIG)
 	$(PYTHON) scripts/07_make_plots.py            --config $(CONFIG)
 	$(PYTHON) scripts/08_unit_example.py          --config $(CONFIG)
+
+# Phase 2 — resumable alpha sweep, safe under tmux.
+#   * Logs to results/runs/<run-name>/logs/phase2.log (no terminal dep)
+#   * Re-running picks up where it stopped (skips done cells)
+#   * Add OVERWRITE=1 to force recompute
+# Override the run dir name via: make phase2 PHASE2_RUN_NAME=my_run
+PHASE2_RUN_NAME ?= phase2_alpha_sweep
+PHASE2_FLAGS ?=
+ifeq ($(OVERWRITE),1)
+    PHASE2_FLAGS += --overwrite
+endif
+
+phase2-smoke:
+	$(PYTHON) scripts/15_phase2_sweep.py --run-name $(PHASE2_RUN_NAME)_smoke --smoke
+
+phase2:
+	$(PYTHON) scripts/15_phase2_sweep.py --run-name $(PHASE2_RUN_NAME) $(PHASE2_FLAGS)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
