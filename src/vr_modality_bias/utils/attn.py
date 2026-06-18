@@ -83,30 +83,67 @@ logger = logging.getLogger(__name__)
 
 class SelectedIndexBuffer:
     def __init__(self):
-        self.indices1 = (
-            []
-        )  # Buffer to store selected token indices from the current token generation step
-        self.indices2 = (
-            []
-        )  # Buffer to store selected token indices from the previous token generation step
-        self.input_len = 0  # Length of the input sequence
+        # Selected token indices from the current generation step (global
+        # positions in the input_ids — already translated through
+        # image_positions).
+        self.indices1 = []
+        # Selected indices from the PREVIOUS generation step (used by
+        # ``calibrate`` to scale ``value_cache`` at those positions).
+        self.indices2 = []
+        self.input_len = 0  # prompt length excluding image patches
         self.num_image_patches = None
+        # Explicit list of global positions in input_ids where
+        # input_ids[p] == image_token_id. Replaces the implicit
+        # [image_token_index, image_token_index + num_image_patches) block
+        # the original SPARC code assumed — that assumption is wrong for
+        # Idefics3 / SmolVLM, whose image patches are interleaved with
+        # row/column separator tokens (<fake_token_around_image>,
+        # <row_X_col_Y>, ...). For Qwen (contiguous block), this list is
+        # exactly [idx, idx+1, ..., idx+N-1], so the per-id mask is a
+        # drop-in replacement that yields identical results.
+        # 1-D LongTensor (on any device — moved to attn device on use).
+        self.image_positions = None
 
-    def update_indices1(self, indices, image_token_index):
+    def update_image_positions(self, positions):
+        """Store the per-image list of global positions where input_ids == image_token_id.
+
+        Must be called BEFORE the prefill of each image (the per-image SPARC
+        bookkeeping is reset + update_input_len + update_image_positions).
         """
-        Updates indices1 with the selected token indices from a specific layer (e.g., the 20th layer).
-        This is called during the current token generation to store new selections.
-        The image_token_index offset is applied to adjust for the position of image tokens.
+        self.image_positions = positions
+
+    def update_indices1(self, indices, image_token_index=None):
+        """Store the (translated, global) selected indices in ``indices1``.
+
+        ``indices`` is the tensor of LOCAL positions inside the image-token
+        block returned by ``(ratio >= tau).nonzero()`` — values in
+        ``[0, num_image_patches)``. We translate to GLOBAL input_ids
+        positions:
+
+        * If ``self.image_positions`` is set (the unified, layout-correct
+          path) → ``self.indices1 = image_positions[indices_squeezed]``.
+          Works for both contiguous (Qwen) and interleaved (SmolVLM) layouts.
+        * Otherwise (back-compat) → ``self.indices1 = indices + image_token_index``,
+          which only works when image tokens form a contiguous block.
         """
-        indices = indices + image_token_index
-        indices = indices.squeeze(dim=-1)
-        self.indices1 = indices
+        local = indices.squeeze(dim=-1)
+        if self.image_positions is not None:
+            self.indices1 = self.image_positions.to(local.device)[local]
+        else:
+            if image_token_index is None:
+                raise ValueError(
+                    "update_indices1 needs either image_positions set on the "
+                    "buffer (the unified path) or an explicit image_token_index "
+                    "(the legacy contiguous-block path)."
+                )
+            self.indices1 = local + image_token_index
 
     def update_indices2(self):
-        """
-        Copies indices1 to indices2.
-        Called at the beginning of a new token generation step so that calibration can use
-        the indices selected from the previous step.
+        """Copy indices1 → indices2 at the start of each new generation step.
+
+        Calibration in the current step uses indices selected at the
+        previous step — that's how the value cache gets boosted at the
+        SAME positions across consecutive steps.
         """
         self.indices2 = self.indices1
 
@@ -118,12 +155,10 @@ class SelectedIndexBuffer:
         self.indices2 = []
         self.input_len = 0
         self.num_image_patches = None
+        self.image_positions = None
 
     def calibrate(self, value, alpha):
-        """
-        Applies calibration to token representations using indices from the previous step (indices2).
-        The calibration scales selected token positions by a factor alpha.
-        """
+        """Scale value-cache rows at ``indices2`` by ``alpha`` (in place)."""
         if len(self.indices2) > 0:
             value[:, :, self.indices2] *= alpha
 
@@ -203,12 +238,21 @@ def forward_llama(
             attn_weights.shape[-1] - indices_buffer.input_len
         )
 
-    image_attention = attn_weights[
-        :,
-        :,
-        -1,
-        image_token_index : image_token_index + indices_buffer.num_image_patches,
-    ].mean(dim=1)
+    # Image-attention: either the per-id mask (correct for any layout —
+    # both Qwen contiguous and Idefics3 interleaved) or the legacy
+    # contiguous slice. The per-id mask is the only path SmolVLM should
+    # take; it's also drop-in identical for Qwen since their image tokens
+    # ARE contiguous, so image_positions = arange(idx, idx+N).
+    if indices_buffer.image_positions is not None:
+        ip = indices_buffer.image_positions.to(attn_weights.device)
+        image_attention = attn_weights[:, :, -1, :].index_select(-1, ip).mean(dim=1)
+    else:
+        image_attention = attn_weights[
+            :,
+            :,
+            -1,
+            image_token_index : image_token_index + indices_buffer.num_image_patches,
+        ].mean(dim=1)
 
     if gen_new_token:
         if selected:
@@ -216,7 +260,7 @@ def forward_llama(
             ratio = (image_attention - self.image_attention) / self.image_attention
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()
-            indices_buffer.update_indices1(indices, image_token_index)
+            indices_buffer.update_indices1(indices, image_token_index=image_token_index)
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -310,12 +354,20 @@ def forward_qwen25vl(
             attn_weights.shape[-1] - indices_buffer.input_len
         )
 
-    image_attention = attn_weights[
-        :,
-        :,
-        -1,
-        image_token_index : image_token_index + indices_buffer.num_image_patches,
-    ].mean(dim=1)
+    # Image-attention via per-id mask (correct for any layout). See
+    # forward_llama above for the rationale — Qwen is contiguous so this
+    # is identical to the legacy slice; Idefics3 has interleaved
+    # separators, so the mask is the only correct option.
+    if indices_buffer.image_positions is not None:
+        ip = indices_buffer.image_positions.to(attn_weights.device)
+        image_attention = attn_weights[:, :, -1, :].index_select(-1, ip).mean(dim=1)
+    else:
+        image_attention = attn_weights[
+            :,
+            :,
+            -1,
+            image_token_index : image_token_index + indices_buffer.num_image_patches,
+        ].mean(dim=1)
 
     if gen_new_token:
         if selected:
@@ -323,7 +375,7 @@ def forward_qwen25vl(
             ratio = (image_attention - self.image_attention) / self.image_attention
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()
-            indices_buffer.update_indices1(indices, image_token_index)
+            indices_buffer.update_indices1(indices, image_token_index=image_token_index)
 
     if not gen_new_token:
         self.image_attention = image_attention

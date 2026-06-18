@@ -276,21 +276,44 @@ def _audit_model(model_key: str, image_path: Path, prompt_key: str) -> None:
                 more = "..." if len(gap_ids) > 5 else ""
                 print(f"      gap [{a+1}..{b-1}] ({b - a - 1} tokens): {decoded}{more}")
 
-    # ---- 7. factual verdict (one line) -----------------------------
+    # ---- 7. factual verdicts ---------------------------------------
+    # Two verdicts side by side so the user can compare what SPARC USED to
+    # do (legacy contiguous slice — what 19_audit reported originally)
+    # against what SPARC NOW DOES after the per-id-mask fix.
     print()
-    if n_mismatch == 0 and (len(all_image_positions) == num_image_patches):
+    print("  VERDICT — legacy contiguous slice (pre-fix SPARC):")
+    if n_mismatch == 0:
         print(
-            f"  VERDICT: all {num_image_patches} positions in the SPARC range "
-            f"ARE image-placeholders, and the placeholders form a single "
-            f"contiguous block. SPARC indexing is consistent with the data."
+            f"    all {num_image_patches}/{num_image_patches} positions in "
+            f"[{lo}, {hi}) ARE image-placeholders. SPARC was consistent here."
         )
     else:
         print(
-            f"  VERDICT: SPARC range mismatch — {n_mismatch}/{num_image_patches} "
-            f"positions are NOT image-placeholders; "
-            f"image-placeholders themselves are "
-            f"{'contiguous' if len(all_image_positions) == num_image_patches else 'NON-contiguous'} "
-            f"in the full input_ids."
+            f"    {n_match}/{num_image_patches} positions in [{lo}, {hi}) "
+            f"are image-placeholders; {n_mismatch} are something else "
+            f"(separators/text). The contiguous-block assumption MISSES "
+            f"the layout."
+        )
+
+    print()
+    print("  VERDICT — per-id mask (post-fix SPARC, current code):")
+    print(
+        f"    SPARC now operates on the explicit list of {len(all_image_positions)} "
+        f"positions where input_ids == image_token_id ({image_token_id}). "
+        f"By construction, 100% of those positions are image-placeholders "
+        f"(no separators / text mixed in)."
+    )
+    if len(all_image_positions) == num_image_patches:
+        print(
+            f"    Layout is contiguous → per-id mask gives IDENTICAL result "
+            f"to the legacy slice (e.g. Qwen 2.5-VL)."
+        )
+    else:
+        # Shouldn't happen — we built num_image_patches = len(image_positions).
+        # Kept for defensive logging.
+        print(
+            f"    (Note: num_image_patches={num_image_patches} != "
+            f"len(image_positions)={len(all_image_positions)}.)"
         )
 
 

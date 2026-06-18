@@ -98,12 +98,17 @@ def _append(jsonl_path: Path, entry: dict) -> None:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
-def _probe_input_len(model_wrapper, image, prompt: str) -> int:
-    """Compute SPARC ``input_len`` (= prompt length excluding image patches).
+def _probe_sparc_layout(model_wrapper, image, prompt):
+    """Return ``(input_len, image_positions)`` for one image's prefill.
 
-    Same logic as collect_forced_decoding and the fluency section of the
-    Phase 2 report: tokenise the prefix, count <|image_pad|> tokens,
-    subtract.
+    * ``input_len`` is the prompt length excluding image-placeholder tokens
+      (the value SPARC's ``update_input_len`` expects).
+    * ``image_positions`` is the per-id mask — a 1-D LongTensor of global
+      positions in the prefill input_ids where the token equals
+      ``model.config.image_token_id``. SPARC's ``update_image_positions``
+      consumes this. For Qwen the mask IS contiguous; for SmolVLM/Idefics3
+      it skips over <fake_token_around_image> / <row_X_col_Y> separators
+      that the contiguous-block assumption would otherwise miscalibrate.
     """
     processor = model_wrapper._processor  # noqa: SLF001
     messages = model_wrapper._build_messages(prompt, image)
@@ -117,7 +122,7 @@ def _probe_input_len(model_wrapper, image, prompt: str) -> int:
         prefix_inputs["input_ids"][0] == image_token_id
     ).nonzero(as_tuple=True)[0]
     num_image_patches = int(image_positions.numel())
-    return caption_start - num_image_patches
+    return caption_start - num_image_patches, image_positions
 
 
 def main() -> int:
@@ -389,13 +394,20 @@ def main() -> int:
                 continue
             t_cell = time.time()
             try:
-                input_len = _probe_input_len(model_wrapper, image, prompt)
+                input_len, image_positions = _probe_sparc_layout(
+                    model_wrapper, image, prompt,
+                )
                 with enable_sparc(
                     model_wrapper, hparams=sparc_hparams,
                     probe_image=image, prompt=prompt,
                 ) as buffer:
                     buffer.reset()
                     buffer.update_input_len(input_len)
+                    # Per-id mask of <image>-token positions for THIS image.
+                    # Without this, SPARC falls back to the legacy contiguous
+                    # slice — fine for Qwen, broken for Idefics3/SmolVLM where
+                    # separator tokens sit inside that range.
+                    buffer.update_image_positions(image_positions)
                     caption = model_wrapper.generate_caption(
                         image=image, prompt=prompt,
                         max_new_tokens=max_new_tokens,

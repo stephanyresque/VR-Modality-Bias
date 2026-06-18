@@ -207,6 +207,13 @@ def collect_forced_decoding(
         image_positions = (prefix_ids == image_token_id).nonzero(as_tuple=True)[0]
         num_image_patches = int(image_positions.numel())
         sparc_buffer.update_input_len(caption_start - num_image_patches)
+        # CRITICAL: pass the explicit per-id mask so SPARC operates on the
+        # actual <image>-placeholder positions, not a contiguous block.
+        # For Qwen (contiguous) the mask = arange(idx, idx+N), so this is
+        # identical to the legacy slice. For Idefics3/SmolVLM (interleaved
+        # row/col separators) this is the only correct path — without it,
+        # SPARC would calibrate / select the separator tokens too.
+        sparc_buffer.update_image_positions(image_positions)
 
     # Move tokenised inputs onto the model's device.
     prefix_input_ids = prefix_inputs["input_ids"].to(device)

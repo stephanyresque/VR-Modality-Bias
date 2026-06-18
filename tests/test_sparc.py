@@ -218,3 +218,82 @@ def test_enable_sparc_yields_a_buffer_per_block():
         pass
 
     assert b1 is not b2
+
+
+# ---------------------------------------------------------------- per-id mask buffer tests
+#
+# These tests pin the buffer's translation of local image-block indices
+# (returned by ``(ratio >= tau).nonzero()``) to GLOBAL input_ids positions.
+# Two paths:
+#   * unified per-id mask (post-fix, ``image_positions`` set on the buffer)
+#   * legacy contiguous-block fallback (pre-fix, ``image_token_index`` int)
+# The unified path is the only correct one for Idefics3 / SmolVLM whose
+# image-placeholder tokens are interleaved with row/column separators.
+
+
+def test_buffer_per_id_mask_translates_local_indices_to_global():
+    """When ``image_positions`` is set, ``update_indices1`` must gather."""
+    from vr_modality_bias.utils.attn import SelectedIndexBuffer
+
+    buf = SelectedIndexBuffer()
+    # Idefics3-style non-contiguous layout: image tokens at positions
+    # 100, 101, 105, 106 (gap at 102-104 = separator tokens).
+    buf.update_image_positions(torch.tensor([100, 101, 105, 106], dtype=torch.long))
+
+    # Selector picked LOCAL positions 0 and 2 inside the image block,
+    # i.e. the 1st and 3rd image-placeholder tokens (global 100 and 105).
+    local = torch.tensor([[0], [2]], dtype=torch.long)
+    buf.update_indices1(local)
+
+    assert torch.equal(buf.indices1, torch.tensor([100, 105], dtype=torch.long)), (
+        f"Per-id mask translated local indices wrong: got {buf.indices1}"
+    )
+
+
+def test_buffer_per_id_mask_identical_to_legacy_for_contiguous_layout():
+    """For a contiguous block (Qwen), per-id mask must match legacy slice."""
+    from vr_modality_bias.utils.attn import SelectedIndexBuffer
+
+    # Qwen-like: 5 image tokens at positions 30..34.
+    image_token_index = 30
+    image_positions = torch.tensor([30, 31, 32, 33, 34], dtype=torch.long)
+    local = torch.tensor([[0], [2], [4]], dtype=torch.long)  # 1st, 3rd, 5th
+
+    buf_new = SelectedIndexBuffer()
+    buf_new.update_image_positions(image_positions)
+    buf_new.update_indices1(local)
+
+    buf_legacy = SelectedIndexBuffer()
+    buf_legacy.update_indices1(local, image_token_index=image_token_index)
+
+    assert torch.equal(buf_new.indices1, buf_legacy.indices1), (
+        "Per-id mask must give the same result as the legacy contiguous "
+        "slice when image positions actually ARE contiguous (Qwen case)."
+    )
+    assert torch.equal(buf_new.indices1, torch.tensor([30, 32, 34], dtype=torch.long))
+
+
+def test_buffer_legacy_path_requires_image_token_index():
+    """Without ``image_positions`` and without an explicit index, raise."""
+    from vr_modality_bias.utils.attn import SelectedIndexBuffer
+
+    buf = SelectedIndexBuffer()
+    local = torch.tensor([[0]], dtype=torch.long)
+    with pytest.raises(ValueError, match="image_positions"):
+        buf.update_indices1(local)  # neither path available
+
+
+def test_buffer_reset_clears_image_positions():
+    """``reset()`` must clear the per-id mask so the next image starts clean."""
+    from vr_modality_bias.utils.attn import SelectedIndexBuffer
+
+    buf = SelectedIndexBuffer()
+    buf.update_image_positions(torch.tensor([1, 2, 3], dtype=torch.long))
+    buf.update_input_len(50)
+    buf.reset()
+
+    assert buf.image_positions is None
+    assert buf.input_len == 0
+    assert buf.indices1 == []
+    assert buf.indices2 == []
+    assert buf.num_image_patches is None
