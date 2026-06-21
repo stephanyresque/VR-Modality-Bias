@@ -23,7 +23,11 @@ from vr_modality_bias.io.results import (
 from vr_modality_bias.io.storage import hidden_states_filename, load_hidden_states
 from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
 from vr_modality_bias.metrics.kl import compute_kl_matrix
-from vr_modality_bias.metrics.residual import head_tail_ratio, residual_drift_ratio
+from vr_modality_bias.metrics.residual import (
+    head_tail_ratio,
+    residual_drift_ratio,
+    share_tail,
+)
 from vr_modality_bias.models.registry import build_model
 from vr_modality_bias.utils.config import load_config, snapshot_config
 from vr_modality_bias.utils.device import resolve_dtype, select_device
@@ -206,7 +210,8 @@ def main() -> int:
             caption_len=int(result_A.caption_len),
         )
         rr = residual_drift_ratio(kl, t0=t0)
-        htr = head_tail_ratio(kl, t0=t0)
+        htr = head_tail_ratio(kl, t0=t0)  # deprecated; kept for back-compat parquets
+        st = share_tail(kl)               # post-Block-3 headline metric
 
         caption_tokens = decode_caption_tokens(
             model,
@@ -225,6 +230,7 @@ def main() -> int:
                 "kl": kl,
                 "cos_dist": cos,
                 "residual_ratio": float(rr),
+                "share_tail": float(st),
                 "head_tail_ratio": float(htr),
                 "model_id": str(meta.get("model_id", model.model_id)),
                 "prompt_key": prompt_key,

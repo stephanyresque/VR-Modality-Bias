@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pyarrow.parquet as pq
+import pytest
 
 from vr_modality_bias.io.results import (
     METRICS_SCHEMA,
@@ -216,3 +217,83 @@ def test_write_summary_json_reports_range_metadata(tmp_path: Path):
     write_summary_json(stats, path)
     parsed = json.loads(path.read_text(encoding="utf-8"))
     assert parsed["range"] == {"lo": 0.0, "hi": 1.0}
+
+
+# ================================================================
+# share_tail — post-Block-3 headline metric
+# Round-trip through the parquet schema (populated + null cases) and
+# summary stats wiring. Cousin tests of test_compute_summary_stats_*.
+# ================================================================
+
+
+def test_write_and_read_preserves_share_tail(tmp_path):
+    """A populated share_tail value survives parquet round-trip."""
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-1",
+        "caption_len": 12,
+        "n_layers": 28,
+        "hidden_dim": 768,
+        "caption_ref": "ref",
+        "kl": [[0.1, 0.2, 0.3]],
+        "cos_dist": [[0.4, 0.5, 0.6]],
+        "residual_ratio": 0.42,
+        "share_tail": 0.37,             # bounded [0,1], SPARC-proof
+        "head_tail_ratio": 0.81,        # legacy column kept around
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_long",
+        "seed_global": 0,
+        "noise_seed": 1,
+        "timestamp_iso": "2026-01-01T00:00:00+00:00",
+        "caption_tokens": None,
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    assert len(back) == 1
+    assert back[0]["share_tail"] == pytest.approx(0.37, rel=1e-5)
+
+
+def test_write_accepts_missing_share_tail_as_null(tmp_path):
+    """Rows produced by code paths predating Block 3 omit share_tail; must round-trip as None."""
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-2",
+        "caption_len": 12,
+        "n_layers": 28,
+        "hidden_dim": 768,
+        "caption_ref": "ref",
+        "kl": [[0.0]],
+        "cos_dist": [[0.0]],
+        "residual_ratio": 0.4,
+        # share_tail intentionally absent
+        "head_tail_ratio": 0.7,
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_long",
+        "seed_global": 0,
+        "noise_seed": 1,
+        "timestamp_iso": "2026-01-01T00:00:00+00:00",
+        "caption_tokens": None,
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    assert back[0]["share_tail"] is None
+
+
+def test_compute_summary_stats_reports_share_tail_section():
+    """share_tail must show up in the summary alongside the legacy htr block."""
+    from vr_modality_bias.io.results import compute_summary_stats
+
+    rows = [
+        {"residual_ratio": 0.4, "share_tail": v, "head_tail_ratio": 1.0, "model_id": "m"}
+        for v in (0.1, 0.3, 0.5, 0.7, 0.9)
+    ]
+    stats = compute_summary_stats(rows)
+    assert stats["n_share_tail_finite"] == 5
+    st = stats["share_tail"]
+    assert math.isclose(st["median"], 0.5, rel_tol=1e-9)
+    assert st["min"] == pytest.approx(0.1)
+    assert st["max"] == pytest.approx(0.9)

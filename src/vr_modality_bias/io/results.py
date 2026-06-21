@@ -37,7 +37,16 @@ METRICS_SCHEMA = pa.schema(
         # the deep-block KL curve). Complements residual_ratio, which
         # saturates near 1 for long captions even on flat curves. Nullable
         # so older parquets (baseline scripts/05) remain readable.
+        # DEPRECATED post-Block-3: inflates under SPARC (the ratio is
+        # unbounded above; SPARC's multiplicative amplification pushes it
+        # to 50+/NaN). Use ``share_tail`` as the headline attenuation
+        # metric — see metrics/residual.py. Kept for back-compat reads.
         pa.field("head_tail_ratio", pa.float32(), nullable=True),
+        # Post-Block-3 headline attenuation metric: fraction of deep-KL
+        # mass that sits in the tail half of the caption. Bounded [0, 1],
+        # invariant under positive multiplicative scaling (SPARC-proof).
+        # Nullable so parquets written before Block-3 stay readable.
+        pa.field("share_tail", pa.float32(), nullable=True),
         pa.field("model_id", pa.string()),
         pa.field("prompt_key", pa.string()),
         pa.field("seed_global", pa.int32()),
@@ -92,7 +101,8 @@ _SUMMARY_CSV_COLUMNS: tuple[str, ...] = (
     "caption_len",
     "n_layers",
     "residual_ratio",
-    "head_tail_ratio",
+    "share_tail",      # post-Block-3 headline; bounded [0,1], SPARC-proof
+    "head_tail_ratio",  # deprecated; kept in CSV until orphan scripts retire
     "model_id",
     "prompt_key",
     "caption_ref",
@@ -161,9 +171,17 @@ def compute_summary_stats(
     median = _safe(np.median)
     iqr = (q75 - q25) if (q25 is not None and q75 is not None) else None
 
-    # head_tail_ratio is unbounded above (any positive value); we don't
-    # apply a [range_lo, range_hi] filter to it — just compute stats over
-    # the finite subset. ``None``s and missing keys are tolerated.
+    # share_tail is bounded [0, 1] by construction; we report finite stats
+    # without any extra filtering. This is the POST-BLOCK-3 headline metric.
+    share_tail_values = np.asarray(
+        [row.get("share_tail") for row in rows], dtype=np.float64
+    )
+    share_tail_stats = _finite_stats(share_tail_values)
+    n_share_tail_finite = int(np.isfinite(share_tail_values).sum())
+
+    # head_tail_ratio is DEPRECATED but still computed/written by the
+    # legacy code paths; keep its summary section so old viewers don't
+    # crash. ``None``s and missing keys are tolerated.
     htr_values = np.asarray(
         [row.get("head_tail_ratio") for row in rows], dtype=np.float64
     )
@@ -176,6 +194,7 @@ def compute_summary_stats(
         "n_images": int(len(rows)),
         "n_residual_ratio_finite": int(finite_mask.sum()),
         "n_residual_ratio_finite_in_range": int(in_range_mask.sum()),
+        "n_share_tail_finite": n_share_tail_finite,
         "n_head_tail_ratio_finite": n_htr_finite,
         "range": {"lo": float(range_lo), "hi": float(range_hi)},
         "residual_ratio": {
@@ -188,6 +207,7 @@ def compute_summary_stats(
             "mean": _safe(np.mean),
             "std": _safe(lambda a: np.std(a, ddof=1)) if eligible.size > 1 else None,
         },
+        "share_tail": share_tail_stats,
         "head_tail_ratio": htr_stats,
         "model_id": head_row.get("model_id"),
         "prompt_key": head_row.get("prompt_key"),

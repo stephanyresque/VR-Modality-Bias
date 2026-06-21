@@ -55,7 +55,11 @@ try:
     )
     from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
     from vr_modality_bias.metrics.kl import compute_kl_matrix
-    from vr_modality_bias.metrics.residual import head_tail_ratio, residual_drift_ratio
+    from vr_modality_bias.metrics.residual import (
+        head_tail_ratio,
+        residual_drift_ratio,
+        share_tail,
+    )
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.utils.config import load_config, snapshot_config
     from vr_modality_bias.utils.device import resolve_dtype, select_device
@@ -75,7 +79,11 @@ except ModuleNotFoundError:
     )
     from src.vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
     from src.vr_modality_bias.metrics.kl import compute_kl_matrix
-    from src.vr_modality_bias.metrics.residual import head_tail_ratio, residual_drift_ratio
+    from src.vr_modality_bias.metrics.residual import (
+        head_tail_ratio,
+        residual_drift_ratio,
+        share_tail,
+    )
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.utils.config import load_config, snapshot_config
     from src.vr_modality_bias.utils.device import resolve_dtype, select_device
@@ -116,7 +124,8 @@ def _row_for_pair(
         caption_len=int(result_A.caption_len),
     )
     rr = residual_drift_ratio(kl, t0=t0)
-    htr = head_tail_ratio(kl, t0=t0)
+    htr = head_tail_ratio(kl, t0=t0)  # deprecated; this script will likely be retired
+    st = share_tail(kl)               # post-Block-3 headline metric
 
     return {
         "image_id": image_id,
@@ -127,6 +136,7 @@ def _row_for_pair(
         "kl": kl,
         "cos_dist": cos,
         "residual_ratio": float(rr),
+        "share_tail": float(st),
         "head_tail_ratio": float(htr),
         "model_id": model_id,
         "prompt_key": prompt_key,
