@@ -1,20 +1,21 @@
 """Tests for the caption-sweep extension (scripts 09 + 10).
 
 Covers everything that can be validated CPU-only:
-    - registry has the three model keys after the extension,
+    - registry exposes the post-Block-2 model keys,
     - the three caption prompts are active (no None),
     - decode_caption_tokens slices and decodes per-position,
     - METRICS_SCHEMA has the new nullable caption_tokens field,
-    - write/read parquet survives both populated and absent caption_tokens,
-    - sweep orchestrator's combination expansion (script 10) is correct.
+    - write/read parquet survives both populated and absent caption_tokens.
 
-Model loading (SmolVLM-2.2B / Qwen2.5-VL-7B) is **not** exercised here —
-that's DGX territory.
+Model loading (LLaVA-1.5-7B) is **not** exercised here — that's DGX
+territory. The Block-2 migration retired SmolVLM and Qwen2.5-VL, so the
+sweep-orchestrator tests that used those keys are gone with them (the
+orchestrator in scripts/10_run_sweep.py is listed as meaningless until a
+new LLaVA sweep config is wired).
 """
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -23,48 +24,25 @@ import pytest
 import torch
 
 
-_SCRIPT_10 = Path(__file__).parent.parent / "scripts" / "10_run_sweep.py"
-
-
-def _load_script_10():
-    spec = importlib.util.spec_from_file_location("script_10", _SCRIPT_10)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 # ---------------------------------------------------------------- registry
 
 
-def test_registry_has_all_three_model_keys():
+def test_registry_lists_only_llava_post_block2():
+    """Block 2 retired SmolVLM and Qwen2.5-VL; LLaVA-1.5-7B is the sole key."""
     from vr_modality_bias.models.registry import list_models
 
-    keys = list_models()
-    assert "smolvlm-256m" in keys
-    assert "smolvlm-2.2b" in keys
-    assert "qwen2.5-vl-7b" in keys
+    assert list_models() == ["llava-1.5-7b"]
 
 
-def test_registry_builds_smolvlm_2_2b_without_loading():
-    from vr_modality_bias.models.registry import build_model
-    from vr_modality_bias.models.smolvlm import SmolVLMWrapper
-
-    wrapper = build_model("smolvlm-2.2b")
-    assert isinstance(wrapper, SmolVLMWrapper)
-    assert "SmolVLM" in wrapper.model_id
-    # Not yet loaded — n_layers must error
-    with pytest.raises(RuntimeError):
-        _ = wrapper.n_layers
-
-
-def test_registry_builds_qwen_without_loading():
-    from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+def test_registry_builds_llava_without_loading():
+    """Building the wrapper must not touch the GPU / download weights."""
+    from vr_modality_bias.models.llava import LlavaWrapper
     from vr_modality_bias.models.registry import build_model
 
-    wrapper = build_model("qwen2.5-vl-7b")
-    assert isinstance(wrapper, QwenVLWrapper)
-    assert "Qwen" in wrapper.model_id
+    wrapper = build_model("llava-1.5-7b")
+    assert isinstance(wrapper, LlavaWrapper)
+    assert "llava" in wrapper.model_id.lower()
+    # Not yet loaded — n_layers must error.
     with pytest.raises(RuntimeError):
         _ = wrapper.n_layers
 
@@ -232,73 +210,6 @@ def test_write_metrics_without_caption_tokens_writes_null(tmp_path: Path):
     assert back[0]["caption_tokens"] is None
 
 
-# ----------------------------------------------------- sweep orchestrator
-
-
-def test_expand_cells_full_matrix_when_no_filters():
-    script = _load_script_10()
-    cells = script.expand_cells(models=None, lengths=None)
-    assert len(cells) == 6
-    pairs = {(m, length) for m, length, _ in cells}
-    assert pairs == {
-        ("smolvlm-2.2b", "short"),
-        ("smolvlm-2.2b", "medium"),
-        ("smolvlm-2.2b", "long"),
-        ("qwen2.5-vl-7b", "short"),
-        ("qwen2.5-vl-7b", "medium"),
-        ("qwen2.5-vl-7b", "long"),
-    }
-
-
-def test_expand_cells_filters_by_model():
-    script = _load_script_10()
-    cells = script.expand_cells(models=["smolvlm-2.2b"], lengths=None)
-    assert len(cells) == 3
-    assert all(m == "smolvlm-2.2b" for m, _, _ in cells)
-
-
-def test_expand_cells_filters_by_length():
-    script = _load_script_10()
-    cells = script.expand_cells(models=None, lengths=["long"])
-    assert len(cells) == 2
-    assert all(length == "long" for _, length, _ in cells)
-
-
-def test_expand_cells_filters_by_both():
-    script = _load_script_10()
-    cells = script.expand_cells(models=["qwen2.5-vl-7b"], lengths=["short", "medium"])
-    assert len(cells) == 2
-    pairs = {(m, length) for m, length, _ in cells}
-    assert pairs == {
-        ("qwen2.5-vl-7b", "short"),
-        ("qwen2.5-vl-7b", "medium"),
-    }
-
-
-def test_expand_cells_rejects_unknown_model():
-    script = _load_script_10()
-    with pytest.raises(ValueError) as exc_info:
-        script.expand_cells(models=["mystery-7b"], lengths=None)
-    assert "mystery-7b" in str(exc_info.value)
-
-
-def test_expand_cells_rejects_unknown_length():
-    script = _load_script_10()
-    with pytest.raises(ValueError) as exc_info:
-        script.expand_cells(models=None, lengths=["epic"])
-    assert "epic" in str(exc_info.value)
-
-
-def test_expand_cells_returns_existing_configs():
-    """Every (model, length) cell must point to a real config file on disk."""
-    script = _load_script_10()
-    cells = script.expand_cells(models=None, lengths=None)
-    for model, length, config_path in cells:
-        assert config_path.is_file(), (
-            f"config for ({model}, {length}) missing on disk: {config_path}"
-        )
-
-
 # -------------------------------------------------------- discard semantics
 
 
@@ -314,46 +225,8 @@ def test_discard_flag_default_is_false_in_baseline_config():
     )
 
 
-def test_discard_flag_true_in_sweep_configs():
-    """Every sweep cell config must opt in to per-image discard."""
-    import yaml
-
-    sweep_configs = [
-        "configs/run_smolvlm22_short.yaml",
-        "configs/run_smolvlm22_medium.yaml",
-        "configs/run_smolvlm22_long.yaml",
-        "configs/run_qwen7b_short.yaml",
-        "configs/run_qwen7b_medium.yaml",
-        "configs/run_qwen7b_long.yaml",
-    ]
-    for path in sweep_configs:
-        cfg = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-        assert (
-            cfg.get("io", {}).get("discard_hidden_states_after_metrics") is True
-        ), f"{path} must have io.discard_hidden_states_after_metrics: true"
-
-
-def test_sweep_configs_have_expected_n_images():
-    """All six sweep cells use 50 images (per spec)."""
-    import yaml
-
-    for path in Path("configs").glob("run_*.yaml"):
-        cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
-        assert int(cfg["dataset"]["n_images"]) == 50, (
-            f"{path}: n_images should be 50, got {cfg['dataset']['n_images']}"
-        )
-
-
-def test_sweep_configs_have_matching_prompt_keys():
-    """prompt_key must match the length suffix in the config name."""
-    import yaml
-
-    expected = {
-        "short": "caption_short",
-        "medium": "caption_medium",
-        "long": "caption_long",
-    }
-    for path in Path("configs").glob("run_*.yaml"):
-        cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
-        suffix = path.stem.rsplit("_", 1)[-1]
-        assert cfg["task"]["prompt_key"] == expected[suffix], path
+# Note: the sweep orchestrator tests (expand_cells, sweep-config validation)
+# were dropped in the Block-2 migration. They relied on the SmolVLM and
+# Qwen2.5-VL keys + their six per-length configs, all of which are gone.
+# scripts/10_run_sweep.py is documented as orphaned until a new LLaVA
+# sweep wiring lands.

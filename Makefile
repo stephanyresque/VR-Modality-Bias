@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report phase4-smolvlm-smoke clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report clean
 
 help:
 	@echo "Targets:"
@@ -21,7 +21,6 @@ help:
 	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
 	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
 	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
-	@echo "  phase4-smolvlm-smoke  Phase-4 coherence smoke for SmolVLM-2.2B + SPARC (Llama variant of attn forward)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -105,16 +104,6 @@ phase3:
 # CHAIR report — auto-downloads COCO val2017 annotations if missing.
 chair-report:
 	$(PYTHON) scripts/17_chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
-
-# Phase 4 — SmolVLM-2.2B coherence smoke. Confirms the Llama variant of
-# add_custom_attention_layers (and the SmolVLM decoder-path lookup) work
-# before committing to a full Phase-1/2/3 run on SmolVLM.
-phase4-smolvlm-smoke:
-	$(PYTHON) scripts/18_phase3_generate.py \
-		--run-name phase4_smolvlm_coherence \
-		--coherence-smoke \
-		--length-config-pattern configs/run_smolvlm22_{length}.yaml \
-		--selected-layer 15
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

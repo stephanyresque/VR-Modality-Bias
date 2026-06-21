@@ -297,3 +297,54 @@ def test_buffer_reset_clears_image_positions():
     assert buf.indices1 == []
     assert buf.indices2 == []
     assert buf.num_image_patches is None
+
+
+# ---------------------------------------------------------------- LLaVA-1.5 layout
+# Post-Block-2 the only registered family is "llama"; the LLaVA-1.5
+# checkpoint exposes the decoder at ``model.model.language_model.layers``.
+# These tests pin both the layout discovery and the family marker.
+
+
+def test_decoder_of_resolves_llava_layout():
+    """decoder_of must walk model.model.language_model.layers for LLaVA-1.5."""
+    import torch.nn as nn
+    from vr_modality_bias.utils.attn import decoder_of
+
+    class _FakeLayer(nn.Module):
+        pass
+
+    decoder = SimpleNamespace(layers=nn.ModuleList([_FakeLayer() for _ in range(32)]))
+    inner = SimpleNamespace(language_model=decoder)
+    fake_model = SimpleNamespace(model=inner)
+
+    found = decoder_of(fake_model)
+    assert found is decoder
+    assert len(found.layers) == 32
+
+
+def test_decoder_of_resolves_legacy_nested_llava_layout():
+    """Older LLaVA shapes nest the decoder one level deeper: ``language_model.model.layers``."""
+    import torch.nn as nn
+    from vr_modality_bias.utils.attn import decoder_of
+
+    class _FakeLayer(nn.Module):
+        pass
+
+    decoder = SimpleNamespace(layers=nn.ModuleList([_FakeLayer() for _ in range(32)]))
+    # language_model is a LlamaForCausalLM-style wrapper; .model holds the decoder.
+    language_model = SimpleNamespace(model=decoder)
+    inner = SimpleNamespace(language_model=language_model)
+    fake_model = SimpleNamespace(model=inner)
+
+    found = decoder_of(fake_model)
+    assert found is decoder
+
+
+def test_detect_model_family_returns_llama_for_llava_class_name():
+    """``LlavaForConditionalGeneration`` must be recognised as the llama family."""
+    from vr_modality_bias.utils.attn import detect_model_family
+
+    # Synthesize a class whose name starts with "Llava" — that's all the
+    # marker check looks at; no torch modules involved.
+    fake = type("LlavaForConditionalGeneration", (), {})()
+    assert detect_model_family(fake) == "llama"
