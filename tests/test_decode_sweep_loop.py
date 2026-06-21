@@ -1,34 +1,12 @@
-"""Tests for the loop detector in scripts/20_decode_sweep.py.
-
-The script is operator-facing and never imported as a module by the rest
-of the codebase, so we load it via importlib. The point of these tests
-is just to nail down the loop heuristic — false positives and false
-negatives both invalidate the sweep table.
-"""
-
 from __future__ import annotations
-
-import importlib.util
-from pathlib import Path
 
 import pytest
 
 
-# ---------------------------------------------------------------- importer
-
-
-def _load_decode_sweep_module():
-    here = Path(__file__).parent.parent / "scripts" / "20_decode_sweep.py"
-    spec = importlib.util.spec_from_file_location("decode_sweep", here)
-    mod = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    spec.loader.exec_module(mod)
-    return mod
-
-
 @pytest.fixture(scope="module")
 def detect_loop():
-    return _load_decode_sweep_module().detect_loop
+    from vr_modality_bias.data.captions import detect_loop as fn
+    return fn
 
 
 # ---------------------------------------------------------------- tests

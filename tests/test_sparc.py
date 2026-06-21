@@ -1,15 +1,3 @@
-"""Tests for :mod:`vr_modality_bias.experiment.sparc`.
-
-The facade is small but two invariants matter a lot:
-
-1. ``alpha <= 1`` must be rejected. A no-op SPARC silently invalidates the
-   whole evaluation.
-2. The original ``self_attn.forward`` methods MUST be restored on exit —
-   even when the with-block raises. Otherwise a subsequent "baseline"
-   collection would still run through the monkey-patched forwards and we
-   would be measuring SPARC twice without knowing.
-"""
-
 from __future__ import annotations
 
 from types import MethodType, SimpleNamespace

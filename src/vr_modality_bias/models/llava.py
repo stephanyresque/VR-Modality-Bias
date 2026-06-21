@@ -1,26 +1,4 @@
-"""Concrete wrapper for ``llava-hf/llava-1.5-7b-hf``.
-
-LLaVA-1.5 is the canonical baseline of the SPARC paper (their reference
-results are on the same backbone family). This wrapper exists so the
-study can pivot to LLaVA-1.5-7B without rewriting any of the experiment
-orchestration — same :class:`ModelWrapper` contract as
-:class:`SmolVLMWrapper` and :class:`QwenVLWrapper`.
-
-Family-specific notes
----------------------
-* Prompt format: LLaVA-1.5 uses ``"USER: <image>\\n{prompt} ASSISTANT:"``.
-  Modern (5.x) transformers ships a chat template on the processor that
-  renders the canonical list-of-content-dicts format into that exact
-  string, so we prefer ``processor.apply_chat_template`` when it's
-  registered. The manual fallback below produces the same string for
-  environments where the template isn't installed.
-* Image token: the processor inserts ``<image>`` (id depends on the
-  vocab) and the LLaVA model expands it internally to 576 visual feature
-  tokens. We never touch this manually — same convention as the other
-  wrappers.
-* Decoder: 32 transformer layers (LlamaModel, ``config.text_config.
-  num_hidden_layers``). ``lm_head`` resolves at the top level.
-"""
+"""Concrete wrapper for ``llava-hf/llava-1.5-7b-hf``."""
 
 from __future__ import annotations
 

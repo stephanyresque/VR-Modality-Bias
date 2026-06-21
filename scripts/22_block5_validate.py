@@ -1,40 +1,5 @@
 #!/usr/bin/env python
-"""Block-5 functional validation — LLaVA-1.5-7B end-to-end, small sample.
-
-Pipeline validated, in a single process:
-
-    1. Audit: confirm the SPARC ``image_positions`` mask is 100%
-       <image>-tokens for LLaVA-1.5 (contiguous block, no Idefics3-style
-       separators).
-    2. For each of ``--limit`` images (default 3), length=long:
-       (a) Generate ``caption_baseline`` (free generation, greedy).
-       (b) Generate ``caption_sparc`` (free generation, greedy, with
-           ``enable_sparc`` context — official COCO config).
-       (c) Run ``collect_forced_decoding`` PAIRED:
-             * SPARC OFF on (real_image, noise_image)
-             * SPARC ON  on (real_image, noise_image)
-           This is the apples-to-apples ``share_tail`` comparison (both
-           sides use the FD code path so the TF↔FD bf16 noise floor
-           doesn't pollute the delta).
-       (d) Compute KL, deep_curve and share_tail for each condition.
-    3. Write rows:
-       * ``results/diagnostico/llava-1.5-7b/long/<run>_<ts>/metrics.parquet``
-         — baseline (FD-OFF) rows, post-Block-4 layout.
-       * ``results/avaliacao/llava-1.5-7b/long/<run>_<ts>/metrics.parquet``
-         — SPARC (FD-ON) rows, same schema.
-    4. Print everything to stdout: audit verdict, side-by-side captions,
-       per-image share_tail table, and bounded-check sanity (both
-       conditions must produce values in [0, 1]).
-
-This is a FUNCTIONAL validation, not a scientific run. Two-to-three
-images is enough to prove every code path lights up and writes to the
-new layout. Scale to 50 images for the real diagnostic.
-
-CLI
----
-    python scripts/22_block5_validate.py
-    python scripts/22_block5_validate.py --limit 2 --length long
-"""
+"""Block-5 functional validation — LLaVA-1.5-7B end-to-end, small sample."""
 
 from __future__ import annotations
 

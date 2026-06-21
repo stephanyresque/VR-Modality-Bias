@@ -1,17 +1,3 @@
-"""Tests for :mod:`vr_modality_bias.metrics.chair`.
-
-The score itself is trivial arithmetic; the hard part is the **noun
-recogniser**. Specifically:
-
-  * Whole-word matching: ``cat`` is in ``"a cat sleeps"`` but NOT in
-    ``"a category of pets"``.
-  * Multi-word synonyms: ``hot dog`` matches in ``"a hot dog on a plate"``.
-  * Plurals: ``cats`` → ``cat``, ``children`` → ``person``.
-  * Non-COCO words: ``unicorn`` is NOT counted at all (zero-influence).
-  * Aggregation: an off-by-one in CHAIR_i / CHAIR_s ratio changes a
-    headline number, so the basic arithmetic is asserted.
-"""
-
 from __future__ import annotations
 
 import json

@@ -1,17 +1,5 @@
 #!/usr/bin/env python
-"""Phase 3 — free caption generation: baseline (SPARC OFF) vs SPARC α=1.1.
-
-SPARC hyperparameters and decoding match the official paper's COCO recipe
-(captioning_coco.sh in the SPARC authors' repo): α=1.1, β=0.1, τ=1.5,
-selected_layer=20, se_layers=(0,31), greedy decoding (do_sample=False,
-num_beams=1, no repetition penalty).
-
-Greedy is mandatory: sampling from a SPARC-amplified distribution is what
-triggered the long-caption degeneration we saw before, NOT the
-implementation itself. The implementation was verified against the
-official repo (forward identical to the official Llama path, Qwen variant
-replicates the same mechanism).
-"""
+"""Phase 3 — free caption generation: baseline (SPARC OFF) vs SPARC α=1.1."""
 
 from __future__ import annotations
 

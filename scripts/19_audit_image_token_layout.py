@@ -1,51 +1,5 @@
 #!/usr/bin/env python
-"""Diagnostic: inspect the image-token layout in the prefill input_ids.
-
-The SPARC mechanism (``forward_qwen25vl`` in
-``src/vr_modality_bias/utils/attn.py``) assumes that the image-placeholder
-tokens occupy a **contiguous block** at
-``input_ids[image_token_index : image_token_index + num_image_patches]``,
-and calibrates / selects only inside that block. That assumption is
-inherited from LLaVA's layout, where it's correct. For Qwen2.5-VL and
-SmolVLM (Idefics3), the layout is more complex (special
-``<vision_start>`` / ``<vision_end>`` markers, multi-row image grids with
-in-line separators, etc.). If the assumed block actually contains text
-tokens, SPARC is silently calibrating the wrong things — which would
-explain why generation degenerates over many tokens.
-
-This script is **purely diagnostic**. It does NOT run SPARC, does NOT
-generate, does NOT touch the GPU. It only loads the processor + config,
-runs the same prefill tokenisation that ``probe_image_token_index`` does,
-and prints what's actually in those positions.
-
-For each (model, image, prompt) it prints:
-    1. the model's ``config.image_token_id`` (the ground-truth
-       image-placeholder id)
-    2. the values the SPARC probe computes: ``image_token_index``,
-       ``num_image_patches``, ``input_len``
-    3. the token-id sequence in the assumed SPARC range, plus 10 tokens
-       of context on each side, decoded to text
-    4. a factual verdict — how many of the ``num_image_patches`` positions
-       are actually the image-placeholder id, and how many are something
-       else.
-
-The verdict is the only thing that matters. If ANY model shows
-"X of N positions are NOT image-placeholder", that's the bug. No
-conclusion / fix is proposed here — the user reads the numbers.
-
-CLI
----
-    # Qwen2.5-VL-7B (long prompt, one COCO image)
-    python scripts/19_audit_image_token_layout.py --model qwen
-
-    # SmolVLM-2.2B (same)
-    python scripts/19_audit_image_token_layout.py --model smol
-
-    # Override defaults
-    python scripts/19_audit_image_token_layout.py --model qwen \\
-        --image-path data/processed/mscoco_baseline/images/000000000285.jpg \\
-        --prompt-key caption_short
-"""
+"""Diagnostic: inspect the image-token layout in the prefill input_ids."""
 
 from __future__ import annotations
 

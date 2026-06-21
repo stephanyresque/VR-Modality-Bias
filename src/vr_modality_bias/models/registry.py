@@ -1,11 +1,4 @@
-"""Simple key→wrapper-factory registry for VLMs.
-
-Post-migration (Block 2): the study uses LLaVA-1.5-7B exclusively. The
-SmolVLM and Qwen2.5-VL factories were retired here together with their
-wrappers (``models/smolvlm.py`` and ``models/qwen_vl.py``). If a future
-block adds another family, register it the same way as
-``_llava_1_5_7b`` below.
-"""
+"""Simple key→wrapper-factory registry for VLMs."""
 
 from __future__ import annotations
 

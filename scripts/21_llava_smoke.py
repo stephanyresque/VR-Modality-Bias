@@ -1,28 +1,5 @@
 #!/usr/bin/env python
-"""Block-1 smoke for the LLaVA-1.5-7B migration.
-
-Confirms three things, in order:
-    1. ``LlavaWrapper`` loads — processor + model + dtype on CUDA, no
-       crash, no missing-class shenanigans.
-    2. The wrapper's introspection works — ``n_layers`` resolves to 32
-       (LLaVA-1.5-7B's LlamaModel depth) and ``get_lm_head()`` returns a
-       real ``torch.nn.Module`` (the LM head linear).
-    3. Free generation runs end to end — greedy, 64 tokens, on a single
-       image already in the dataset (000000000139 by default). Print
-       the caption so a human can confirm it's coherent prose, not the
-       empty string or a salad of tokens.
-
-This is intentionally minimal. No SPARC, no metrics, no sweep, no log
-file. Just a print to stdout. If it passes, we're cleared to start
-Block 2 (retiring other families / wiring LLaVA into the experiment
-orchestration). If it fails, we stop here and diagnose.
-
-CLI
----
-    python scripts/21_llava_smoke.py
-    python scripts/21_llava_smoke.py --image-id 000000000285
-    python scripts/21_llava_smoke.py --max-new-tokens 96
-"""
+"""Block-1 smoke for the LLaVA-1.5-7B migration."""
 
 from __future__ import annotations
 

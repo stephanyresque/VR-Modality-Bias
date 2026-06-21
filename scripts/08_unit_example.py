@@ -1,27 +1,5 @@
 #!/usr/bin/env python
-"""Per-image unit examples — one folder per image with separate artefacts.
-
-For every image in ``<run_dir>/metrics.parquet`` (or just ``--image-id``),
-writes the following files inside
-``<run_dir>/plots/unit_examples/<image_id>/``::
-
-    image.jpg              copy of the source image (skipped if not on disk)
-    meta.txt               prompt, caption_ref, residual_ratio, metadata
-    kl_heatmap.png         per-(layer, token) KL for this image
-    kl_token_curve.png     deep-block-averaged KL over tokens
-
-This way the paper-side organisation (image / prompt / KL / curve in
-distinct artefacts) is mechanically separated, not jammed into a single
-composite figure.
-
-CPU-only, no model required — reuses ``plot_heatmap``/``plot_token_curve``
-and reads data already in ``metrics.parquet``.
-
-CLI:
-    python scripts/08_unit_example.py --config configs/baseline.yaml
-    python scripts/08_unit_example.py --config configs/baseline.yaml --image-id 000000001584
-    python scripts/08_unit_example.py --config configs/baseline.yaml --overwrite
-"""
+"""Per-image unit examples — one folder per image with separate artefacts."""
 
 from __future__ import annotations
 

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report block5-validate clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report block5-validate run-all run-all-smoke clean
 
 help:
 	@echo "Targets:"
@@ -22,6 +22,8 @@ help:
 	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
 	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
 	@echo "  block5-validate Block-5 LLaVA end-to-end validation (3 imgs, audit + share_tail + captions)"
+	@echo "  run-all-smoke  Block-6 smoke (1 img long, baseline+SPARC) — confirms entrypoint + IO + log path"
+	@echo "  run-all        Block-6 full orchestrator (50 imgs × 3 lengths × 2 conds). Resumable, tmux-safe."
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -112,6 +114,23 @@ chair-report:
 # + share_tail + audit verdict. NOT the full 50-image run.
 block5-validate:
 	$(PYTHON) scripts/22_block5_validate.py --length long --limit 3
+
+# Block-6 — single resumable orchestrator for the full diagnostic + SPARC
+# run. 50 imgs × 3 lengths × 2 conditions = 300 cells, written to
+# results/{diagnostico,avaliacao}/llava-1.5-7b/<length>/<run-name>/.
+# Resume by relaunching the SAME command — done cells are skipped.
+# Add OVERWRITE=1 to force recompute, RUN_NAME=foo to use a different run.
+RUN_ALL_NAME ?= run_all_v1
+RUN_ALL_FLAGS ?=
+ifeq ($(OVERWRITE),1)
+    RUN_ALL_FLAGS += --overwrite
+endif
+
+run-all-smoke:
+	$(PYTHON) scripts/23_run_all.py --run-name $(RUN_ALL_NAME) --smoke $(RUN_ALL_FLAGS)
+
+run-all:
+	$(PYTHON) scripts/23_run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

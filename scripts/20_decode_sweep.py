@@ -1,58 +1,5 @@
 #!/usr/bin/env python
-"""Decode-sweep tuner: pick repetition_penalty × max_new_tokens for SPARC.
-
-Phase 4 (SmolVLM) tuning. After the per-id-mask indexing fix
-(``utils/attn.py``'s ``SelectedIndexBuffer.image_positions``), SPARC ON
-generates coherently on most images but a few still degenerate at the
-tail of long descriptions (e.g. ``"allowed, allowed, allowed..."``).
-That's an amplification-meets-greedy stability issue, not an indexing or
-state-leak bug. This script sweeps repetition_penalty × max_new_tokens
-to find the lightest decoding adjustment that keeps SPARC ON loop-free
-across ≥3 images without truncating SPARC OFF too short.
-
-Design choices (frozen)
------------------------
-* SPARC config is FIXED to the official COCO setup: alpha=1.1, beta=0.1,
-  tau=1.5, selected_layer=15, se_layers=(0, 31). Do NOT vary these here.
-* The same decoding kwargs are applied to BOTH conditions in each cell —
-  the OFF vs ON comparison only stays meaningful when the decoding setup
-  is identical on the two sides.
-* Greedy: ``do_sample=False, num_beams=1``. Sampling is what destabilised
-  SPARC's amplification in the original Phase 2 sweep (cf. EXPERIMENT.md
-  §13 — α≥1.2 + temperature 0.8 → 'its its'-style super-amplification).
-  This script only varies the penalties that bound greedy repetition.
-* Model is loaded ONCE; the sweep iterates inside that loaded model
-  instance. SPARC is enabled/disabled per cell via ``enable_sparc(...)``.
-
-Loop heuristic (recorded in the table)
---------------------------------------
-``detect_loop(text)`` flags a caption as "looping" iff EITHER:
-
-    (a) some non-stopword unigram occupies ≥4 of the last 20 tokens, OR
-    (b) some token repeats ≥3 times consecutively in the last 30 tokens
-        (catches the canonical 'allowed, allowed, allowed' / 'in. in. in.'
-        failure mode).
-
-Stopwords (the/a/of/and/...) are excluded from (a) so we don't false-fire
-on normal English prose. (b) ignores trailing punctuation when comparing
-('allowed' == 'allowed,'). The threshold is intentionally permissive —
-the script flags suspicion; the human reads the actual caption.
-
-Output
-------
-* Per cell, the OFF and ON captions are printed between clear delimiters.
-* At the end, an ASCII table with one row per (image_id, rp, max_tok):
-    image_id  | rp    | max_tok | off_words | off_loop | on_words | on_loop
-
-The script does NOT pick a recommendation — that's the user's call. The
-goal is just to lay out the grid for inspection.
-
-CLI
----
-    python scripts/20_decode_sweep.py            # SmolVLM defaults
-    python scripts/20_decode_sweep.py --image-ids 000000000139 000000000285 000000000632
-    python scripts/20_decode_sweep.py --rps 1.0 1.1 --max-toks 512
-"""
+"""Decode-sweep tuner: pick repetition_penalty × max_new_tokens for SPARC."""
 
 from __future__ import annotations
 
@@ -61,7 +8,6 @@ import re
 import sys
 import time
 import traceback
-from collections import Counter
 from pathlib import Path
 
 from loguru import logger
@@ -69,6 +15,7 @@ from PIL import Image
 from pyprojroot import here
 
 try:
+    from vr_modality_bias.data.captions import detect_loop
     from vr_modality_bias.data.prompts import get_prompt
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from vr_modality_bias.models.registry import build_model
@@ -78,6 +25,7 @@ try:
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
+    from src.vr_modality_bias.data.captions import detect_loop
     from src.vr_modality_bias.data.prompts import get_prompt
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from src.vr_modality_bias.models.registry import build_model
@@ -87,64 +35,9 @@ except ModuleNotFoundError:
 
 
 # ---------------------------------------------------------------- helpers
-
-
-_STOPWORDS = {
-    "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "by", "for",
-    "with", "from", "is", "are", "was", "were", "be", "been", "being", "as",
-    "it", "its", "this", "that", "these", "those", "there", "their", "they",
-    "he", "she", "him", "her", "his", "hers", "you", "your",
-    # punctuation-only artifacts after .strip()
-    "", ".", ",",
-}
-
-
-def _norm(tok: str) -> str:
-    """Lowercase + strip trailing punctuation. Used by both loop checks."""
-    return tok.lower().strip(".,;:!?\"'()[]")
-
-
-def detect_loop(text: str) -> tuple[bool, str]:
-    """Return ``(has_loop, why)`` for a generated caption.
-
-    Two heuristics — either triggers a flag:
-
-        (a) tail-window unigram dominance — some non-stopword appears
-            ≥ 4 times in the last 20 tokens.
-        (b) trailing consecutive repeat — some token appears ≥ 3 times
-            in a row anywhere in the last 30 tokens.
-    """
-    words = text.split()
-    if len(words) < 6:
-        return False, ""
-
-    # (b) consecutive repeats — checks the canonical 'X, X, X' tail.
-    tail_for_b = words[-30:] if len(words) > 30 else words
-    for i in range(len(tail_for_b)):
-        if not _norm(tail_for_b[i]):
-            continue
-        run = 1
-        j = i + 1
-        while j < len(tail_for_b) and _norm(tail_for_b[j]) == _norm(tail_for_b[i]):
-            run += 1
-            j += 1
-        if run >= 3:
-            return True, f"consecutive '{_norm(tail_for_b[i])}' x{run}"
-
-    # (a) tail-window unigram dominance.
-    # Walk most_common from the top until we find a non-stopword candidate
-    # whose count meets the threshold. The naive top-1 check misses
-    # "the room. the room. the room." because "the" and "room" tie at 4
-    # and Counter returns the stopword "the" first by insertion order.
-    tail_for_a = [_norm(w) for w in words[-20:]]
-    counter = Counter(tail_for_a)
-    for tok, count in counter.most_common():
-        if count < 4:
-            break  # everything below is <4 too, by sort order
-        if tok and tok not in _STOPWORDS:
-            return True, f"'{tok}' x{count} in last 20 tokens"
-
-    return False, ""
+# detect_loop lives in src/vr_modality_bias/data/captions.py (Block 6
+# moved it there so the orchestrator can import without going through a
+# script). It's imported above in the try/except.
 
 
 def _word_count(text: str) -> int:

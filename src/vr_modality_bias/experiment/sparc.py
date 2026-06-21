@@ -1,17 +1,4 @@
-"""Thin facade for enabling SPARC during a collection run.
-
-The SPARC implementation lives in :mod:`vr_modality_bias.utils.attn` (Arthur's
-``add_custom_attention_layers`` plus ``SelectedIndexBuffer``). This module
-wraps it as a **context manager** so the collection scripts can flip SPARC
-on for one block, off for another, and never leave a monkey-patched model
-behind — that would silently contaminate later runs.
-
-Hyperparameter defaults follow EXPERIMENT.md §12.1: keep Arthur's defaults
-for everything except ``alpha`` (the calibration coefficient), which must
-be ``> 1`` to have any effect. The user explicitly decided we should start
-at a soft value and only do a mini-sweep if Phase 2 shows the effect is
-too weak — so the default here is ``1.3`` (middle of the 1.1–1.5 band).
-"""
+"""Thin facade for enabling SPARC during a collection run."""
 
 from __future__ import annotations
 

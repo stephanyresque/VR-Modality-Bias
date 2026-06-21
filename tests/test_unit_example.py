@@ -1,18 +1,3 @@
-"""Tests for script 08 (per-image unit-example folders).
-
-Covers:
-    - KL matrix reconstruction from the nested-list row format,
-    - error path when ``image_id`` is missing (lists available ids),
-    - tolerance to rows without ``image_id``,
-    - deep curve length equals ``caption_len``,
-    - ``_format_meta`` includes all required fields and handles NaN,
-    - ``emit_for_row`` writes all four artefacts when the image exists,
-    - ``emit_for_row`` writes 3 artefacts (no image.jpg) when the source
-      image is missing.
-
-CPU-only, no model required.
-"""
-
 from __future__ import annotations
 
 import importlib.util

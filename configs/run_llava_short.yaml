@@ -15,8 +15,6 @@ dataset:
 model:
   key: "llava-1.5-7b"
   model_id: "llava-hf/llava-1.5-7b-hf"
-  # LLaVA-1.5 family is happy in float16 (no logits-overflow issue that
-  # Qwen-2.5-VL had — that needed bfloat16).
   dtype: "float16"
 
 task:
@@ -25,18 +23,15 @@ task:
 
 generation:
   max_new_tokens: 64
-  # Greedy is the SPARC paper's canonical decoding (do_sample=False,
-  # num_beams=1). Sampling destabilises amplification on long captions.
   do_sample: false
   num_beams: 1
   temperature: 1.0
   top_p: 1.0
-  repetition_penalty: 1.0
+  # 1.15 (Block-6 spec): stabilises LLaVA greedy across all lengths.
+  # Applied identically to baseline AND SPARC so the OFF↔ON comparison
+  # isn't biased by decoding setup.
+  repetition_penalty: 1.15
 
-# SPARC official COCO config (LLaVA paper). selected_layer=20 is the
-# paper's value for a 32-layer LLaVA-1.5; do NOT scale this by the model
-# (the layer index is absolute, picked by the authors). Block-2 dispatch
-# in utils/attn.py sends LLaVA through ``forward_llama``.
 sparc:
   alpha: 1.1
   beta: 0.1

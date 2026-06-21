@@ -1,10 +1,8 @@
 run:
   seed_global: 10
   name: "baseline_llava_sparc"
-  # Post-Block-4 layout: <output_root>/<area>/<model.key>/<length>/<run-name>_<ts>/
-  # See results/README.md for the schema.
   output_root: "results"
-  area: "diagnostico"  # "diagnostico" (base model) or "avaliacao" (SPARC vs baseline)
+  area: "diagnostico"  
 
 dataset:
   name: "mscoco_baseline"
@@ -13,9 +11,6 @@ dataset:
   n_images: 50
 
 model:
-  # Post-Block-2: only LLaVA-1.5-7B is registered. The per-length
-  # configs (run_qwen7b_*.yaml, run_smolvlm22_*.yaml) were retired; new
-  # length-specific LLaVA configs land in the diagnostic / eval block.
   key: "llava-1.5-7b"
   model_id: "llava-hf/llava-1.5-7b-hf"
   dtype: "float16"

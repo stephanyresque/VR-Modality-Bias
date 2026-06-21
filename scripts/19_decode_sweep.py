@@ -1,27 +1,5 @@
 #!/usr/bin/env python
-"""ETAPA 1 — Decode-stabilization sweep for the Qwen2.5-VL-7B SPARC pipeline.
-
-The Phase-3 audit confirmed: SPARC implementation is faithful and there's no
-state leakage between images. The remaining issue is a greedy repetition
-collapse specific to Qwen-7B (its baseline already shows "are are", "in in"
-without rep-penalty; SPARC amplifies the loop).
-
-This script keeps SPARC fixed at the official COCO config and applies the
-SAME decoding override to BOTH OFF and ON, so the comparison is fair. It
-loads the model once and iterates over a small grid of
-``(rep_penalty, no_repeat_ngram_size)`` combinations on the chosen images.
-
-For each (image, rp, ng) cell it prints OFF and ON captions plus word
-counts. At the end it prints a summary table so you can pick the smallest
-penalty that (a) kills the ON loop AND (b) doesn't truncate the OFF.
-
-CLI
----
-    python scripts/19_decode_sweep.py \\
-        --image-ids 000000000139 000000000285 000000000632 \\
-        --rep-penalties 1.0 1.1 1.15 1.2 \\
-        --no-repeat-ngrams 0 3
-"""
+"""ETAPA 1 — Decode-stabilization sweep for the Qwen2.5-VL-7B SPARC pipeline."""
 
 from __future__ import annotations
 

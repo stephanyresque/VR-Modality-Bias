@@ -1,19 +1,3 @@
-"""Tests for the caption-sweep extension (scripts 09 + 10).
-
-Covers everything that can be validated CPU-only:
-    - registry exposes the post-Block-2 model keys,
-    - the three caption prompts are active (no None),
-    - decode_caption_tokens slices and decodes per-position,
-    - METRICS_SCHEMA has the new nullable caption_tokens field,
-    - write/read parquet survives both populated and absent caption_tokens.
-
-Model loading (LLaVA-1.5-7B) is **not** exercised here — that's DGX
-territory. The Block-2 migration retired SmolVLM and Qwen2.5-VL, so the
-sweep-orchestrator tests that used those keys are gone with them (the
-orchestrator in scripts/10_run_sweep.py is listed as meaningless until a
-new LLaVA sweep config is wired).
-"""
-
 from __future__ import annotations
 
 from pathlib import Path

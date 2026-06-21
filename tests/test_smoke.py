@@ -9,9 +9,9 @@ def test_package_imports():
 
 
 def test_subpackages_import():
-    import vr_modality_bias.data  # noqa: F401
-    import vr_modality_bias.experiment  # noqa: F401
-    import vr_modality_bias.io  # noqa: F401
-    import vr_modality_bias.metrics  # noqa: F401
-    import vr_modality_bias.models  # noqa: F401
-    import vr_modality_bias.utils  # noqa: F401
+    import vr_modality_bias.data  
+    import vr_modality_bias.experiment  
+    import vr_modality_bias.io  
+    import vr_modality_bias.metrics  
+    import vr_modality_bias.models  
+    import vr_modality_bias.utils  

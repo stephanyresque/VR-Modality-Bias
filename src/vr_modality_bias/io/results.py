@@ -59,6 +59,25 @@ METRICS_SCHEMA = pa.schema(
         pa.field("noise_seed", pa.int64()),
         pa.field("timestamp_iso", pa.string()),
         pa.field("caption_tokens", pa.list_(pa.string()), nullable=True),
+        # Block-6 orchestrator fields. All nullable so the schema stays
+        # backward-compatible with parquets written by scripts 05/09/12.
+        # ``condition`` is "off" or "on" for run-all rows; null for
+        # legacy diagnostic rows. ``free_caption`` is the actual free
+        # generation in that condition (separate from caption_ref, which
+        # is the FD forced target — shared between OFF and ON so the
+        # comparison is on identical token positions). ``degenerated``
+        # carries the detect_loop verdict on ``free_caption``.
+        # ``sparc_*`` are populated only on ON rows.
+        pa.field("condition", pa.string(), nullable=True),
+        pa.field("free_caption", pa.string(), nullable=True),
+        pa.field("degenerated", pa.bool_(), nullable=True),
+        pa.field("degeneration_reason", pa.string(), nullable=True),
+        pa.field("sparc_alpha", pa.float32(), nullable=True),
+        pa.field("sparc_beta", pa.float32(), nullable=True),
+        pa.field("sparc_tau", pa.float32(), nullable=True),
+        pa.field("sparc_selected_layer", pa.int32(), nullable=True),
+        pa.field("sparc_se_layer_lo", pa.int32(), nullable=True),
+        pa.field("sparc_se_layer_hi", pa.int32(), nullable=True),
     ]
 )
 

@@ -25,8 +25,10 @@ generation:
   num_beams: 1
   temperature: 1.0
   top_p: 1.0
-  # 1.1 prevents the greedy tail-loop on long descriptions in LLaVA-1.5.
-  repetition_penalty: 1.1
+  # 1.15 (Block-6 spec): stabilises LLaVA greedy across all lengths.
+  # Applied identically to baseline AND SPARC so the OFF↔ON comparison
+  # isn't biased by decoding setup.
+  repetition_penalty: 1.15
 
 sparc:
   alpha: 1.1

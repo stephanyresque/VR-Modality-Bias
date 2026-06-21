@@ -363,3 +363,86 @@ def test_write_accepts_missing_deep_curve_as_null(tmp_path):
     write_metrics_table([row], path)
     back = read_metrics_table(path)
     assert back[0]["deep_curve"] is None
+
+
+# ================================================================
+# Block 6 — orchestrator extras: condition, free_caption,
+# degenerated, degeneration_reason, sparc_* hparams
+# All nullable so legacy parquets (without these columns) still load.
+# ================================================================
+
+
+def test_write_and_read_preserves_block6_fields(tmp_path):
+    """Populated Block-6 columns must survive the parquet round-trip."""
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-b6",
+        "caption_len": 4,
+        "n_layers": 32,
+        "hidden_dim": 4096,
+        "caption_ref": "ref",
+        "kl": [[0.1, 0.2, 0.3, 0.4]],
+        "cos_dist": [[0.5, 0.5, 0.5, 0.5]],
+        "deep_curve": [0.1, 0.2, 0.3, 0.4],
+        "residual_ratio": 0.42,
+        "share_tail": 0.55,
+        "head_tail_ratio": None,
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_long",
+        "seed_global": 42,
+        "noise_seed": 1,
+        "timestamp_iso": "2026-06-30T00:00:00+00:00",
+        "caption_tokens": None,
+        "condition": "on",
+        "free_caption": "A cozy living room.",
+        "degenerated": False,
+        "degeneration_reason": None,
+        "sparc_alpha": 1.1,
+        "sparc_beta": 0.1,
+        "sparc_tau": 1.5,
+        "sparc_selected_layer": 20,
+        "sparc_se_layer_lo": 0,
+        "sparc_se_layer_hi": 31,
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    r = back[0]
+    assert r["condition"] == "on"
+    assert r["free_caption"] == "A cozy living room."
+    assert r["degenerated"] is False
+    assert r["sparc_alpha"] == pytest.approx(1.1)
+    assert r["sparc_selected_layer"] == 20
+    assert r["sparc_se_layer_hi"] == 31
+
+
+def test_write_accepts_missing_block6_fields_as_null(tmp_path):
+    """Legacy rows (pre-Block-6) round-trip with the new columns null."""
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-legacy",
+        "caption_len": 4,
+        "n_layers": 32,
+        "hidden_dim": 4096,
+        "caption_ref": "ref",
+        "kl": [[0.0]],
+        "cos_dist": [[0.0]],
+        "residual_ratio": 0.3,
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_long",
+        "seed_global": 0,
+        "noise_seed": 0,
+        "timestamp_iso": "2026-06-30T00:00:00+00:00",
+        # All Block-6 columns intentionally absent.
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    r = back[0]
+    assert r["condition"] is None
+    assert r["free_caption"] is None
+    assert r["degenerated"] is None
+    assert r["sparc_alpha"] is None
+    assert r["sparc_se_layer_hi"] is None

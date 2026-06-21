@@ -1,20 +1,3 @@
-"""Tests for :mod:`vr_modality_bias.experiment.forced_decoding`.
-
-The hard part of forced decoding is the **index alignment**: the predictive
-hidden state of caption token ``j`` must land at the *absolute* index
-``caption_start - 1 + j`` so that ``compute_kl_matrix`` reads it without
-any extra arithmetic. The tests here exist to make a one-position shift
-visible: they use a mock model whose hidden state at position ``p``,
-layer ``l``, dimension ``d`` is the *exact* integer ``p * 1000 + (l+1) * 10
-+ d``. Any off-by-one in the loop produces wrong values that the tests
-catch instantly.
-
-The mock is intentionally minimal — it mimics only the
-``prepare_inputs_for_generation`` + ``forward`` contract that the real
-loop uses. We exercise the real ``DynamicCache`` from transformers so the
-cache slicing in ``prepare_inputs_for_generation`` actually works.
-"""
-
 from __future__ import annotations
 
 from types import SimpleNamespace

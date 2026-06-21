@@ -1,25 +1,5 @@
 #!/usr/bin/env python
-"""Phase 3 — CHAIR report, stdout only.
-
-Reads ``results/runs/<run>/captions.jsonl`` (produced by 18_phase3_generate.py)
-and ``instances_val2017.json`` (downloaded by data.coco_annotations), then
-prints three sections in ASCII:
-
-    1. CHAIR BY LENGTH      — CHAIR_s and CHAIR_i per (length, condition),
-                              baseline vs SPARC α, with n_captions
-    2. DEGENERATION RATE    — % of unusable captions (empty / too short /
-                              heavily repetitive) per (length, condition)
-    3. PAIR SAMPLES         — for ~3 images, OFF and ON captions side by side
-                              so the user can eyeball quality for the panel
-
-No conclusions. The reader does the interpretation.
-
-CLI
----
-    python scripts/17_chair_report.py --run-dir results/runs/phase3
-    python scripts/17_chair_report.py --run-dir results/runs/phase3 --auto-download
-    python scripts/17_chair_report.py --run-dir results/runs/phase3 --pair-samples 5
-"""
+"""Phase 3 — CHAIR report, stdout only."""
 
 from __future__ import annotations
 

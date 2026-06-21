@@ -1,41 +1,5 @@
 #!/usr/bin/env python
-"""Phase-1 sanity (item 3): FD repeatability vs SPARC effect, paired per image.
-
-The Phase-1 equivalence check (``scripts/13_equivalence_check.py``) compares
-the **single-pass teacher-forcing** path against the **step-by-step forced
-decoding** path. That gap (~5-10% on 7B-bf16) is the bf16 numerical floor
-between two DIFFERENT collection methods.
-
-But the actual Phase-2 SPARC measurement compares **FD-OFF vs FD-ON on the
-same path, paired per image**. So the TF-vs-FD gap is *not* the noise
-floor of the SPARC measurement — the relevant noise floor is FD-vs-FD
-repeatability on the same condition.
-
-What this script does
----------------------
-For each of ``--limit`` images (default: 3 — this is a quick sanity, not a
-full eval):
-
-    1. Generate ``caption_ref`` once (free generation, deterministic seed).
-    2. FD-OFF run #1  : (A, B) → htr_off_1
-    3. FD-OFF run #2  : (A, B) → htr_off_2   ← same code path, run twice
-    4. FD-ON (SPARC)  : (A, B) → htr_on
-    5. Compute and log:
-       * Δ_repeat = htr_off_2 − htr_off_1   (signed; noise floor of FD path)
-       * Δ_sparc  = htr_on    − htr_off_1   (signed; SPARC effect)
-       * ratio    = |Δ_sparc| / max(|Δ_repeat|, 1e-6)
-         If ratio ≫ 1 (say ≥ 5), the SPARC effect is comfortably above the
-         FD repeatability noise floor and the Phase-2 pairing is sound.
-
-Two FD-OFF passes are cheaper than they look: ``model.eval()`` makes
-each forward deterministic *up to* GPU-atomic non-determinism in matmul
-order, which sets the real noise floor we want to measure.
-
-CLI
----
-    python scripts/14_repeatability_check.py --config configs/baseline.yaml --limit 3
-    python scripts/14_repeatability_check.py --config configs/baseline.yaml --limit 3 --alpha 1.3
-"""
+"""Phase-1 sanity (item 3): FD repeatability vs SPARC effect, paired per image."""
 
 from __future__ import annotations
 

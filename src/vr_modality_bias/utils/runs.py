@@ -1,18 +1,4 @@
-"""Run-directory management.
-
-Two layouts are supported:
-
-* **Flat (legacy)** — ``<output_root>/<run-name>_<ts>/`` — used by orphan
-  scripts that pre-date Block 4.
-* **Organized (post-Block-4)** — ``<output_root>/<area>/<model_key>/
-  <length>/<run-name>_<ts>/`` — used by every active script. Built via
-  :func:`area_root` (which returns the nested base path) composed with
-  :func:`make_run_dir` (which appends the timestamped run dir). Keeping
-  ``make_run_dir`` agnostic of the prefix means the orphan code keeps
-  working without changes.
-
-See ``results/README.md`` for the full directory schema.
-"""
+"""Run-directory management."""
 
 from __future__ import annotations
 

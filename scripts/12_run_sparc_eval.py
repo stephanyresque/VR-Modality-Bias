@@ -1,32 +1,5 @@
 #!/usr/bin/env python
-"""Phase-2 orchestrator: forced-decoding A/B collection, SPARC OFF and SPARC ON.
-
-Designed to be run **after** the §4.4 equivalence check
-(``scripts/13_equivalence_check.py``) passes. Conceptually:
-
-    for each image:
-        caption_ref = model.generate_caption(image)                # deterministic per (seed, image_id)
-        # condition 1: SPARC OFF
-        result_A_off = collect_forced_decoding(image,        prompt, caption_ref)
-        result_B_off = collect_forced_decoding(noise_image,  prompt, caption_ref)
-        # condition 2: SPARC ON (in a context manager — restores originals on exit)
-        with enable_sparc(...) as buffer:
-            result_A_on  = collect_forced_decoding(image,       ..., sparc_buffer=buffer)
-            result_B_on  = collect_forced_decoding(noise_image, ..., sparc_buffer=buffer)
-        # KL + head_tail_ratio per condition; write rows to the parquets.
-
-Outputs (under ``<run_dir>``):
-    metrics_sparc_off.parquet   one row per image, baseline (SPARC OFF)
-    metrics_sparc_on.parquet    one row per image, SPARC ON
-    summary_compare.json        side-by-side aggregate statistics (htr per condition)
-    ref_captions.jsonl          the captions used as forced targets
-    logs/12_run_sparc_eval.log  per-image trace
-
-CLI
----
-    python scripts/12_run_sparc_eval.py --config configs/baseline.yaml --limit 5
-    python scripts/12_run_sparc_eval.py --config configs/baseline.yaml --alpha 1.3 --limit 50
-"""
+"""Phase-2 orchestrator: forced-decoding A/B collection, SPARC OFF and SPARC ON."""
 
 from __future__ import annotations
 
