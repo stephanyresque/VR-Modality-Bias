@@ -1,7 +1,0 @@
-2026-06-02T22:01:00 INFO __main__ :: Run dir: results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_220100
-2026-06-02T22:01:00 INFO __main__ :: Config: configs/run_smolvlm22_short.yaml
-2026-06-02T22:01:00 INFO __main__ :: Prompt key: caption_short
-2026-06-02T22:01:00 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…
-2026-06-02T22:06:48 INFO __main__ :: Loaded. n_layers=24
-2026-06-02T22:06:48 INFO __main__ :: discard_hidden_states_after_metrics = True
-2026-06-02T22:06:48 INFO __main__ :: Processing 1 image(s) (cfg.n_images=50).

@@ -1,2 +1,0 @@
-image_id,caption_len,n_layers,residual_ratio,model_id,prompt_key,caption_ref
-000000000139,7,24,0.20295678640742573,HuggingFaceTB/SmolVLM-Instruct,caption_short,Woman standing in dining room.

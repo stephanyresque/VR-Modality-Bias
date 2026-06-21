@@ -1,2 +1,0 @@
-image_id,caption_len,n_layers,residual_ratio,model_id,prompt_key,caption_ref
-000000000139,27,28,0.46097155261070905,Qwen/Qwen2.5-VL-7B-Instruct,caption_short,"A brightly colored modern living room featuring a yellow and green palette, a TV on a console, a dining area, and a fireplace."

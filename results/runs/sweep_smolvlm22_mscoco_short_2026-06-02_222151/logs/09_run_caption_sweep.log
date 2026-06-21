@@ -1,4 +1,0 @@
-2026-06-02T22:21:51 INFO __main__ :: Run dir: results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_222151
-2026-06-02T22:21:51 INFO __main__ :: Config: configs/run_smolvlm22_short.yaml
-2026-06-02T22:21:51 INFO __main__ :: Prompt key: caption_short
-2026-06-02T22:21:51 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…

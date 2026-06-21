@@ -1,1 +1,0 @@
-/aluno/aluno_stephany/repos/VR-Modality-Bias/results/runs/sweep_smolvlm22_mscoco_short_2026-06-02_230715

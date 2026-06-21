@@ -78,10 +78,23 @@ def _register_builtin() -> None:
 
         return QwenVLWrapper(model_id="Qwen/Qwen2.5-VL-3B-Instruct")
 
+    def _llava_1_5_7b() -> ModelWrapper:
+        # New target family for the study — LLaVA-1.5-7B is the canonical
+        # baseline of the SPARC paper. Wrapper at models/llava.py; the
+        # other families (smolvlm-*, qwen2.5-vl-*) stay registered until
+        # the migration block-2 retires them.
+        try:
+            from vr_modality_bias.models.llava import LlavaWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.llava import LlavaWrapper
+
+        return LlavaWrapper(model_id="llava-hf/llava-1.5-7b-hf")
+
     register_model("smolvlm-256m", _smolvlm_256m)
     register_model("smolvlm-2.2b", _smolvlm_2_2b)
     register_model("qwen2.5-vl-3b", _qwen2_5_vl_3b)
     register_model("qwen2.5-vl-7b", _qwen2_5_vl_7b)
+    register_model("llava-1.5-7b", _llava_1_5_7b)
 
 
 _register_builtin()
