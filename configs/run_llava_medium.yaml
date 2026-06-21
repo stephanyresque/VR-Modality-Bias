@@ -1,0 +1,55 @@
+run:
+  name: "sweep_llava_mscoco_medium"
+  seed_global: 42
+  output_root: "results"
+  area: "diagnostico"
+
+dataset:
+  name: "mscoco_baseline"
+  manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
+  images_dir: "data/processed/mscoco_baseline/images"
+  n_images: 50
+
+model:
+  key: "llava-1.5-7b"
+  model_id: "llava-hf/llava-1.5-7b-hf"
+  dtype: "float16"
+
+task:
+  name: "caption_medium"
+  prompt_key: "caption_medium"
+
+generation:
+  max_new_tokens: 200
+  do_sample: false
+  num_beams: 1
+  temperature: 1.0
+  top_p: 1.0
+  # 1.1 (vs 1.0 in short) discourages degenerate loops in longer greedy
+  # generation on LLaVA-1.5 (same fix as in the old qwen/smol configs).
+  repetition_penalty: 1.1
+
+sparc:
+  alpha: 1.1
+  beta: 0.1
+  tau: 1.5
+  selected_layer: 20
+  se_layers: [0, 31]
+
+teacher_forcing:
+  output_hidden_states: true
+  use_cache: false
+
+metrics:
+  logits_top_k: 50
+  deep_block_rule: "last_third"
+
+residual:
+  t0: 5
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4
+  discard_hidden_states_after_metrics: true

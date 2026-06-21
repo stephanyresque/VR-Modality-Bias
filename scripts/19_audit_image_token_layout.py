@@ -88,6 +88,22 @@ MODEL_SPECS = {
             }
         ],
     },
+    "llava": {
+        # Post-Block-2 the study is LLaVA-1.5-only. Layout expected:
+        # contiguous block of <image> tokens at a fixed index (no
+        # row/col separators like Idefics3) — the audit should report
+        # 100% match, identical to Qwen2.5-VL's verdict.
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "build_messages": lambda prompt, image: [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ],
+    },
 }
 
 

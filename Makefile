@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report block5-validate clean
 
 help:
 	@echo "Targets:"
@@ -21,6 +21,7 @@ help:
 	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
 	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
 	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
+	@echo "  block5-validate Block-5 LLaVA end-to-end validation (3 imgs, audit + share_tail + captions)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
 install:
@@ -104,6 +105,13 @@ phase3:
 # CHAIR report — auto-downloads COCO val2017 annotations if missing.
 chair-report:
 	$(PYTHON) scripts/17_chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
+
+# Block-5 functional validation — LLaVA-1.5-7B end-to-end on 3 long images.
+# Audit + baseline (FD-OFF) + SPARC (FD-ON), paired per image, writes to
+# results/{diagnostico,avaliacao}/llava-1.5-7b/long/.... Prints captions
+# + share_tail + audit verdict. NOT the full 50-image run.
+block5-validate:
+	$(PYTHON) scripts/22_block5_validate.py --length long --limit 3
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

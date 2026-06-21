@@ -202,11 +202,17 @@ class LlavaWrapper(ModelWrapper):
             text=prompt_text, images=[image.convert("RGB")], return_tensors="pt",
         ).to(self._device)
 
+        # Greedy by default — matches the official SPARC COCO setup and
+        # is required for SPARC stability on long captions (amplification
+        # + sampling = bola-de-neve de repetição). Callers may override
+        # any of these via ``generation_kwargs`` (e.g. ``do_sample=True``
+        # + ``temperature``/``top_p`` for diagnostic non-deterministic
+        # runs). The pre-Block-5 default was sampling, which warned about
+        # unused temperature/top_p whenever the caller passed do_sample=False.
         gen_kwargs: dict[str, Any] = {
             "max_new_tokens": int(max_new_tokens),
-            "do_sample": True,
-            "temperature": 0.8,
-            "top_p": 0.9,
+            "do_sample": False,
+            "num_beams": 1,
             "repetition_penalty": 1.0,
         }
         if generation_kwargs:

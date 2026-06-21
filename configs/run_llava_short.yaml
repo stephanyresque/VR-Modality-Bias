@@ -1,0 +1,63 @@
+run:
+  name: "sweep_llava_mscoco_short"
+  seed_global: 42
+  # Post-Block-4 layout: <output_root>/<area>/<model.key>/<length>/<run-name>_<ts>/
+  # See results/README.md.
+  output_root: "results"
+  area: "diagnostico"
+
+dataset:
+  name: "mscoco_baseline"
+  manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
+  images_dir: "data/processed/mscoco_baseline/images"
+  n_images: 50
+
+model:
+  key: "llava-1.5-7b"
+  model_id: "llava-hf/llava-1.5-7b-hf"
+  # LLaVA-1.5 family is happy in float16 (no logits-overflow issue that
+  # Qwen-2.5-VL had — that needed bfloat16).
+  dtype: "float16"
+
+task:
+  name: "caption_short"
+  prompt_key: "caption_short"
+
+generation:
+  max_new_tokens: 64
+  # Greedy is the SPARC paper's canonical decoding (do_sample=False,
+  # num_beams=1). Sampling destabilises amplification on long captions.
+  do_sample: false
+  num_beams: 1
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.0
+
+# SPARC official COCO config (LLaVA paper). selected_layer=20 is the
+# paper's value for a 32-layer LLaVA-1.5; do NOT scale this by the model
+# (the layer index is absolute, picked by the authors). Block-2 dispatch
+# in utils/attn.py sends LLaVA through ``forward_llama``.
+sparc:
+  alpha: 1.1
+  beta: 0.1
+  tau: 1.5
+  selected_layer: 20
+  se_layers: [0, 31]
+
+teacher_forcing:
+  output_hidden_states: true
+  use_cache: false
+
+metrics:
+  logits_top_k: 50
+  deep_block_rule: "last_third"
+
+residual:
+  t0: 5
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4
+  discard_hidden_states_after_metrics: true
