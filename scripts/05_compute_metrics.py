@@ -10,12 +10,12 @@ from vr_modality_bias.io.results import write_metrics_table
 from vr_modality_bias.io.storage import load_hidden_states
 from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
 from vr_modality_bias.metrics.kl import compute_kl_matrix
-from vr_modality_bias.metrics.residual import residual_drift_ratio, share_tail
+from vr_modality_bias.metrics.residual import deep_block, residual_drift_ratio, share_tail
 from vr_modality_bias.models.registry import build_model
 from vr_modality_bias.utils.config import load_config
 from vr_modality_bias.utils.device import resolve_dtype, select_device
 from vr_modality_bias.utils.logging import configure_logging, get_logger
-from vr_modality_bias.utils.runs import current_run_dir
+from vr_modality_bias.utils.runs import area_root, current_run_dir, length_from_prompt_key
 
 
 def _discover_image_ids(hidden_states_dir: Path) -> list[str]:
@@ -41,7 +41,13 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
+    organized_root = area_root(
+        cfg["run"]["output_root"],
+        area=str(cfg["run"].get("area", "diagnostico")),
+        model_key=str(cfg["model"]["key"]),
+        length=length_from_prompt_key(str(cfg["task"]["prompt_key"])),
+    )
+    run_dir = current_run_dir(organized_root, cfg["run"]["name"])
     log_file = run_dir / "logs" / "05_compute_metrics.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
@@ -117,6 +123,10 @@ def main() -> int:
         )
         rr = residual_drift_ratio(kl, t0=t0)
         st = share_tail(kl)  # post-Block-3 headline metric (bounded, SPARC-proof)
+        # Per-token deep-block-mean KL — Fig 2 data, persisted explicitly
+        # so the figure script can plot without reimporting deep_block.
+        l0, l1 = deep_block(int(kl.shape[0]))
+        deep_curve_arr = kl[l0:l1, :].astype("float32").mean(axis=0)
 
         meta = result_A.metadata
         rows.append({
@@ -127,6 +137,7 @@ def main() -> int:
             "caption_ref": str(meta.get("caption_ref", "")),
             "kl": kl,
             "cos_dist": cos,
+            "deep_curve": deep_curve_arr,
             "residual_ratio": float(rr),
             "share_tail": float(st),
             "model_id": str(meta.get("model_id", model.model_id)),

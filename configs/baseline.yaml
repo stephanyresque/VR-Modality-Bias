@@ -1,7 +1,10 @@
 run:
   seed_global: 10
   name: "baseline_llava_sparc"
-  output_root: "results/runs"
+  # Post-Block-4 layout: <output_root>/<area>/<model.key>/<length>/<run-name>_<ts>/
+  # See results/README.md for the schema.
+  output_root: "results"
+  area: "diagnostico"  # "diagnostico" (base model) or "avaliacao" (SPARC vs baseline)
 
 dataset:
   name: "mscoco_baseline"

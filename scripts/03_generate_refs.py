@@ -14,7 +14,7 @@ from vr_modality_bias.models.registry import build_model
 from vr_modality_bias.utils.config import load_config, snapshot_config
 from vr_modality_bias.utils.device import resolve_dtype, select_device
 from vr_modality_bias.utils.logging import configure_logging, get_logger
-from vr_modality_bias.utils.runs import make_run_dir
+from vr_modality_bias.utils.runs import area_root, length_from_prompt_key, make_run_dir
 from vr_modality_bias.utils.seeds import set_global_seeds
 
 
@@ -27,7 +27,15 @@ def main() -> int:
 
     cfg = load_config(args.config)
 
-    run_dir = make_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
+    # Organized layout: results/<area>/<model>/<length>/<run-name>_<ts>/
+    # See results/README.md.
+    organized_root = area_root(
+        cfg["run"]["output_root"],
+        area=str(cfg["run"].get("area", "diagnostico")),
+        model_key=str(cfg["model"]["key"]),
+        length=length_from_prompt_key(str(cfg["task"]["prompt_key"])),
+    )
+    run_dir = make_run_dir(organized_root, cfg["run"]["name"])
     log_file = run_dir / "logs" / "03_generate_refs.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)

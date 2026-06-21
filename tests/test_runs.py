@@ -56,3 +56,69 @@ def test_pointer_is_isolated_per_run_name(tmp_path: Path):
     b = make_run_dir(tmp_path, "runB", timestamp=datetime(2026, 5, 27, 11))
     assert current_run_dir(tmp_path, "runA") == a.resolve()
     assert current_run_dir(tmp_path, "runB") == b.resolve()
+
+
+# ================================================================
+# Block-4 organized layout: <output_root>/<area>/<model>/<length>/...
+# ================================================================
+
+
+def test_length_from_prompt_key_recognises_three_lengths():
+    from vr_modality_bias.utils.runs import length_from_prompt_key
+
+    assert length_from_prompt_key("caption_short") == "short"
+    assert length_from_prompt_key("caption_medium") == "medium"
+    assert length_from_prompt_key("caption_long") == "long"
+
+
+def test_length_from_prompt_key_rejects_unknown():
+    from vr_modality_bias.utils.runs import length_from_prompt_key
+    import pytest
+
+    with pytest.raises(ValueError):
+        length_from_prompt_key("caption_xxx")
+    with pytest.raises(ValueError):
+        length_from_prompt_key("describe")
+
+
+def test_area_root_builds_nested_path(tmp_path):
+    from vr_modality_bias.utils.runs import area_root
+
+    root = area_root(
+        tmp_path / "results",
+        area="diagnostico",
+        model_key="llava-1.5-7b",
+        length="long",
+    )
+    assert root == tmp_path / "results" / "diagnostico" / "llava-1.5-7b" / "long"
+
+
+def test_area_root_rejects_bad_area_or_length(tmp_path):
+    from vr_modality_bias.utils.runs import area_root
+    import pytest
+
+    with pytest.raises(ValueError):
+        area_root(tmp_path, area="wrong", model_key="m", length="short")
+    with pytest.raises(ValueError):
+        area_root(tmp_path, area="diagnostico", model_key="m", length="xl")
+
+
+def test_make_run_dir_under_area_root_round_trip(tmp_path):
+    """The organized layout composes cleanly: area_root + make_run_dir + current_run_dir."""
+    from vr_modality_bias.utils.runs import area_root, current_run_dir, make_run_dir
+
+    root = area_root(
+        tmp_path / "results",
+        area="diagnostico",
+        model_key="llava-1.5-7b",
+        length="short",
+    )
+    run_dir = make_run_dir(root, "baseline_llava")
+    # Run dir lives at <area_root>/<run-name>_<ts>/
+    assert run_dir.parent == root
+    assert run_dir.name.startswith("baseline_llava_")
+
+    # The pointer file is co-located with the run dir, NOT at output_root.
+    # current_run_dir takes the same area_root and finds it via the pointer.
+    resolved = current_run_dir(root, "baseline_llava")
+    assert resolved.resolve() == run_dir.resolve()

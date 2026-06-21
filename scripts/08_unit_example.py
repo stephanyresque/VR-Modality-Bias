@@ -26,6 +26,7 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import shutil
 from pathlib import Path
@@ -41,7 +42,7 @@ from vr_modality_bias.experiment.plots import (
 from vr_modality_bias.io.results import read_metrics_table
 from vr_modality_bias.utils.config import load_config
 from vr_modality_bias.utils.logging import configure_logging, get_logger
-from vr_modality_bias.utils.runs import current_run_dir
+from vr_modality_bias.utils.runs import area_root, current_run_dir, length_from_prompt_key
 
 
 def _kl_matrix_from_row(row: dict) -> np.ndarray:
@@ -153,6 +154,81 @@ def emit_for_row(
     return target_dir
 
 
+def _kl_shape_from_row(row: dict) -> list[int]:
+    kl = np.asarray(row.get("kl") or [], dtype=np.float32)
+    return list(kl.shape) if kl.ndim == 2 else []
+
+
+def _cos_shape_from_row(row: dict) -> list[int]:
+    cos = np.asarray(row.get("cos_dist") or [], dtype=np.float32)
+    return list(cos.shape) if cos.ndim == 2 else []
+
+
+def emit_unit_case_json(
+    row: dict,
+    *,
+    out_dir: Path,
+    images_dir: Path,
+    metrics_parquet_path: Path,
+    prompt: str,
+    overwrite: bool = False,
+) -> Path:
+    """Write the Fig-3 data scaffold for one image: ``unit_cases/<image_id>.json``.
+
+    This is the structured-data twin of the per-image plot folder. It
+    references back into ``metrics.parquet`` for the heavy arrays
+    (``kl``, ``cos_dist``) instead of duplicating them — figure code
+    opens the parquet, picks the row, and combines with this JSON.
+
+    Future-CHAIR slots (``hallucinated_objects``,
+    ``hallucinated_token_positions``) are left empty; they'll be
+    populated when CHAIR is run on the diagnostic captions.
+    """
+    image_id = str(row["image_id"])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / f"{image_id}.json"
+    if target.is_file() and not overwrite:
+        return target
+
+    image_path = images_dir / f"{image_id}.jpg"
+    payload = {
+        "image_id": image_id,
+        "image_path": str(image_path),
+        "prompt": prompt,
+        "caption_ref": row.get("caption_ref"),
+        "caption_tokens": row.get("caption_tokens"),
+        "caption_start": row.get("caption_start"),
+        "caption_len": row.get("caption_len"),
+        "share_tail": row.get("share_tail"),
+        "residual_ratio": row.get("residual_ratio"),
+        "head_tail_ratio": row.get("head_tail_ratio"),
+        "metrics_parquet": str(metrics_parquet_path),
+        "kl_shape": _kl_shape_from_row(row),
+        "cos_dist_shape": _cos_shape_from_row(row),
+        # Fig-3 alignment between hallucinated objects and token positions.
+        # Populated by a future CHAIR-on-diagnostic pass; kept here as
+        # empty lists so the JSON shape is stable across runs.
+        "hallucinated_objects": [],
+        "hallucinated_token_positions": [],
+        "notes": (
+            "hallucinated_* are populated by a future CHAIR-on-diagnostic "
+            "pass; ``kl`` / ``cos_dist`` live in ``metrics_parquet`` to "
+            "avoid duplicating large arrays."
+        ),
+    }
+    # JSON-safe: replace numpy scalars / NaN with native types / None.
+    def _coerce(v):
+        if isinstance(v, np.generic):
+            v = v.item()
+        if isinstance(v, float) and not np.isfinite(v):
+            return None
+        return v
+    payload = {k: _coerce(v) for k, v in payload.items()}
+    target.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                      encoding="utf-8")
+    return target
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -166,7 +242,13 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
+    organized_root = area_root(
+        cfg["run"]["output_root"],
+        area=str(cfg["run"].get("area", "diagnostico")),
+        model_key=str(cfg["model"]["key"]),
+        length=length_from_prompt_key(str(cfg["task"]["prompt_key"])),
+    )
+    run_dir = current_run_dir(organized_root, cfg["run"]["name"])
     log_file = run_dir / "logs" / "08_unit_example.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
@@ -188,6 +270,9 @@ def main() -> int:
 
     images_dir = Path(cfg["dataset"]["images_dir"])
     out_dir = run_dir / "plots" / "unit_examples"
+    # Fig-3 data goes next to (not inside) the plot folder so figure
+    # scripts can find all unit cases at one stable path.
+    unit_cases_dir = run_dir / "unit_cases"
 
     for row in rows:
         target = emit_for_row(
@@ -198,15 +283,25 @@ def main() -> int:
             overwrite=args.overwrite,
             log=log,
         )
+        json_target = emit_unit_case_json(
+            row,
+            out_dir=unit_cases_dir,
+            images_dir=images_dir,
+            metrics_parquet_path=metrics_path,
+            prompt=prompt,
+            overwrite=args.overwrite,
+        )
         rr = row.get("residual_ratio")
         log.info(
-            "[%s] folder ready (rr=%s): %s",
+            "[%s] folder ready (rr=%s): plots=%s  data=%s",
             row.get("image_id"),
             f"{rr:.4f}" if isinstance(rr, float) and np.isfinite(rr) else rr,
             target,
+            json_target,
         )
 
-    log.info("Done. %d unit example folder(s) under %s.", len(rows), out_dir)
+    log.info("Done. %d unit example folder(s) under %s; data under %s.",
+             len(rows), out_dir, unit_cases_dir)
     return 0
 
 

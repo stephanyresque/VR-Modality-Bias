@@ -32,6 +32,12 @@ METRICS_SCHEMA = pa.schema(
         pa.field("caption_ref", pa.string()),
         pa.field("kl", pa.list_(pa.list_(pa.float32()))),
         pa.field("cos_dist", pa.list_(pa.list_(pa.float32()))),
+        # Per-token deep-block-mean KL, length == caption_len. Nullable so
+        # parquets predating Block 4 stay readable. Stored explicitly (not
+        # recomputed from ``kl[deep_block, :].mean(0)`` at read time)
+        # because Fig 2 (attenuation curves per length) plots it directly
+        # and we don't want every figure script to re-import deep_block.
+        pa.field("deep_curve", pa.list_(pa.float32()), nullable=True),
         pa.field("residual_ratio", pa.float32()),
         # Length-invariant attenuation indicator (mean(tail) / mean(head) on
         # the deep-block KL curve). Complements residual_ratio, which
@@ -78,6 +84,12 @@ def write_metrics_table(rows: Iterable[dict[str, Any]], path: Path) -> int:
             value = row.get(field.name)
             if field.name in ("kl", "cos_dist"):
                 value = _matrix_to_nested_list(value) if value is not None else []
+            elif field.name == "deep_curve":
+                # Accept numpy arrays / lists / torch tensors. Coerce to
+                # plain ``list[float]`` so pyarrow stores it as the
+                # ``list<float32>`` schema field (kept nullable).
+                if value is not None:
+                    value = [float(v) for v in np.asarray(value, dtype=np.float32).tolist()]
             elif field.name == "caption_tokens":
 
                 if value is None:

@@ -297,3 +297,69 @@ def test_compute_summary_stats_reports_share_tail_section():
     assert math.isclose(st["median"], 0.5, rel_tol=1e-9)
     assert st["min"] == pytest.approx(0.1)
     assert st["max"] == pytest.approx(0.9)
+
+
+# ================================================================
+# Block 4 — deep_curve persistence in METRICS_SCHEMA
+# Fig-2 (deep-block attenuation curves per length) reads deep_curve
+# straight from the parquet without recomputing from kl[deep_block].
+# ================================================================
+
+
+def test_write_and_read_preserves_deep_curve(tmp_path):
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-dc",
+        "caption_len": 4,
+        "n_layers": 12,
+        "hidden_dim": 768,
+        "caption_ref": "ref",
+        "kl": [[0.1, 0.2, 0.3, 0.4]],
+        "cos_dist": [[0.5, 0.5, 0.5, 0.5]],
+        "deep_curve": np.array([0.10, 0.20, 0.30, 0.40], dtype=np.float32),
+        "residual_ratio": 0.5,
+        "share_tail": 0.5,
+        "head_tail_ratio": 1.0,
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_short",
+        "seed_global": 0,
+        "noise_seed": 1,
+        "timestamp_iso": "2026-01-01T00:00:00+00:00",
+        "caption_tokens": None,
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    got = back[0]["deep_curve"]
+    assert got is not None
+    np.testing.assert_allclose(got, [0.10, 0.20, 0.30, 0.40], rtol=1e-5)
+
+
+def test_write_accepts_missing_deep_curve_as_null(tmp_path):
+    """Rows produced by code paths predating Block 4 must round-trip with None."""
+    from vr_modality_bias.io.results import read_metrics_table, write_metrics_table
+
+    row = {
+        "image_id": "img-dc-2",
+        "caption_len": 4,
+        "n_layers": 12,
+        "hidden_dim": 768,
+        "caption_ref": "ref",
+        "kl": [[0.0]],
+        "cos_dist": [[0.0]],
+        # deep_curve intentionally absent
+        "residual_ratio": 0.5,
+        "share_tail": 0.5,
+        "head_tail_ratio": 1.0,
+        "model_id": "llava-hf/llava-1.5-7b-hf",
+        "prompt_key": "caption_short",
+        "seed_global": 0,
+        "noise_seed": 1,
+        "timestamp_iso": "2026-01-01T00:00:00+00:00",
+        "caption_tokens": None,
+    }
+    path = tmp_path / "out.parquet"
+    write_metrics_table([row], path)
+    back = read_metrics_table(path)
+    assert back[0]["deep_curve"] is None

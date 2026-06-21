@@ -24,6 +24,7 @@ from vr_modality_bias.io.storage import hidden_states_filename, load_hidden_stat
 from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
 from vr_modality_bias.metrics.kl import compute_kl_matrix
 from vr_modality_bias.metrics.residual import (
+    deep_block,
     head_tail_ratio,
     residual_drift_ratio,
     share_tail,
@@ -212,6 +213,9 @@ def main() -> int:
         rr = residual_drift_ratio(kl, t0=t0)
         htr = head_tail_ratio(kl, t0=t0)  # deprecated; kept for back-compat parquets
         st = share_tail(kl)               # post-Block-3 headline metric
+        # Fig-2 per-token deep-block-mean KL — persisted (Block 4).
+        l0, l1 = deep_block(int(kl.shape[0]))
+        deep_curve_arr = kl[l0:l1, :].astype("float32").mean(axis=0)
 
         caption_tokens = decode_caption_tokens(
             model,
@@ -229,6 +233,7 @@ def main() -> int:
                 "caption_ref": str(caption_ref),
                 "kl": kl,
                 "cos_dist": cos,
+                "deep_curve": deep_curve_arr,
                 "residual_ratio": float(rr),
                 "share_tail": float(st),
                 "head_tail_ratio": float(htr),

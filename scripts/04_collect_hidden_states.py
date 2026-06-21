@@ -27,7 +27,7 @@ from vr_modality_bias.utils.profiling import (
     reset_cuda_peak,
     summarize_seconds,
 )
-from vr_modality_bias.utils.runs import current_run_dir
+from vr_modality_bias.utils.runs import area_root, current_run_dir, length_from_prompt_key
 from vr_modality_bias.utils.seeds import derive_image_seed, set_global_seeds
 
 
@@ -39,7 +39,13 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
+    organized_root = area_root(
+        cfg["run"]["output_root"],
+        area=str(cfg["run"].get("area", "diagnostico")),
+        model_key=str(cfg["model"]["key"]),
+        length=length_from_prompt_key(str(cfg["task"]["prompt_key"])),
+    )
+    run_dir = current_run_dir(organized_root, cfg["run"]["name"])
     log_file = run_dir / "logs" / "04_collect_hidden_states.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)

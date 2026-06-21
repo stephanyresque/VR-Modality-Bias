@@ -1,13 +1,84 @@
-"""Run-directory management"""
+"""Run-directory management.
+
+Two layouts are supported:
+
+* **Flat (legacy)** — ``<output_root>/<run-name>_<ts>/`` — used by orphan
+  scripts that pre-date Block 4.
+* **Organized (post-Block-4)** — ``<output_root>/<area>/<model_key>/
+  <length>/<run-name>_<ts>/`` — used by every active script. Built via
+  :func:`area_root` (which returns the nested base path) composed with
+  :func:`make_run_dir` (which appends the timestamped run dir). Keeping
+  ``make_run_dir`` agnostic of the prefix means the orphan code keeps
+  working without changes.
+
+See ``results/README.md`` for the full directory schema.
+"""
 
 from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
 
-__all__ = ["make_run_dir", "current_run_dir", "pointer_path"]
+__all__ = [
+    "make_run_dir",
+    "current_run_dir",
+    "pointer_path",
+    "area_root",
+    "length_from_prompt_key",
+]
 
 _TIMESTAMP_FMT = "%Y-%m-%d_%H%M%S"
+
+
+_LENGTH_NAMES = ("short", "medium", "long")
+
+
+def length_from_prompt_key(prompt_key: str) -> str:
+    """Return ``"short" | "medium" | "long"`` for a caption prompt_key.
+
+    Active prompt keys are ``caption_short``, ``caption_medium`` and
+    ``caption_long``. The length name becomes part of the organized
+    output path: ``results/<area>/<model>/<length>/<run>/``.
+    """
+    for length in _LENGTH_NAMES:
+        if prompt_key.endswith(f"_{length}"):
+            return length
+    raise ValueError(
+        f"prompt_key={prompt_key!r} does not end in one of {_LENGTH_NAMES}; "
+        "cannot derive a length name for the organized results path."
+    )
+
+
+def area_root(
+    output_root: Path | str,
+    *,
+    area: str,
+    model_key: str,
+    length: str,
+) -> Path:
+    """Return ``<output_root>/<area>/<model_key>/<length>/``.
+
+    The path returned is then handed to :func:`make_run_dir` /
+    :func:`current_run_dir` as their ``output_root`` — those helpers
+    don't know about the nesting, they just append the timestamped run
+    dir + pointer file at whatever prefix they get.
+
+    Args:
+        area: ``"diagnostico"`` or ``"avaliacao"`` (the two top-level
+            buckets — see ``results/README.md``).
+        model_key: the registry key (e.g. ``"llava-1.5-7b"``).
+        length: ``"short" | "medium" | "long"`` — usually obtained from
+            :func:`length_from_prompt_key`.
+    """
+    if area not in ("diagnostico", "avaliacao"):
+        raise ValueError(
+            f"area must be 'diagnostico' or 'avaliacao', got {area!r}."
+        )
+    if length not in _LENGTH_NAMES:
+        raise ValueError(
+            f"length must be one of {_LENGTH_NAMES}, got {length!r}."
+        )
+    return Path(output_root) / area / model_key / length
 
 
 def pointer_path(output_root: Path | str, run_name: str) -> Path:
