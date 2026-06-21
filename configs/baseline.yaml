@@ -27,7 +27,7 @@ task:
 generation:
   max_new_tokens: 64
   do_sample: true
-  temperature: 0.8
+  temperature: 0.3
   top_p: 0.9
   repetition_penalty: 1.0
 
