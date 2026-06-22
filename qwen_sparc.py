@@ -1,6 +1,6 @@
 # Uso (rodar a partir da raiz do repositorio, na branch qwen-sparc):
-#   python debug_qwen_sparc.py
-#   python debug_qwen_sparc.py --image-id 000000000139 --max-new-tokens 512
+#   python qwen_sparc.py
+#   python qwen_sparc.py --image-id 000000000139 --max-new-tokens 512
 
 from __future__ import annotations
 
