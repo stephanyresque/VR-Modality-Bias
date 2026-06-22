@@ -429,6 +429,7 @@ def add_custom_attention_layers(
                          f"Known: {sorted(_FORWARD_BY_FAMILY)}.")
 
     forward_fn = _FORWARD_BY_FAMILY[family]
+
     decoder = decoder_of(model)
     for i, layer in enumerate(decoder.layers):
         selected = True if selected_layer == i else False

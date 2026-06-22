@@ -7,12 +7,14 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing_extensions import Any
 
 import torch
 import transformers
 from PIL import Image
 
 try:
+    from vr_modality_bias.utils.attn import add_custom_attention_layers, SelectedIndexBuffer
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.experiment.sparc import (
         SparcHyperparams,
@@ -21,6 +23,8 @@ try:
     )
 except ModuleNotFoundError:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
+    
+    from src.vr_modality_bias.utils.attn import add_custom_attention_layers, SelectedIndexBuffer
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.experiment.sparc import (
         SparcHyperparams,
@@ -30,14 +34,14 @@ except ModuleNotFoundError:
 
 
 MODEL_KEY = "qwen2.5-vl-7b"
-DEFAULT_PROMPT = "Describe the image in a long, detailed paragraph."
+DEFAULT_PROMPT = "Describe all the details in this image, generate a long caption."
 
 SPARC_OFFICIAL_COCO = dict(
-    alpha=1.1,
+    alpha=1.05,
     beta=0.1,
-    tau=1.5,
-    selected_layer=20,
-    se_layers=(0, 31),
+    tau=3.0,
+    selected_layer=18,
+    se_layers=(0, 28),
 )
 
 
@@ -99,13 +103,13 @@ def audit_indexing(wrapper, image: Image.Image, prompt: str) -> None:
 
 
 def generate(wrapper, image: Image.Image, prompt: str, max_new_tokens: int,
-             sparc: bool) -> str:
-    gen_kwargs = dict(do_sample=False, num_beams=1, repetition_penalty=1.0)
+             sparc: bool, gen_kwargs: dict[str, Any]) -> str:
     if not sparc:
         return wrapper.generate_caption(
             image, prompt, max_new_tokens=max_new_tokens, seed=42,
             generation_kwargs=gen_kwargs,
         )
+
     hparams = SparcHyperparams(**SPARC_OFFICIAL_COCO)
     with enable_sparc(wrapper, hparams=hparams, probe_image=image, prompt=prompt):
         return wrapper.generate_caption(
@@ -138,7 +142,12 @@ def main() -> None:
     print(f"imagem: {image_path}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     wrapper = build_model(MODEL_KEY)
+
+    ## important
+    wrapper._dtype = torch.bfloat16
+
     print(f"carregando {MODEL_KEY} em {device}...")
     wrapper.load(device)
     print(f"carregado. n_layers={wrapper.n_layers}")
@@ -146,18 +155,71 @@ def main() -> None:
 
     audit_indexing(wrapper, image, args.prompt)
 
+    gen_kwargs = dict(
+        do_sample=False, 
+        repetition_penalty=1.2, 
+        no_repeat_ngram_size=3,
+    )
+
     print("=" * 78)
     print("LEGENDA SEM SPARC (baseline)")
+    print(f"PROMPT: {args.prompt}")
     print("=" * 78)
-    base = generate(wrapper, image, args.prompt, args.max_new_tokens, sparc=False)
+    base = wrapper.generate_caption(
+        image=image,
+        prompt=args.prompt,
+        max_new_tokens=512,
+        seed=10,
+        generation_kwargs=gen_kwargs,
+    )
+
     print(base)
     print()
+
+    gen_kwargs = dict(
+        do_sample=False, 
+        repetition_penalty=1.2,
+        no_repeat_ngram_size=3,
+    )
 
     print("=" * 78)
     print("LEGENDA COM SPARC (config oficial COCO)")
     print("=" * 78)
-    on = generate(wrapper, image, args.prompt, args.max_new_tokens, sparc=True)
-    print(on)
+    
+    gen_kwargs = dict(
+        do_sample=False, 
+        repetition_penalty=1.2, 
+        no_repeat_ngram_size=3,
+    ) 
+
+    hparams = SparcHyperparams(**SPARC_OFFICIAL_COCO)
+    
+    indices_buffer = SelectedIndexBuffer()
+    indices_buffer.reset()
+
+    image_token_index, input_len, _ = probe_image_token_index(wrapper, image, args.prompt)
+
+    add_custom_attention_layers(
+        wrapper._model,
+        indices_buffer=indices_buffer,
+        image_token_index=image_token_index,
+        alpha=1.05,
+        beta=0.1, 
+        tau=3.0,
+        selected_layer=18, 
+        se_layers=(0,29)
+    )
+
+    indices_buffer.update_input_len(input_len)
+    caption_sparc = wrapper.generate_caption(
+        image=image,
+        prompt=args.prompt,
+        max_new_tokens=512,
+        seed=10,
+        generation_kwargs=gen_kwargs,
+    )
+
+    print(caption_sparc)
     print()
 
     print("=" * 78)

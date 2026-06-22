@@ -15,6 +15,8 @@ from loguru import logger
 
 try:
 
+    from vr_modality_bias.utils.attn import add_custom_attention_layers, SelectedIndexBuffer
+
     from vr_modality_bias.data.prompts import get_prompt
     from vr_modality_bias.io.results import write_metrics_table
     from vr_modality_bias.io.storage import load_hidden_states
@@ -132,57 +134,72 @@ def main() -> int:
     prompt = get_prompt(prompt_key)
 
     seed_global = int(cfg["run"]["seed_global"])
-    max_new_tokens = int(cfg["generation"]["max_new_tokens"])
+    max_new_tokens = 1024 # int(cfg["generation"]["max_new_tokens"])
     gen_kwargs = {
-        "do_sample": bool(cfg["generation"]["do_sample"]),
+        "do_sample": True,
         "temperature": float(cfg["generation"]["temperature"]),
         "top_p": float(cfg["generation"]["top_p"]),
         "repetition_penalty": float(cfg["generation"]["repetition_penalty"]),
     }
 
-    ## load sparc attention
-    indices_buffer = SelectedIndexBuffer()
-
     image_token_id = int(model._model.config.image_token_id)
-    with Image.open(images_files[0]) as raw:
-        probe_image = raw.convert("RGB")
-    
-    image_token_index, _, _ = _probe_image_tokens(model, probe_image, prompt, image_token_id)
+
+    ## -------------- run on the first image, with and without SPARC
+    image_path = images_files[0]
+    image_id = Path(image_path).stem
+    with Image.open(image_path) as raw:
+        image = raw.convert("RGB")
+
+    seed = derive_image_seed(seed_global, image_id)
+
+    # 1) baseline: clean model, no SPARC interference (run before patching)
+    caption_base = model.generate_caption(
+        image=image,
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+        seed=seed,
+        generation_kwargs=gen_kwargs,
+    )
+    logger.info(f"[{image_id}] WITHOUT sparc: {caption_base} {len(caption_base.split())}")
+
+    gen_kwargs = {
+        "do_sample": False,
+        "repetition_penalty": 1.2,
+        "no_repeat_ngram_size": 3,
+    }
+
+    # 2) with SPARC: monkey-patch the attention layers, then generate
+    indices_buffer = SelectedIndexBuffer()
+    indices_buffer.reset()
+
+    image_token_index, input_len, _ = _probe_image_tokens(
+        model, image, prompt, image_token_id
+    )
 
     add_custom_attention_layers(
         model._model,
         indices_buffer=indices_buffer,
         image_token_index=image_token_index,
+        alpha=1.05,
+        beta=0.1, 
+        tau=3.0,
+        selected_layer=18, 
+        se_layers=(0,29)
     )
+    logger.info(f"sparc loaded. image_token_index={image_token_index}")
 
-    logger.info(
-        f"sparc loaded. n_layers={model.n_layers}, image_token_index={image_token_index}"
+    indices_buffer.update_input_len(input_len)
+
+    caption_sparc = model.generate_caption(
+        image=image,
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+        seed=seed,
+        generation_kwargs=gen_kwargs,
     )
+    logger.info(f"[{image_id}] WITH sparc: {caption_sparc} {len(caption_sparc.split())}")
 
-    for i, image_path in enumerate(images_files):
-        image_id = Path(image_path).stem
-
-        with Image.open(image_path) as raw:
-            image = raw.convert("RGB")
-
-        _, input_len, num_image_patches = _probe_image_tokens(
-            model, image, prompt, image_token_id
-        )
-        indices_buffer.reset()
-        indices_buffer.update_input_len(input_len)
-
-        caption = model.generate_caption(
-            image=image,
-            prompt=prompt,
-            max_new_tokens=2048,
-            seed=derive_image_seed(seed_global, image_id),
-            generation_kwargs=gen_kwargs,
-        )
-
-        logger.info(f"[{image_id}] caption: {caption}")
-
-        if i == 5: 
-            break
+    return 0
 
 
 if __name__ == "__main__": 

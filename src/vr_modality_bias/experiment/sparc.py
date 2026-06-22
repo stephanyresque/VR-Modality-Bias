@@ -101,6 +101,7 @@ def probe_image_token_index(
     image_positions = (input_ids == image_token_id).nonzero(as_tuple=True)[0]
     total_len = int(input_ids.shape[-1])
     num_image_patches = int(image_positions.numel())
+
     return int(image_positions[0]), total_len - num_image_patches, num_image_patches
 
 
@@ -150,11 +151,15 @@ def enable_sparc(
     # Snapshot the original forwards so we can restore them after the block.
     originals = [layer.self_attn.forward for layer in decoder.layers]
 
-    image_token_index, _, _ = probe_image_token_index(
+    image_token_index, input_len, _ = probe_image_token_index(
         model_wrapper, probe_image.convert("RGB"), prompt
     )
 
     buffer = SelectedIndexBuffer()
+    buffer.reset()
+
+    buffer.update_input_len(input_len) 
+
     add_custom_attention_layers(
         model,
         alpha=hparams.alpha,

@@ -21,7 +21,7 @@ task:
   prompt_key: "caption_long"
 
 generation:
-  max_new_tokens: 64
+  max_new_tokens: 4096 
   do_sample: true
   temperature: 0.8
   top_p: 0.9
