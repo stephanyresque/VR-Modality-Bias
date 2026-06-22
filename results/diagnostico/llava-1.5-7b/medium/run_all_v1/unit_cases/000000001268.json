@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001268",
+  "image_path": "data/processed/mscoco_baseline/images/000000001268.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a man sitting on a bench near a body of water with several boats floating nearby. Another person is standing next to him, taking pictures of the beautiful view. There are also two birds present in the area, one closer to the left side of the frame and another further away towards the right.",
+    "free_caption": "The scene features a man sitting on a bench near a body of water with several boats floating nearby. Another person is standing next to him, taking pictures of the beautiful view. There are also two birds present in the area, one closer to the left side of the frame and another further away towards the right.",
+    "share_tail": 0.1933771228579566,
+    "residual_ratio": 0.8612128783232044,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a man sitting on a bench near a body of water with several boats floating nearby. Another person is standing next to him, taking pictures of the beautiful view. There are also two birds present in the area, one closer to the left side of the frame and another further away towards the right.",
+    "free_caption": "The scene features a man sitting on a bench near a body of water with several boats floating nearby. Another person is standing next to him, taking pictures of the birds present at the location. There are two handbags placed close to each other, possibly belonging to the people in the area.",
+    "share_tail": 0.26057292711380325,
+    "residual_ratio": 0.8823638693909558,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

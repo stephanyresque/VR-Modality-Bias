@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001000",
+  "image_path": "data/processed/mscoco_baseline/images/000000001000.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a group of young people standing on a tennis court with their coaches. There are several children wearing white shirts, while others have different colored outfits. Some kids can be seen holding tennis rackets, indicating they might be participating in a match or practice session.",
+    "free_caption": "The scene features a group of young people standing on a tennis court with their coaches. There are several children wearing white shirts, while others have different colored outfits. Some kids can be seen holding tennis rackets, indicating they might be participating in a match or practice session.",
+    "share_tail": 0.21008613286851957,
+    "residual_ratio": 0.7923749809991306,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a group of young people standing on a tennis court with their coaches. There are several children wearing white shirts, while others have different colored outfits. Some kids can be seen holding tennis rackets, indicating they might be participating in a match or practice session.",
+    "free_caption": "The scene features a group of young tennis players posing for a photo on a tennis court. There are at least thirteen children present, with some standing closer together while others maintain more distance between them. They all appear to be enjoying their time on the court.",
+    "share_tail": 0.2659948919558792,
+    "residual_ratio": 0.8316234238845337,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

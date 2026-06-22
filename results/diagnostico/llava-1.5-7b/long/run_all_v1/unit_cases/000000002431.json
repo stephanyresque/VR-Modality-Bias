@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002431",
+  "image_path": "data/processed/mscoco_baseline/images/000000002431.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a wooden dining table with an assortment of food items on it. There are several pieces of bread placed around the table, along with some toast that appears to be burnt or charred. In addition to the bread, there is a bowl containing soup, which adds variety to the meal.\n\nThe table also has utensils such as knives and spoons laid out neatly. Two wine glasses can be seen at opposite ends of the table, suggesting that this might be a dinner party or gathering where guests will enjoy both food and drinks.",
+    "free_caption": "The image features a wooden dining table with an assortment of food items on it. There are several pieces of bread placed around the table, along with some toast that appears to be burnt or charred. In addition to the bread, there is a bowl containing soup, which adds variety to the meal.\n\nThe table also has utensils such as knives and spoons laid out neatly. Two wine glasses can be seen at opposite ends of the table, suggesting that this might be a dinner party or gathering where guests will enjoy both food and drinks.",
+    "share_tail": 0.21747632128049427,
+    "residual_ratio": 0.8392461027534304,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 123,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a wooden dining table with an assortment of food items on it. There are several pieces of bread placed around the table, along with some toast that appears to be burnt or charred. In addition to the bread, there is a bowl containing soup, which adds variety to the meal.\n\nThe table also has utensils such as knives and spoons laid out neatly. Two wine glasses can be seen at opposite ends of the table, suggesting that this might be a dinner party or gathering where guests will enjoy both food and drinks.",
+    "free_caption": "The image features a wooden dining table with an assortment of food items placed on it. There are several pieces of bread, including toast and slices of baguette, spread across the plate. Some of these breads appear to be burnt or charred, adding variety to the presentation. In addition to the bread, there is a bowl containing soup, which complements the other food items on the plate.\n\nThe table also has various utensils such as a wine glass, two spoons, a knuckle, a fork, a spoon, and a knife. Two people are sitting above the table. A cup is present on the table. A white nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap nap",
+    "share_tail": 0.32151192771619297,
+    "residual_ratio": 0.8911427516073154,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'nap' x30",
+    "caption_len": 123,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

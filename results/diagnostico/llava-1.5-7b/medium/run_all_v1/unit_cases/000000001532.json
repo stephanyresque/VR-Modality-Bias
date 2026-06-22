@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001532",
+  "image_path": "data/processed/mscoco_baseline/images/000000001532.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene is a busy highway with multiple cars driving underneath an overpass. There are several traffic signs on the bridge above, including one pointing towards Hollywood Blvd. Some of these vehicles have California license plates.",
+    "free_caption": "The scene is a busy highway with multiple cars driving underneath an overpass. There are several traffic signs on the bridge above, including one pointing towards Hollywood Blvd. Some of these vehicles have California license plates.",
+    "share_tail": 0.3218886674987006,
+    "residual_ratio": 0.7898238901461867,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 45,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene is a busy highway with multiple cars driving underneath an overpass. There are several traffic signs on the bridge above, including one pointing towards Hollywood Blvd. Some of these vehicles have California license plates.",
+    "free_caption": "The scene is a busy highway with multiple cars driving underneath an overpass. There are several vehicles on both sides of the road, including trucks and smaller cars. One car can be seen driving under a freeway sign indicating directions for Hollywood Blvd., Sunset Blvd., North Hollywood Blvd., and Ventura Avenue. Traffic lights are also present at various points along the highway.",
+    "share_tail": 0.3739817522857681,
+    "residual_ratio": 0.8235364679356852,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 45,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

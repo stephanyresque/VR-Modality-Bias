@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001993",
+  "image_path": "data/processed/mscoco_baseline/images/000000001993.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The room features a bed with a colorful comforter on it, situated next to a window. There is also a chair placed near the table.",
+    "free_caption": "The room features a bed with a colorful comforter on it, situated next to a window. There is also a chair placed near the table.",
+    "share_tail": 0.3158635900481062,
+    "residual_ratio": 0.5445505781992437,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 31,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The room features a bed with a colorful comforter on it, situated next to a window. There is also a chair placed near the table.",
+    "free_caption": "The room features a bed with a colorful comforter on it, situated next to a window. There is also a chair placed near the window, creating an inviting atmosphere for relaxation.",
+    "share_tail": 0.3410110161370095,
+    "residual_ratio": 0.5813345568873357,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 31,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

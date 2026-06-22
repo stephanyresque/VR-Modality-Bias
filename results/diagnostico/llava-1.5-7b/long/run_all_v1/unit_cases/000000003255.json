@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003255",
+  "image_path": "data/processed/mscoco_baseline/images/000000003255.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures a group of people standing on top of a snow-covered mountain slope with their skis. There are at least six individuals present, some closer to each other while others stand further apart. They appear to be enjoying their time together as they take in the breathtaking view of the surrounding mountains.\n\nThe skiers have left tracks behind them, indicating that they have been traversing the slopes. Some of these tracks can be seen near the center of the image, while others extend towards the right side. In addition to the people and tracks, there is also a backpack placed on the ground close to one of the individuals, possibly containing essential items or belongings during their adventure.",
+    "free_caption": "The image captures a group of people standing on top of a snow-covered mountain slope with their skis. There are at least six individuals present, some closer to each other while others stand further apart. They appear to be enjoying their time together as they take in the breathtaking view of the surrounding mountains.\n\nThe skiers have left tracks behind them, indicating that they have been traversing the slopes. Some of these tracks can be seen near the center of the image, while others extend towards the right side. In addition to the people and tracks, there is also a backpack placed on the ground close to one of the individuals, possibly containing essential items or belongings during their adventure.",
+    "share_tail": 0.1575329083012505,
+    "residual_ratio": 0.9668737580343837,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 149,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures a group of people standing on top of a snow-covered mountain slope with their skis. There are at least six individuals present, some closer to each other while others stand further apart. They appear to be enjoying their time together as they take in the breathtaking view of the surrounding mountains.\n\nThe skiers have left tracks behind them, indicating that they have been traversing the slopes. Some of these tracks can be seen near the center of the image, while others extend towards the right side. In addition to the people and tracks, there is also a backpack placed on the ground close to one of the individuals, possibly containing essential items or belongings during their adventure.",
+    "free_caption": "The image captures a group of people standing on top of a snow-covered mountain slope with their skis. There are at least seven individuals present in the scene, some closer to each other while others stand further apart. They appear to be taking a break from skiing or preparing themselves before continuing down the slopes.\n\nTheir skis can be seen scattered around them, indicating that they have been actively skiing through the snowy terrain. In addition to the skis, there is also a backpack placed near one of the persons. This suggests that these people might be carrying essential items during their adventure on this snowy mountain.",
+    "share_tail": 0.2634868376336042,
+    "residual_ratio": 0.976890835528548,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 149,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000005001",
+  "image_path": "data/processed/mscoco_baseline/images/000000005001.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a group of people gathered around a ribbon-cutting ceremony with children present. One man is cutting the ribbon using scissors while others watch closely. There are several individuals standing near each other, some wearing ties as part of their attire. In addition to the people, there's also a bicycle parked nearby.",
+    "free_caption": "The scene features a group of people gathered around a ribbon-cutting ceremony with children present. One man is cutting the ribbon using scissors while others watch closely. There are several individuals standing near each other, some wearing ties as part of their attire. In addition to the people, there's also a bicycle parked nearby.",
+    "share_tail": 0.25942921642445843,
+    "residual_ratio": 0.8254199444600175,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 75,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a group of people gathered around a ribbon-cutting ceremony with children present. One man is cutting the ribbon using scissors while others watch closely. There are several individuals standing near each other, some wearing ties as part of their attire. In addition to the people, there's also a bicycle parked nearby.",
+    "free_caption": "The scene features a group of people gathered around a red ribbon on a street corner. Among them is a man wearing glasses who is cutting the ribbon with scissors while others watch closely. There are several children present as well, including one holding a helmet. In addition to the people, there are multiple bicycles scattered throughout the area.",
+    "share_tail": 0.40631949637651793,
+    "residual_ratio": 0.8711809170458457,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 75,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

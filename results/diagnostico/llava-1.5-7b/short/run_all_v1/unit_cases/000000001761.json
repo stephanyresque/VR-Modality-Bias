@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001761",
+  "image_path": "data/processed/mscoco_baseline/images/000000001761.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "An airplane is flying over a bridge with an arched structure under it.",
+    "free_caption": "An airplane is flying over a bridge with an arched structure under it.",
+    "share_tail": 0.11198995847739411,
+    "residual_ratio": 0.44701974134345845,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "An airplane is flying over a bridge with an arched structure under it.",
+    "free_caption": "An airplane is flying over a bridge with an Australian flag on it.",
+    "share_tail": 0.13149173188648927,
+    "residual_ratio": 0.46368956696109165,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

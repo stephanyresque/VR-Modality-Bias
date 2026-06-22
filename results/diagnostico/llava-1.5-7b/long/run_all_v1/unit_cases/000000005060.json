@@ -1,0 +1,30 @@
+{
+  "image_id": "000000005060",
+  "image_path": "data/processed/mscoco_baseline/images/000000005060.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a man sitting on the floor in front of a large mirror. He is taking a picture of himself using his cell phone, capturing both his reflection and the surrounding area. In addition to the man, there are two other people present in the room, one standing near the left side of the frame and another person closer to the right edge.\n\nThe room has various items scattered around it. There's an umbrella placed towards the center-left part of the space, while a handbag can be seen resting nearby. Two bottles are also located within the room – one close to the top-right corner and the other at the bottom-right corner. Furthermore, a chair is situated against the wall, providing seating options for those who may want to relax or engage with others in the room.",
+    "free_caption": "The image features a man sitting on the floor in front of a large mirror. He is taking a picture of himself using his cell phone, capturing both his reflection and the surrounding area. In addition to the man, there are two other people present in the room, one standing near the left side of the frame and another person closer to the right edge.\n\nThe room has various items scattered around it. There's an umbrella placed towards the center-left part of the space, while a handbag can be seen resting nearby. Two bottles are also located within the room – one close to the top-right corner and the other at the bottom-right corner. Furthermore, a chair is situated against the wall, providing seating options for those who may want to relax or engage with others in the room.",
+    "share_tail": 0.09112625481004823,
+    "residual_ratio": 0.836931404987478,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a man sitting on the floor in front of a large mirror. He is taking a picture of himself using his cell phone, capturing both his reflection and the surrounding area. In addition to the man, there are two other people present in the room, one standing near the left side of the frame and another person closer to the right edge.\n\nThe room has various items scattered around it. There's an umbrella placed towards the center-left part of the space, while a handbag can be seen resting nearby. Two bottles are also located within the room – one close to the top-right corner and the other at the bottom-right corner. Furthermore, a chair is situated against the wall, providing seating options for those who may want to relax or engage with others in the room.",
+    "free_caption": "The image features a man sitting on the floor in front of a large mirror that spans almost the entire height of the room. He is taking a picture with his cell phone while looking at himself in the mirror. There are two other people present in the background, one standing closer to the left side of the frame and another person further back towards the right side.\n\nThe room has several items scattered around it. Two bottles can be seen placed near each other, possibly containing drinks or cleaning supplies. Additionally, there's an umbrella located close to the center of the room. In the farthest corner of the room, a chair is visible.",
+    "share_tail": 0.5447115496198763,
+    "residual_ratio": 0.9243150883962443,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001353",
+  "image_path": "data/processed/mscoco_baseline/images/000000001353.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a group of children enjoying themselves on an amusement park ride. They are sitting together inside a small red train car that is part of a larger roller coaster-like structure. There are at least nine kids visible in the scene, with some seated closer to the front of the train while others occupy more distant seats.\n\nThe children appear to be having fun as they sit close to each other, possibly engaging in conversations or sharing their excitement about the ride. The overall atmosphere seems lively and joyful, capturing the essence of childhood memories and shared experiences within this entertaining environment.",
+    "free_caption": "The image depicts a group of children enjoying themselves on an amusement park ride. They are sitting together inside a small red train car that is part of a larger roller coaster-like structure. There are at least nine kids visible in the scene, with some seated closer to the front of the train while others occupy more distant seats.\n\nThe children appear to be having fun as they sit close to each other, possibly engaging in conversations or sharing their excitement about the ride. The overall atmosphere seems lively and joyful, capturing the essence of childhood memories and shared experiences within this entertaining environment.",
+    "share_tail": 0.05990931206014822,
+    "residual_ratio": 0.9638912380500454,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 134,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a group of children enjoying themselves on an amusement park ride. They are sitting together inside a small red train car that is part of a larger roller coaster-like structure. There are at least nine kids visible in the scene, with some seated closer to the front of the train while others occupy more distant seats.\n\nThe children appear to be having fun as they sit close to each other, possibly engaging in conversations or sharing their excitement about the ride. The overall atmosphere seems lively and joyful, capturing the essence of childhood memories and shared experiences within this entertaining environment.",
+    "free_caption": "The image depicts a group of children enjoying themselves on an amusement park ride. They are sitting together in small red cars that resemble train carts or miniature trolleys. There are at least nine kids visible in the scene, with some seated closer to the front while others sit further back. Each child appears to be having fun as they ride along the track.\n\nThe setting is likely indoors, given the presence of a large red carousel. This carousel has multiple seats attached to it, providing a unique experience for the children riding inside. In addition to the children, there are also two other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other other",
+    "share_tail": 0.22332271135604082,
+    "residual_ratio": 0.975163277162165,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'other' x30",
+    "caption_len": 134,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

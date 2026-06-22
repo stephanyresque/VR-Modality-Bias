@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000785",
+  "image_path": "data/processed/mscoco_baseline/images/000000000785.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The woman is skiing down a snowy slope while wearing sunglasses. She has her arms outstretched for balance as she glides through the snow.",
+    "free_caption": "The woman is skiing down a snowy slope while wearing sunglasses. She has her arms outstretched for balance as she glides through the snow.",
+    "share_tail": 0.1533598332196963,
+    "residual_ratio": 0.6341434506821119,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 36,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The woman is skiing down a snowy slope while wearing sunglasses. She has her arms outstretched for balance as she glides through the snow.",
+    "free_caption": "The woman is skiing down a snowy slope while wearing sunglasses. She has her arms outstretched for balance as she glides through the white snow.",
+    "share_tail": 0.17289774357194854,
+    "residual_ratio": 0.6485696884713678,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 36,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

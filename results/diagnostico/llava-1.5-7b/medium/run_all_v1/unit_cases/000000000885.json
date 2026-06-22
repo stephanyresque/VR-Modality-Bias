@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000885",
+  "image_path": "data/processed/mscoco_baseline/images/000000000885.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a man playing tennis on an outdoor court. He is holding a red racket and appears to be swinging it with great force. Another person can be seen standing nearby, possibly watching the game or waiting for their turn to play. There are two sports balls present in the scene - one nearer to the player and another further away.",
+    "free_caption": "The scene features a man playing tennis on an outdoor court. He is holding a red racket and appears to be swinging it with great force. Another person can be seen standing nearby, possibly watching the game or waiting for their turn to play. There are two sports balls present in the scene - one nearer to the player and another further away.",
+    "share_tail": 0.15803694648203773,
+    "residual_ratio": 0.7886742551417804,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 72,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a man playing tennis on an outdoor court. He is holding a red racket and appears to be swinging it with great force. Another person can be seen standing nearby, possibly watching the game or waiting for their turn to play. There are two sports balls present in the scene - one nearer to the player and another further away.",
+    "free_caption": "The scene features a man playing tennis on an outdoor court with his racket raised above him. He is wearing white shorts and appears focused as he swings at the ball. There are several other people present around the court, possibly watching the game or waiting for their turn to play. Additionally, there's a Polo sign near the court, indicating sponsorship of the event.",
+    "share_tail": 0.18971402588736125,
+    "residual_ratio": 0.8064392279437322,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 72,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

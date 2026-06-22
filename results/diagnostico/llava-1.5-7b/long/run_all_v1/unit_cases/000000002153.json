@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002153",
+  "image_path": "data/processed/mscoco_baseline/images/000000002153.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment during a baseball game on a field with green grass. There are several players actively participating in the match. One player is holding a bat, ready to swing at the incoming pitch. Another player can be seen wearing a baseball glove, likely preparing to catch or throw the ball. In total, there are eight people present in various positions across the field.\n\nThe sports ball is located near the center-right part of the field, while the batter stands closer to the left side of the frame. Some other players are scattered around the field, some standing close together, possibly discussing strategies or waiting for their turn to play. Overall, it's a lively scene filled with action and anticipation as the players engage in this thrilling sport.",
+    "free_caption": "The image captures an exciting moment during a baseball game on a field with green grass. There are several players actively participating in the match. One player is holding a bat, ready to swing at the incoming pitch. Another player can be seen wearing a baseball glove, likely preparing to catch or throw the ball. In total, there are eight people present in various positions across the field.\n\nThe sports ball is located near the center-right part of the field, while the batter stands closer to the left side of the frame. Some other players are scattered around the field, some standing close together, possibly discussing strategies or waiting for their turn to play. Overall, it's a lively scene filled with action and anticipation as the players engage in this thrilling sport.",
+    "share_tail": 0.08246309858376327,
+    "residual_ratio": 0.9661137120353777,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 167,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment during a baseball game on a field with green grass. There are several players actively participating in the match. One player is holding a bat, ready to swing at the incoming pitch. Another player can be seen wearing a baseball glove, likely preparing to catch or throw the ball. In total, there are eight people present in various positions across the field.\n\nThe sports ball is located near the center-right part of the field, while the batter stands closer to the left side of the frame. Some other players are scattered around the field, some standing close together, possibly discussing strategies or waiting for their turn to play. Overall, it's a lively scene filled with action and anticipation as the players engage in this thrilling sport.",
+    "free_caption": "The image captures an exciting moment during a baseball game on a field with green grass. There are several players actively participating in the match. One player is holding a bat, ready to swing at the incoming pitch. Another player can be seen wearing a baseball glove, likely preparing to catch the ball if it comes their way. In addition, there's another person standing near home plate, possibly waiting for their turn or observing the game from close proximity.\n\nThe batter stands confidently next to the mound, while the u-purple stands behind him, watching the pitcher closely. The pitcher has his arm extended outward, throwing the ball towards the hitter. The purple is also present in the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the \"the\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"",
+    "share_tail": 0.4403786926128403,
+    "residual_ratio": 0.9824134599863948,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'the' x30",
+    "caption_len": 167,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

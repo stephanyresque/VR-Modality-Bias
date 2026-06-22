@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003501",
+  "image_path": "data/processed/mscoco_baseline/images/000000003501.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a white bowl filled with rice and red chili on top of it. There are several pieces of broccoli scattered throughout the dish, adding color and nutritional value to the meal. The combination of rice, chili, and broccoli creates an appetizing and balanced dish.",
+    "free_caption": "The image features a white bowl filled with rice and red chili on top of it. There are several pieces of broccoli scattered throughout the dish, adding color and nutritional value to the meal. The combination of rice, chili, and broccoli creates an appetizing and balanced dish.",
+    "share_tail": 0.05123660991320712,
+    "residual_ratio": 0.8031499113912131,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 68,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a white bowl filled with rice and red chili on top of it. There are several pieces of broccoli scattered throughout the dish, adding color and nutritional value to the meal. The combination of rice, chili, and broccoli creates an appetizing and balanced dish.",
+    "free_caption": "The image features a white bowl filled with rice and red chili on top of it. There are several pieces of broccoli scattered throughout the dish, adding color and nutritional value to the meal. The combination of rice, chili, and broccoli creates an appetizing and healthy-looking dish.",
+    "share_tail": 0.09308774746591245,
+    "residual_ratio": 0.8146897995915025,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 68,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

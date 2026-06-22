@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001490",
+  "image_path": "data/processed/mscoco_baseline/images/000000001490.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a person paddling on top of a surfboard in calm waters near the shore. They are wearing a black wetsuit while standing upright on their board, skillfully navigating through the water. In addition to this individual, there is another person further back in the scene, possibly observing or waiting for their turn to join the activity.\n\nThe surrounding area consists of several houses situated along the shoreline, creating a picturesque coastal landscape. There's also an umbrella placed close to one of these homes, providing some shade from the sun. Overall, it appears to be a pleasant day at the beach with people enjoying various activities by the ocean.",
+    "free_caption": "The image features a person paddling on top of a surfboard in calm waters near the shore. They are wearing a black wetsuit while standing upright on their board, skillfully navigating through the water. In addition to this individual, there is another person further back in the scene, possibly observing or waiting for their turn to join the activity.\n\nThe surrounding area consists of several houses situated along the shoreline, creating a picturesque coastal landscape. There's also an umbrella placed close to one of these homes, providing some shade from the sun. Overall, it appears to be a pleasant day at the beach with people enjoying various activities by the ocean.",
+    "share_tail": 0.21316428208874347,
+    "residual_ratio": 0.8008282044788025,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 148,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a person paddling on top of a surfboard in calm waters near the shore. They are wearing a black wetsuit while standing upright on their board, skillfully navigating through the water. In addition to this individual, there is another person further back in the scene, possibly observing or waiting for their turn to join the activity.\n\nThe surrounding area consists of several houses situated along the shoreline, creating a picturesque coastal landscape. There's also an umbrella placed close to one of these homes, providing some shade from the sun. Overall, it appears to be a pleasant day at the beach with people enjoying various activities by the ocean.",
+    "free_caption": "The image features a person paddling on top of a surfboard across a large body of water, possibly an ocean or lake. They are wearing a black wetsuit while standing upright on their board, skillfully navigating through the water. There is another smaller figure further back in the distance, but it's not clear if they are also paddleboarding or just enjoying the view.\n\nThe surrounding area consists of numerous houses situated along the shoreline, creating a picturesque landscape. Some trees can be seen near the shore as well. Overall, this serene scene captures the essence of outdoor recreational activities.",
+    "share_tail": 0.35871797663690486,
+    "residual_ratio": 0.8564484879139077,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 148,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

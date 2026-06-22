@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001503",
+  "image_path": "data/processed/mscoco_baseline/images/000000001503.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a desk with two laptops placed on it. One laptop is positioned towards the left side of the table while the other occupies more space to its right. There are also three keyboards on the desk – one near each laptop and another closer to the center-right area. Additionally, there's a mouse located at the bottom-left corner of the desk.\n\nThe room appears to be an office or workspace, as evidenced by the presence of multiple computers and peripherals. Two TV screens can be seen mounted on the wall above the desks, providing additional display options for the users.",
+    "free_caption": "The image features a desk with two laptops placed on it. One laptop is positioned towards the left side of the table while the other occupies more space to its right. There are also three keyboards on the desk – one near each laptop and another closer to the center-right area. Additionally, there's a mouse located at the bottom-left corner of the desk.\n\nThe room appears to be an office or workspace, as evidenced by the presence of multiple computers and peripherals. Two TV screens can be seen mounted on the wall above the desks, providing additional display options for the users.",
+    "share_tail": 0.2466441313722135,
+    "residual_ratio": 0.723199065084648,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 133,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a desk with two laptops placed on it. One laptop is positioned towards the left side of the table while the other occupies more space to its right. There are also three keyboards on the desk – one near each laptop and another closer to the center-right area. Additionally, there's a mouse located at the bottom-left corner of the desk.\n\nThe room appears to be an office or workspace, as evidenced by the presence of multiple computers and peripherals. Two TV screens can be seen mounted on the wall above the desks, providing additional display options for the users.",
+    "free_caption": "The image features a desk with two laptops placed on it. One laptop is positioned towards the left side of the table while the other occupies more space to its right. In addition to these devices, there are three keyboards spread across the surface – one near each laptop and another closer to the center of the table. Two computer mice can also be seen on the desk, one located between the first keyboard and the second laptop, and the other situated next to the third keyboard.\n\nApart from the electronic equipment, there's an external hard drive sitting beside the white monitor. This device appears to be used as a storage solution for data files. There's also a round shaped speakers on the desk. Apart from this, there's a black cord plugged into the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the",
+    "share_tail": 0.5733011403524375,
+    "residual_ratio": 0.8612932147954886,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'the' x30",
+    "caption_len": 133,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

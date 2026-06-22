@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004795",
+  "image_path": "data/processed/mscoco_baseline/images/000000004795.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a black cat sitting on top of a wooden desk next to an open laptop computer. The cat appears curious as it looks at the screen with interest. There is also another keyboard located near the bottom left corner of the desk. In addition to these items, there are two cell phones placed close together towards the right side of the desk.",
+    "free_caption": "The image features a black cat sitting on top of a wooden desk next to an open laptop computer. The cat appears curious as it looks at the screen with interest. There is also another keyboard located near the bottom left corner of the desk. In addition to these items, there are two cell phones placed close together towards the right side of the desk.",
+    "share_tail": 0.07694118457360966,
+    "residual_ratio": 0.6994510101616552,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 74,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a black cat sitting on top of a wooden desk next to an open laptop computer. The cat appears curious as it looks at the screen with interest. There is also another keyboard located near the bottom left corner of the desk. In addition to these items, there are two cell phones placed close together towards the right side of the desk.",
+    "free_caption": "The image features a black cat sitting on top of an open laptop computer. It appears that the cat is curious about what's happening on the screen or simply enjoying being close to its owner who might be working at the desk. In addition to the laptop, there are two keyboards present - one placed directly underneath the cat and another keyboard located further away from the cat. There is also a mouse situated near the edge of the laptop screen.",
+    "share_tail": 0.13395900188945903,
+    "residual_ratio": 0.7331616230398791,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 74,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

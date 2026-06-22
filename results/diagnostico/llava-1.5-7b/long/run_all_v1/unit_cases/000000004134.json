@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004134",
+  "image_path": "data/processed/mscoco_baseline/images/000000004134.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts two men shaking hands at an event or gathering. They are standing close to each other with their arms extended towards one another. Both men appear to be dressed formally, wearing ties that can be seen clearly on them.\n\nThe room they are in is filled with various dining tables scattered throughout the space. There are multiple chairs placed around these tables, suggesting that this could be a conference hall or a similar venue where people come together for meetings or events. Additionally, there are several cups and wine glasses placed on some of the tables, indicating that guests may have been enjoying refreshments during the occasion.",
+    "free_caption": "The image depicts two men shaking hands at an event or gathering. They are standing close to each other with their arms extended towards one another. Both men appear to be dressed formally, wearing ties that can be seen clearly on them.\n\nThe room they are in is filled with various dining tables scattered throughout the space. There are multiple chairs placed around these tables, suggesting that this could be a conference hall or a similar venue where people come together for meetings or events. Additionally, there are several cups and wine glasses placed on some of the tables, indicating that guests may have been enjoying refreshments during the occasion.",
+    "share_tail": 0.14708857038425532,
+    "residual_ratio": 0.9581514258713494,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 136,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts two men shaking hands at an event or gathering. They are standing close to each other with their arms extended towards one another. Both men appear to be dressed formally, wearing ties that can be seen clearly on them.\n\nThe room they are in is filled with various dining tables scattered throughout the space. There are multiple chairs placed around these tables, suggesting that this could be a conference hall or a similar venue where people come together for meetings or events. Additionally, there are several cups and wine glasses placed on some of the tables, indicating that guests may have been enjoying refreshments during the occasion.",
+    "free_caption": "The image depicts two men shaking hands at an event or gathering. Both men are wearing suits, with one man dressed more formally than the other. They appear to be engaged in conversation as they exchange pleasantries. There is another person standing nearby, possibly observing the interaction between these two gentlemen.\n\nThe room features several dining tables arranged throughout the space. Multiple chairs can also be seen around the area. In addition to the people present, there are various items on the tables such as wine glasses, cups, ties, papers, and books.",
+    "share_tail": 0.2547715508705927,
+    "residual_ratio": 0.9750882744742522,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 136,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

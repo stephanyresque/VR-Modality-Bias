@@ -1,0 +1,30 @@
+{
+  "image_id": "000000005001",
+  "image_path": "data/processed/mscoco_baseline/images/000000005001.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an outdoor event where several people are gathered around a red ribbon that is being cut by two men using large scissors. There are at least twelve individuals present in various positions within the scene, with some standing closer to the ribbon while others stand further away. Among them, there's a child wearing a helmet who appears to be participating in the celebration.\n\nThe atmosphere seems festive as everyone looks on attentively during this momentous occasion. In addition to the people and the scissors, there are three handbags scattered throughout the scene, possibly belonging to the attendees. One person can also be seen holding a cell phone, likely capturing memories from the event.",
+    "free_caption": "The image captures an outdoor event where several people are gathered around a red ribbon that is being cut by two men using large scissors. There are at least twelve individuals present in various positions within the scene, with some standing closer to the ribbon while others stand further away. Among them, there's a child wearing a helmet who appears to be participating in the celebration.\n\nThe atmosphere seems festive as everyone looks on attentively during this momentous occasion. In addition to the people and the scissors, there are three handbags scattered throughout the scene, possibly belonging to the attendees. One person can also be seen holding a cell phone, likely capturing memories from the event.",
+    "share_tail": 0.11766463371531652,
+    "residual_ratio": 0.9766495310340869,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an outdoor event where several people are gathered around a red ribbon that is being cut by two men using large scissors. There are at least twelve individuals present in various positions within the scene, with some standing closer to the ribbon while others stand further away. Among them, there's a child wearing a helmet who appears to be participating in the celebration.\n\nThe atmosphere seems festive as everyone looks on attentively during this momentous occasion. In addition to the people and the scissors, there are three handbags scattered throughout the scene, possibly belonging to the attendees. One person can also be seen holding a cell phone, likely capturing memories from the event.",
+    "free_caption": "The image captures an outdoor event where several people are gathered around a red ribbon that is being cut by two men using large scissors. Among them, there's a little girl wearing a helmet who appears to be participating in the ceremony as well. In total, there are at least thirteen individuals present in various positions surrounding the ribbon. Some of these people can be seen holding balloons, which adds color and excitement to the atmosphere.\n\nThe crowd consists of both adults and children, with some standing closer together while others maintain more distance from each other. There are also multiple blue balloons floating above the heads of the people, adding a playful element to the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the man officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer officer",
+    "share_tail": 0.5731004814723757,
+    "residual_ratio": 0.990433377257349,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'officer' x30",
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

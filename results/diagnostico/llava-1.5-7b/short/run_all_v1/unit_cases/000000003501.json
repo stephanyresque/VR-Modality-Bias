@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003501",
+  "image_path": "data/processed/mscoco_baseline/images/000000003501.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "A bowl of food with rice and broccoli on a table.",
+    "free_caption": "A bowl of food with rice and broccoli on a table.",
+    "share_tail": 0.19600493326907134,
+    "residual_ratio": 0.42616062625168516,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 15,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "A bowl of food with rice and broccoli on a table.",
+    "free_caption": "A bowl of food with rice and broccoli on a table.",
+    "share_tail": 0.1983141103499788,
+    "residual_ratio": 0.4382414482211435,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 15,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

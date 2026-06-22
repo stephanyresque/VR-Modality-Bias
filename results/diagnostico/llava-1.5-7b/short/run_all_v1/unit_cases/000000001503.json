@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001503",
+  "image_path": "data/processed/mscoco_baseline/images/000000001503.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Two laptops are sitting on a desk with two computer mice next to them.",
+    "free_caption": "Two laptops are sitting on a desk with two computer mice next to them.",
+    "share_tail": 0.2492033539780373,
+    "residual_ratio": 0.4272928348488901,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Two laptops are sitting on a desk with two computer mice next to them.",
+    "free_caption": "Two laptops are sitting on a desk with two computer mice next to them.",
+    "share_tail": 0.28346733401446983,
+    "residual_ratio": 0.45565372036917523,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,324 @@
+2026-06-21 22:59:37.848 | INFO     | __main__:main:642 - ======================================================================
+2026-06-21 22:59:37.848 | INFO     | __main__:main:643 - Block-6 orchestrator — run_name=run_all_v1
+2026-06-21 22:59:37.848 | INFO     | __main__:main:644 - lengths=['short', 'medium', 'long'] limit=50 overwrite=False smoke=False
+2026-06-21 22:59:37.848 | INFO     | __main__:main:648 - log file: results/diagnostico/llava-1.5-7b/short/run_all_v1/logs/run_all.log
+2026-06-21 22:59:37.849 | INFO     | __main__:main:649 - ======================================================================
+2026-06-21 22:59:37.849 | INFO     | __main__:main:657 - Loading llava-hf/llava-1.5-7b-hf on cuda...
+2026-06-21 22:59:43.414 | INFO     | __main__:main:659 - Model loaded. n_layers=32
+2026-06-21 22:59:43.414 | INFO     | __main__:main:670 - SPARC config: {'alpha': 1.1, 'tau': 1.5, 'selected_layer': 20, 'se_layers': [0, 31], 'beta': 0.1}
+2026-06-21 22:59:43.414 | INFO     | __main__:main:675 - Planned cells: 300 (50 imgs × 3 lengths × 2 conditions)
+2026-06-21 22:59:43.417 | INFO     | __main__:_process_length:365 - [short] resume: diag=0 rows, eval=0 rows, captions_cached=0
+2026-06-21 22:59:47.116 | INFO     | __main__:_process_length:439 - [short|000000000139|off] OK share_tail=0.3069 deg=False (2.3s) progress 1/300 ETA 18.4min
+2026-06-21 22:59:50.390 | INFO     | __main__:_process_length:501 - [short|000000000139|on ] OK share_tail=0.7111 deg=False (3.3s) progress 2/300 ETA 17.3min
+2026-06-21 22:59:51.508 | INFO     | __main__:_process_length:439 - [short|000000000285|off] OK share_tail=0.1820 deg=False (0.8s) progress 3/300 ETA 13.4min
+2026-06-21 22:59:52.742 | INFO     | __main__:_process_length:501 - [short|000000000285|on ] OK share_tail=0.1882 deg=False (1.2s) progress 4/300 ETA 11.5min
+2026-06-21 22:59:54.073 | INFO     | __main__:_process_length:439 - [short|000000000632|off] OK share_tail=0.1563 deg=False (0.9s) progress 5/300 ETA 10.5min
+2026-06-21 22:59:55.515 | INFO     | __main__:_process_length:501 - [short|000000000632|on ] OK share_tail=0.1620 deg=False (1.4s) progress 6/300 ETA 9.9min
+2026-06-21 22:59:56.623 | INFO     | __main__:_process_length:439 - [short|000000000724|off] OK share_tail=0.1918 deg=False (0.8s) progress 7/300 ETA 9.2min
+2026-06-21 22:59:57.853 | INFO     | __main__:_process_length:501 - [short|000000000724|on ] OK share_tail=0.1991 deg=False (1.2s) progress 8/300 ETA 8.8min
+2026-06-21 22:59:59.536 | INFO     | __main__:_process_length:439 - [short|000000000776|off] OK share_tail=0.3570 deg=False (1.2s) progress 9/300 ETA 8.7min
+2026-06-21 23:00:01.228 | INFO     | __main__:_process_length:501 - [short|000000000776|on ] OK share_tail=0.3867 deg=False (1.7s) progress 10/300 ETA 8.6min
+2026-06-21 23:00:02.819 | INFO     | __main__:_process_length:439 - [short|000000000785|off] OK share_tail=0.1365 deg=False (1.1s) progress 11/300 ETA 8.5min
+2026-06-21 23:00:04.595 | INFO     | __main__:_process_length:501 - [short|000000000785|on ] OK share_tail=0.1552 deg=False (1.8s) progress 12/300 ETA 8.5min
+2026-06-21 23:00:05.981 | INFO     | __main__:_process_length:439 - [short|000000000802|off] OK share_tail=0.3033 deg=False (1.0s) progress 13/300 ETA 8.3min
+2026-06-21 23:00:07.527 | INFO     | __main__:_process_length:501 - [short|000000000802|on ] OK share_tail=0.3028 deg=False (1.5s) progress 14/300 ETA 8.2min
+2026-06-21 23:00:08.529 | INFO     | __main__:_process_length:439 - [short|000000000872|off] OK share_tail=0.2901 deg=False (0.7s) progress 15/300 ETA 8.0min
+2026-06-21 23:00:09.638 | INFO     | __main__:_process_length:501 - [short|000000000872|on ] OK share_tail=0.2924 deg=False (1.1s) progress 16/300 ETA 7.8min
+2026-06-21 23:00:11.190 | INFO     | __main__:_process_length:439 - [short|000000000885|off] OK share_tail=0.1900 deg=False (1.1s) progress 17/300 ETA 7.7min
+2026-06-21 23:00:12.965 | INFO     | __main__:_process_length:501 - [short|000000000885|on ] OK share_tail=0.2173 deg=False (1.8s) progress 18/300 ETA 7.7min
+2026-06-21 23:00:14.077 | INFO     | __main__:_process_length:439 - [short|000000001000|off] OK share_tail=0.4401 deg=False (0.8s) progress 19/300 ETA 7.6min
+2026-06-21 23:00:15.309 | INFO     | __main__:_process_length:501 - [short|000000001000|on ] OK share_tail=0.5034 deg=False (1.2s) progress 20/300 ETA 7.4min
+2026-06-21 23:00:16.862 | INFO     | __main__:_process_length:439 - [short|000000001268|off] OK share_tail=0.2873 deg=False (1.1s) progress 21/300 ETA 7.4min
+2026-06-21 23:00:18.557 | INFO     | __main__:_process_length:501 - [short|000000001268|on ] OK share_tail=0.3052 deg=False (1.7s) progress 22/300 ETA 7.4min
+2026-06-21 23:00:19.612 | INFO     | __main__:_process_length:439 - [short|000000001296|off] OK share_tail=0.4165 deg=False (0.7s) progress 23/300 ETA 7.3min
+2026-06-21 23:00:20.802 | INFO     | __main__:_process_length:501 - [short|000000001296|on ] OK share_tail=0.4262 deg=False (1.2s) progress 24/300 ETA 7.2min
+2026-06-21 23:00:21.966 | INFO     | __main__:_process_length:439 - [short|000000001353|off] OK share_tail=0.0783 deg=False (0.8s) progress 25/300 ETA 7.1min
+2026-06-21 23:00:23.257 | INFO     | __main__:_process_length:501 - [short|000000001353|on ] OK share_tail=0.0840 deg=False (1.3s) progress 26/300 ETA 7.0min
+2026-06-21 23:00:24.701 | INFO     | __main__:_process_length:439 - [short|000000001425|off] OK share_tail=0.4441 deg=False (1.0s) progress 27/300 ETA 7.0min
+2026-06-21 23:00:26.309 | INFO     | __main__:_process_length:501 - [short|000000001425|on ] OK share_tail=0.4621 deg=False (1.6s) progress 28/300 ETA 6.9min
+2026-06-21 23:00:27.364 | INFO     | __main__:_process_length:439 - [short|000000001490|off] OK share_tail=0.3609 deg=False (0.7s) progress 29/300 ETA 6.8min
+2026-06-21 23:00:28.532 | INFO     | __main__:_process_length:501 - [short|000000001490|on ] OK share_tail=0.3689 deg=False (1.2s) progress 30/300 ETA 6.8min
+2026-06-21 23:00:29.916 | INFO     | __main__:_process_length:439 - [short|000000001503|off] OK share_tail=0.2492 deg=False (1.0s) progress 31/300 ETA 6.7min
+2026-06-21 23:00:31.458 | INFO     | __main__:_process_length:501 - [short|000000001503|on ] OK share_tail=0.2835 deg=False (1.5s) progress 32/300 ETA 6.7min
+2026-06-21 23:00:33.682 | INFO     | __main__:_process_length:439 - [short|000000001532|off] OK share_tail=0.2493 deg=False (1.5s) progress 33/300 ETA 6.8min
+2026-06-21 23:00:36.357 | INFO     | __main__:_process_length:501 - [short|000000001532|on ] OK share_tail=0.3138 deg=False (2.7s) progress 34/300 ETA 6.9min
+2026-06-21 23:00:37.527 | INFO     | __main__:_process_length:439 - [short|000000001584|off] OK share_tail=0.1494 deg=False (0.8s) progress 35/300 ETA 6.8min
+2026-06-21 23:00:38.823 | INFO     | __main__:_process_length:501 - [short|000000001584|on ] OK share_tail=0.1538 deg=False (1.3s) progress 36/300 ETA 6.8min
+2026-06-21 23:00:39.659 | INFO     | __main__:_process_length:439 - [short|000000001675|off] OK share_tail=0.5136 deg=False (0.6s) progress 37/300 ETA 6.7min
+2026-06-21 23:00:40.579 | INFO     | __main__:_process_length:501 - [short|000000001675|on ] OK share_tail=0.5207 deg=False (0.9s) progress 38/300 ETA 6.6min
+2026-06-21 23:00:41.803 | INFO     | __main__:_process_length:439 - [short|000000001761|off] OK share_tail=0.1120 deg=False (0.8s) progress 39/300 ETA 6.5min
+2026-06-21 23:00:43.143 | INFO     | __main__:_process_length:501 - [short|000000001761|on ] OK share_tail=0.1315 deg=False (1.3s) progress 40/300 ETA 6.5min
+2026-06-21 23:00:44.366 | INFO     | __main__:_process_length:439 - [short|000000001818|off] OK share_tail=0.4082 deg=False (0.8s) progress 41/300 ETA 6.4min
+2026-06-21 23:00:45.721 | INFO     | __main__:_process_length:501 - [short|000000001818|on ] OK share_tail=0.4224 deg=False (1.3s) progress 42/300 ETA 6.4min
+2026-06-21 23:00:46.945 | INFO     | __main__:_process_length:439 - [short|000000001993|off] OK share_tail=0.2524 deg=False (0.8s) progress 43/300 ETA 6.3min
+2026-06-21 23:00:48.306 | INFO     | __main__:_process_length:501 - [short|000000001993|on ] OK share_tail=0.2780 deg=False (1.4s) progress 44/300 ETA 6.3min
+2026-06-21 23:00:49.695 | INFO     | __main__:_process_length:439 - [short|000000002006|off] OK share_tail=0.2140 deg=False (1.0s) progress 45/300 ETA 6.3min
+2026-06-21 23:00:51.246 | INFO     | __main__:_process_length:501 - [short|000000002006|on ] OK share_tail=0.2219 deg=False (1.5s) progress 46/300 ETA 6.2min
+2026-06-21 23:00:52.522 | INFO     | __main__:_process_length:439 - [short|000000002149|off] OK share_tail=0.3176 deg=False (0.9s) progress 47/300 ETA 6.2min
+2026-06-21 23:00:53.941 | INFO     | __main__:_process_length:501 - [short|000000002149|on ] OK share_tail=0.3292 deg=False (1.4s) progress 48/300 ETA 6.2min
+2026-06-21 23:00:55.331 | INFO     | __main__:_process_length:439 - [short|000000002153|off] OK share_tail=0.1714 deg=False (1.0s) progress 49/300 ETA 6.1min
+2026-06-21 23:00:56.879 | INFO     | __main__:_process_length:501 - [short|000000002153|on ] OK share_tail=0.1786 deg=False (1.5s) progress 50/300 ETA 6.1min
+2026-06-21 23:00:58.104 | INFO     | __main__:_process_length:439 - [short|000000002157|off] OK share_tail=0.5595 deg=False (0.8s) progress 51/300 ETA 6.1min
+2026-06-21 23:00:59.464 | INFO     | __main__:_process_length:501 - [short|000000002157|on ] OK share_tail=0.5717 deg=False (1.4s) progress 52/300 ETA 6.0min
+2026-06-21 23:01:00.745 | INFO     | __main__:_process_length:439 - [short|000000002261|off] OK share_tail=0.3995 deg=False (0.9s) progress 53/300 ETA 6.0min
+2026-06-21 23:01:02.167 | INFO     | __main__:_process_length:501 - [short|000000002261|on ] OK share_tail=0.4488 deg=False (1.4s) progress 54/300 ETA 6.0min
+2026-06-21 23:01:03.222 | INFO     | __main__:_process_length:439 - [short|000000002299|off] OK share_tail=0.1447 deg=False (0.7s) progress 55/300 ETA 5.9min
+2026-06-21 23:01:04.394 | INFO     | __main__:_process_length:501 - [short|000000002299|on ] OK share_tail=0.1577 deg=False (1.2s) progress 56/300 ETA 5.9min
+2026-06-21 23:01:05.729 | INFO     | __main__:_process_length:439 - [short|000000002431|off] OK share_tail=0.2645 deg=False (0.9s) progress 57/300 ETA 5.8min
+2026-06-21 23:01:07.216 | INFO     | __main__:_process_length:501 - [short|000000002431|on ] OK share_tail=0.2568 deg=False (1.5s) progress 58/300 ETA 5.8min
+2026-06-21 23:01:08.385 | INFO     | __main__:_process_length:439 - [short|000000002473|off] OK share_tail=0.4229 deg=False (0.8s) progress 59/300 ETA 5.8min
+2026-06-21 23:01:09.683 | INFO     | __main__:_process_length:501 - [short|000000002473|on ] OK share_tail=0.4231 deg=False (1.3s) progress 60/300 ETA 5.8min
+2026-06-21 23:01:10.963 | INFO     | __main__:_process_length:439 - [short|000000002532|off] OK share_tail=0.3066 deg=False (0.9s) progress 61/300 ETA 5.7min
+2026-06-21 23:01:12.388 | INFO     | __main__:_process_length:501 - [short|000000002532|on ] OK share_tail=0.3150 deg=False (1.4s) progress 62/300 ETA 5.7min
+2026-06-21 23:01:13.501 | INFO     | __main__:_process_length:439 - [short|000000002587|off] OK share_tail=0.5557 deg=False (0.8s) progress 63/300 ETA 5.6min
+2026-06-21 23:01:14.839 | INFO     | __main__:_process_length:501 - [short|000000002587|on ] OK share_tail=0.5708 deg=False (1.3s) progress 64/300 ETA 5.6min
+2026-06-21 23:01:16.064 | INFO     | __main__:_process_length:439 - [short|000000002592|off] OK share_tail=0.2698 deg=False (0.8s) progress 65/300 ETA 5.6min
+2026-06-21 23:01:17.487 | INFO     | __main__:_process_length:501 - [short|000000002592|on ] OK share_tail=0.2606 deg=False (1.4s) progress 66/300 ETA 5.6min
+2026-06-21 23:01:18.586 | INFO     | __main__:_process_length:439 - [short|000000002685|off] OK share_tail=0.3645 deg=False (0.8s) progress 67/300 ETA 5.5min
+2026-06-21 23:01:19.802 | INFO     | __main__:_process_length:501 - [short|000000002685|on ] OK share_tail=0.3745 deg=False (1.2s) progress 68/300 ETA 5.5min
+2026-06-21 23:01:21.137 | INFO     | __main__:_process_length:439 - [short|000000002923|off] OK share_tail=0.3478 deg=False (0.9s) progress 69/300 ETA 5.5min
+2026-06-21 23:01:22.623 | INFO     | __main__:_process_length:501 - [short|000000002923|on ] OK share_tail=0.3559 deg=False (1.5s) progress 70/300 ETA 5.4min
+2026-06-21 23:01:23.626 | INFO     | __main__:_process_length:439 - [short|000000003156|off] OK share_tail=0.4514 deg=False (0.7s) progress 71/300 ETA 5.4min
+2026-06-21 23:01:24.735 | INFO     | __main__:_process_length:501 - [short|000000003156|on ] OK share_tail=0.4560 deg=False (1.1s) progress 72/300 ETA 5.3min
+2026-06-21 23:01:25.831 | INFO     | __main__:_process_length:439 - [short|000000003255|off] OK share_tail=0.3868 deg=False (0.8s) progress 73/300 ETA 5.3min
+2026-06-21 23:01:27.121 | INFO     | __main__:_process_length:501 - [short|000000003255|on ] OK share_tail=0.4204 deg=False (1.3s) progress 74/300 ETA 5.3min
+2026-06-21 23:01:28.292 | INFO     | __main__:_process_length:439 - [short|000000003501|off] OK share_tail=0.1960 deg=False (0.8s) progress 75/300 ETA 5.2min
+2026-06-21 23:01:29.592 | INFO     | __main__:_process_length:501 - [short|000000003501|on ] OK share_tail=0.1983 deg=False (1.3s) progress 76/300 ETA 5.2min
+2026-06-21 23:01:30.872 | INFO     | __main__:_process_length:439 - [short|000000003553|off] OK share_tail=0.2655 deg=False (0.9s) progress 77/300 ETA 5.2min
+2026-06-21 23:01:32.294 | INFO     | __main__:_process_length:501 - [short|000000003553|on ] OK share_tail=0.2816 deg=False (1.4s) progress 78/300 ETA 5.2min
+2026-06-21 23:01:33.649 | INFO     | __main__:_process_length:439 - [short|000000003661|off] OK share_tail=0.2942 deg=False (1.0s) progress 79/300 ETA 5.1min
+2026-06-21 23:01:35.156 | INFO     | __main__:_process_length:501 - [short|000000003661|on ] OK share_tail=0.2987 deg=False (1.5s) progress 80/300 ETA 5.1min
+2026-06-21 23:01:36.048 | INFO     | __main__:_process_length:439 - [short|000000003845|off] OK share_tail=0.3213 deg=False (0.6s) progress 81/300 ETA 5.1min
+2026-06-21 23:01:37.013 | INFO     | __main__:_process_length:501 - [short|000000003845|on ] OK share_tail=0.3374 deg=False (1.0s) progress 82/300 ETA 5.0min
+2026-06-21 23:01:37.849 | INFO     | __main__:_process_length:439 - [short|000000003934|off] OK share_tail=0.1799 deg=False (0.6s) progress 83/300 ETA 5.0min
+2026-06-21 23:01:38.770 | INFO     | __main__:_process_length:501 - [short|000000003934|on ] OK share_tail=0.1791 deg=False (0.9s) progress 84/300 ETA 4.9min
+2026-06-21 23:01:39.885 | INFO     | __main__:_process_length:439 - [short|000000004134|off] OK share_tail=0.2164 deg=False (0.8s) progress 85/300 ETA 4.9min
+2026-06-21 23:01:41.121 | INFO     | __main__:_process_length:501 - [short|000000004134|on ] OK share_tail=0.2203 deg=False (1.2s) progress 86/300 ETA 4.9min
+2026-06-21 23:01:42.291 | INFO     | __main__:_process_length:439 - [short|000000004395|off] OK share_tail=0.5135 deg=False (0.8s) progress 87/300 ETA 4.9min
+2026-06-21 23:01:43.590 | INFO     | __main__:_process_length:501 - [short|000000004395|on ] OK share_tail=0.5234 deg=False (1.3s) progress 88/300 ETA 4.8min
+2026-06-21 23:01:44.760 | INFO     | __main__:_process_length:439 - [short|000000004495|off] OK share_tail=0.4073 deg=False (0.8s) progress 89/300 ETA 4.8min
+2026-06-21 23:01:46.059 | INFO     | __main__:_process_length:501 - [short|000000004495|on ] OK share_tail=0.4395 deg=False (1.3s) progress 90/300 ETA 4.8min
+2026-06-21 23:01:47.343 | INFO     | __main__:_process_length:439 - [short|000000004765|off] OK share_tail=0.1790 deg=False (0.9s) progress 91/300 ETA 4.7min
+2026-06-21 23:01:48.766 | INFO     | __main__:_process_length:501 - [short|000000004765|on ] OK share_tail=0.1990 deg=False (1.4s) progress 92/300 ETA 4.7min
+2026-06-21 23:01:50.215 | INFO     | __main__:_process_length:439 - [short|000000004795|off] OK share_tail=0.3315 deg=False (1.0s) progress 93/300 ETA 4.7min
+2026-06-21 23:01:51.849 | INFO     | __main__:_process_length:501 - [short|000000004795|on ] OK share_tail=0.3453 deg=False (1.6s) progress 94/300 ETA 4.7min
+2026-06-21 23:01:52.799 | INFO     | __main__:_process_length:439 - [short|000000005001|off] OK share_tail=0.1505 deg=False (0.7s) progress 95/300 ETA 4.7min
+2026-06-21 23:01:53.849 | INFO     | __main__:_process_length:501 - [short|000000005001|on ] OK share_tail=0.1557 deg=False (1.0s) progress 96/300 ETA 4.6min
+2026-06-21 23:01:55.131 | INFO     | __main__:_process_length:439 - [short|000000005037|off] OK share_tail=0.1476 deg=False (0.9s) progress 97/300 ETA 4.6min
+2026-06-21 23:01:56.559 | INFO     | __main__:_process_length:501 - [short|000000005037|on ] OK share_tail=0.1624 deg=False (1.4s) progress 98/300 ETA 4.6min
+2026-06-21 23:01:57.510 | INFO     | __main__:_process_length:439 - [short|000000005060|off] OK share_tail=0.5150 deg=False (0.7s) progress 99/300 ETA 4.5min
+2026-06-21 23:01:58.559 | INFO     | __main__:_process_length:501 - [short|000000005060|on ] OK share_tail=0.5227 deg=False (1.0s) progress 100/300 ETA 4.5min
+2026-06-21 23:01:58.562 | INFO     | __main__:_process_length:365 - [medium] resume: diag=0 rows, eval=0 rows, captions_cached=0
+2026-06-21 23:02:03.348 | INFO     | __main__:_process_length:439 - [medium|000000000139|off] OK share_tail=0.4278 deg=False (3.2s) progress 101/300 ETA 4.6min
+2026-06-21 23:02:08.835 | INFO     | __main__:_process_length:501 - [medium|000000000139|on ] OK share_tail=0.6505 deg=False (5.5s) progress 102/300 ETA 4.7min
+2026-06-21 23:02:10.952 | INFO     | __main__:_process_length:439 - [medium|000000000285|off] OK share_tail=0.0751 deg=False (1.4s) progress 103/300 ETA 4.7min
+2026-06-21 23:02:13.319 | INFO     | __main__:_process_length:501 - [medium|000000000285|on ] OK share_tail=0.0855 deg=False (2.4s) progress 104/300 ETA 4.7min
+2026-06-21 23:02:17.827 | INFO     | __main__:_process_length:439 - [medium|000000000632|off] OK share_tail=0.3603 deg=False (3.1s) progress 105/300 ETA 4.8min
+2026-06-21 23:02:22.669 | INFO     | __main__:_process_length:501 - [medium|000000000632|on ] OK share_tail=0.4057 deg=False (4.8s) progress 106/300 ETA 4.9min
+2026-06-21 23:02:26.841 | INFO     | __main__:_process_length:439 - [medium|000000000724|off] OK share_tail=0.0434 deg=False (2.8s) progress 107/300 ETA 4.9min
+2026-06-21 23:02:31.435 | INFO     | __main__:_process_length:501 - [medium|000000000724|on ] OK share_tail=0.1114 deg=False (4.6s) progress 108/300 ETA 5.0min
+2026-06-21 23:02:35.110 | INFO     | __main__:_process_length:439 - [medium|000000000776|off] OK share_tail=0.0976 deg=False (2.5s) progress 109/300 ETA 5.0min
+2026-06-21 23:02:39.204 | INFO     | __main__:_process_length:501 - [medium|000000000776|on ] OK share_tail=0.1774 deg=False (4.1s) progress 110/300 ETA 5.1min
+2026-06-21 23:02:41.548 | INFO     | __main__:_process_length:439 - [medium|000000000785|off] OK share_tail=0.1534 deg=False (1.6s) progress 111/300 ETA 5.1min
+2026-06-21 23:02:44.188 | INFO     | __main__:_process_length:501 - [medium|000000000785|on ] OK share_tail=0.1729 deg=False (2.6s) progress 112/300 ETA 5.1min
+2026-06-21 23:02:46.749 | INFO     | __main__:_process_length:439 - [medium|000000000802|off] OK share_tail=0.2024 deg=False (1.7s) progress 113/300 ETA 5.1min
+2026-06-21 23:02:49.622 | INFO     | __main__:_process_length:501 - [medium|000000000802|on ] OK share_tail=0.2693 deg=False (2.9s) progress 114/300 ETA 5.1min
+2026-06-21 23:02:52.580 | INFO     | __main__:_process_length:439 - [medium|000000000872|off] OK share_tail=0.1060 deg=False (2.0s) progress 115/300 ETA 5.1min
+2026-06-21 23:02:55.877 | INFO     | __main__:_process_length:501 - [medium|000000000872|on ] OK share_tail=0.1657 deg=False (3.3s) progress 116/300 ETA 5.1min
+2026-06-21 23:03:00.224 | INFO     | __main__:_process_length:439 - [medium|000000000885|off] OK share_tail=0.1580 deg=False (2.9s) progress 117/300 ETA 5.1min
+2026-06-21 23:03:05.296 | INFO     | __main__:_process_length:501 - [medium|000000000885|on ] OK share_tail=0.1897 deg=False (5.1s) progress 118/300 ETA 5.2min
+2026-06-21 23:03:09.086 | INFO     | __main__:_process_length:439 - [medium|000000001000|off] OK share_tail=0.2101 deg=False (2.6s) progress 119/300 ETA 5.2min
+2026-06-21 23:03:13.197 | INFO     | __main__:_process_length:501 - [medium|000000001000|on ] OK share_tail=0.2660 deg=False (4.1s) progress 120/300 ETA 5.2min
+2026-06-21 23:03:17.046 | INFO     | __main__:_process_length:439 - [medium|000000001268|off] OK share_tail=0.1934 deg=False (2.6s) progress 121/300 ETA 5.3min
+2026-06-21 23:03:21.310 | INFO     | __main__:_process_length:501 - [medium|000000001268|on ] OK share_tail=0.2606 deg=False (4.3s) progress 122/300 ETA 5.3min
+2026-06-21 23:03:23.320 | INFO     | __main__:_process_length:439 - [medium|000000001296|off] OK share_tail=0.1046 deg=False (1.4s) progress 123/300 ETA 5.3min
+2026-06-21 23:03:26.375 | INFO     | __main__:_process_length:501 - [medium|000000001296|on ] OK share_tail=0.1214 deg=False (3.0s) progress 124/300 ETA 5.3min
+2026-06-21 23:03:30.161 | INFO     | __main__:_process_length:439 - [medium|000000001353|off] OK share_tail=0.0931 deg=False (2.6s) progress 125/300 ETA 5.3min
+2026-06-21 23:03:34.466 | INFO     | __main__:_process_length:501 - [medium|000000001353|on ] OK share_tail=0.1398 deg=False (4.3s) progress 126/300 ETA 5.3min
+2026-06-21 23:03:39.206 | INFO     | __main__:_process_length:439 - [medium|000000001425|off] OK share_tail=0.2274 deg=False (3.2s) progress 127/300 ETA 5.4min
+2026-06-21 23:03:44.493 | INFO     | __main__:_process_length:501 - [medium|000000001425|on ] OK share_tail=0.3330 deg=False (5.3s) progress 128/300 ETA 5.4min
+2026-06-21 23:03:48.003 | INFO     | __main__:_process_length:439 - [medium|000000001490|off] OK share_tail=0.1832 deg=False (2.4s) progress 129/300 ETA 5.4min
+2026-06-21 23:03:52.174 | INFO     | __main__:_process_length:501 - [medium|000000001490|on ] OK share_tail=0.2009 deg=False (4.2s) progress 130/300 ETA 5.4min
+2026-06-21 23:03:56.686 | INFO     | __main__:_process_length:439 - [medium|000000001503|off] OK share_tail=0.1634 deg=False (3.1s) progress 131/300 ETA 5.4min
+2026-06-21 23:04:01.946 | INFO     | __main__:_process_length:501 - [medium|000000001503|on ] OK share_tail=0.2626 deg=False (5.3s) progress 132/300 ETA 5.5min
+2026-06-21 23:04:04.790 | INFO     | __main__:_process_length:439 - [medium|000000001532|off] OK share_tail=0.3219 deg=False (1.9s) progress 133/300 ETA 5.5min
+2026-06-21 23:04:08.774 | INFO     | __main__:_process_length:501 - [medium|000000001532|on ] OK share_tail=0.3740 deg=False (4.0s) progress 134/300 ETA 5.5min
+2026-06-21 23:04:12.513 | INFO     | __main__:_process_length:439 - [medium|000000001584|off] OK share_tail=0.1281 deg=False (2.5s) progress 135/300 ETA 5.5min
+2026-06-21 23:04:16.631 | INFO     | __main__:_process_length:501 - [medium|000000001584|on ] OK share_tail=0.2169 deg=False (4.1s) progress 136/300 ETA 5.5min
+2026-06-21 23:04:17.645 | INFO     | __main__:_process_length:439 - [medium|000000001675|off] OK share_tail=0.5044 deg=False (0.7s) progress 137/300 ETA 5.4min
+2026-06-21 23:04:18.763 | INFO     | __main__:_process_length:501 - [medium|000000001675|on ] OK share_tail=0.5125 deg=False (1.1s) progress 138/300 ETA 5.4min
+2026-06-21 23:04:21.885 | INFO     | __main__:_process_length:439 - [medium|000000001761|off] OK share_tail=0.1025 deg=False (2.1s) progress 139/300 ETA 5.4min
+2026-06-21 23:04:25.749 | INFO     | __main__:_process_length:501 - [medium|000000001761|on ] OK share_tail=0.1371 deg=False (3.9s) progress 140/300 ETA 5.4min
+2026-06-21 23:04:28.318 | INFO     | __main__:_process_length:439 - [medium|000000001818|off] OK share_tail=0.1286 deg=False (1.8s) progress 141/300 ETA 5.4min
+2026-06-21 23:04:31.113 | INFO     | __main__:_process_length:501 - [medium|000000001818|on ] OK share_tail=0.1563 deg=False (2.8s) progress 142/300 ETA 5.3min
+2026-06-21 23:04:33.178 | INFO     | __main__:_process_length:439 - [medium|000000001993|off] OK share_tail=0.3159 deg=False (1.4s) progress 143/300 ETA 5.3min
+2026-06-21 23:04:35.672 | INFO     | __main__:_process_length:501 - [medium|000000001993|on ] OK share_tail=0.3410 deg=False (2.5s) progress 144/300 ETA 5.3min
+2026-06-21 23:04:39.464 | INFO     | __main__:_process_length:439 - [medium|000000002006|off] OK share_tail=0.0372 deg=False (2.6s) progress 145/300 ETA 5.3min
+2026-06-21 23:04:43.423 | INFO     | __main__:_process_length:501 - [medium|000000002006|on ] OK share_tail=0.1325 deg=False (4.0s) progress 146/300 ETA 5.3min
+2026-06-21 23:04:45.602 | INFO     | __main__:_process_length:439 - [medium|000000002149|off] OK share_tail=0.0449 deg=False (1.5s) progress 147/300 ETA 5.2min
+2026-06-21 23:04:48.353 | INFO     | __main__:_process_length:501 - [medium|000000002149|on ] OK share_tail=0.0526 deg=False (2.7s) progress 148/300 ETA 5.2min
+2026-06-21 23:04:53.594 | INFO     | __main__:_process_length:439 - [medium|000000002153|off] OK share_tail=0.1240 deg=False (3.5s) progress 149/300 ETA 5.2min
+2026-06-21 23:04:59.097 | INFO     | __main__:_process_length:501 - [medium|000000002153|on ] OK share_tail=0.2051 deg=False (5.5s) progress 150/300 ETA 5.3min
+2026-06-21 23:05:05.064 | INFO     | __main__:_process_length:439 - [medium|000000002157|off] OK share_tail=0.0782 deg=False (4.0s) progress 151/300 ETA 5.3min
+2026-06-21 23:05:11.435 | INFO     | __main__:_process_length:501 - [medium|000000002157|on ] OK share_tail=0.2108 deg=False (6.4s) progress 152/300 ETA 5.3min
+2026-06-21 23:05:14.003 | INFO     | __main__:_process_length:439 - [medium|000000002261|off] OK share_tail=0.0847 deg=False (1.8s) progress 153/300 ETA 5.3min
+2026-06-21 23:05:16.880 | INFO     | __main__:_process_length:501 - [medium|000000002261|on ] OK share_tail=0.1194 deg=False (2.9s) progress 154/300 ETA 5.3min
+2026-06-21 23:05:20.170 | INFO     | __main__:_process_length:439 - [medium|000000002299|off] OK share_tail=0.1045 deg=False (2.2s) progress 155/300 ETA 5.3min
+2026-06-21 23:05:24.404 | INFO     | __main__:_process_length:501 - [medium|000000002299|on ] OK share_tail=0.1388 deg=False (4.2s) progress 156/300 ETA 5.2min
+2026-06-21 23:05:29.928 | INFO     | __main__:_process_length:439 - [medium|000000002431|off] OK share_tail=0.1618 deg=False (3.7s) progress 157/300 ETA 5.3min
+2026-06-21 23:05:36.202 | INFO     | __main__:_process_length:501 - [medium|000000002431|on ] OK share_tail=0.2600 deg=False (6.3s) progress 158/300 ETA 5.3min
+2026-06-21 23:05:40.496 | INFO     | __main__:_process_length:439 - [medium|000000002473|off] OK share_tail=0.2133 deg=False (2.9s) progress 159/300 ETA 5.3min
+2026-06-21 23:05:44.938 | INFO     | __main__:_process_length:501 - [medium|000000002473|on ] OK share_tail=0.3233 deg=False (4.4s) progress 160/300 ETA 5.3min
+2026-06-21 23:05:47.787 | INFO     | __main__:_process_length:439 - [medium|000000002532|off] OK share_tail=0.2202 deg=False (1.9s) progress 161/300 ETA 5.2min
+2026-06-21 23:05:51.028 | INFO     | __main__:_process_length:501 - [medium|000000002532|on ] OK share_tail=0.2320 deg=False (3.2s) progress 162/300 ETA 5.2min
+2026-06-21 23:05:53.432 | INFO     | __main__:_process_length:439 - [medium|000000002587|off] OK share_tail=0.1830 deg=False (1.6s) progress 163/300 ETA 5.2min
+2026-06-21 23:05:55.979 | INFO     | __main__:_process_length:501 - [medium|000000002587|on ] OK share_tail=0.2072 deg=False (2.5s) progress 164/300 ETA 5.1min
+2026-06-21 23:05:58.381 | INFO     | __main__:_process_length:439 - [medium|000000002592|off] OK share_tail=0.3492 deg=False (1.6s) progress 165/300 ETA 5.1min
+2026-06-21 23:06:01.075 | INFO     | __main__:_process_length:501 - [medium|000000002592|on ] OK share_tail=0.3472 deg=False (2.7s) progress 166/300 ETA 5.1min
+2026-06-21 23:06:04.924 | INFO     | __main__:_process_length:439 - [medium|000000002685|off] OK share_tail=0.1514 deg=False (2.6s) progress 167/300 ETA 5.1min
+2026-06-21 23:06:09.408 | INFO     | __main__:_process_length:501 - [medium|000000002685|on ] OK share_tail=0.2104 deg=False (4.5s) progress 168/300 ETA 5.1min
+2026-06-21 23:06:12.921 | INFO     | __main__:_process_length:439 - [medium|000000002923|off] OK share_tail=0.0811 deg=False (2.4s) progress 169/300 ETA 5.0min
+2026-06-21 23:06:17.176 | INFO     | __main__:_process_length:501 - [medium|000000002923|on ] OK share_tail=0.1147 deg=False (4.2s) progress 170/300 ETA 5.0min
+2026-06-21 23:06:19.412 | INFO     | __main__:_process_length:439 - [medium|000000003156|off] OK share_tail=0.1526 deg=False (1.5s) progress 171/300 ETA 5.0min
+2026-06-21 23:06:21.997 | INFO     | __main__:_process_length:501 - [medium|000000003156|on ] OK share_tail=0.1684 deg=False (2.6s) progress 172/300 ETA 4.9min
+2026-06-21 23:06:25.069 | INFO     | __main__:_process_length:439 - [medium|000000003255|off] OK share_tail=0.1121 deg=False (2.1s) progress 173/300 ETA 4.9min
+2026-06-21 23:06:29.015 | INFO     | __main__:_process_length:501 - [medium|000000003255|on ] OK share_tail=0.1434 deg=False (3.9s) progress 174/300 ETA 4.9min
+2026-06-21 23:06:33.144 | INFO     | __main__:_process_length:439 - [medium|000000003501|off] OK share_tail=0.0512 deg=False (2.8s) progress 175/300 ETA 4.9min
+2026-06-21 23:06:37.817 | INFO     | __main__:_process_length:501 - [medium|000000003501|on ] OK share_tail=0.0931 deg=False (4.7s) progress 176/300 ETA 4.9min
+2026-06-21 23:06:41.499 | INFO     | __main__:_process_length:439 - [medium|000000003553|off] OK share_tail=0.0491 deg=False (2.5s) progress 177/300 ETA 4.8min
+2026-06-21 23:06:45.370 | INFO     | __main__:_process_length:501 - [medium|000000003553|on ] OK share_tail=0.0878 deg=False (3.9s) progress 178/300 ETA 4.8min
+2026-06-21 23:06:48.163 | INFO     | __main__:_process_length:439 - [medium|000000003661|off] OK share_tail=0.1091 deg=False (1.9s) progress 179/300 ETA 4.8min
+2026-06-21 23:06:51.342 | INFO     | __main__:_process_length:501 - [medium|000000003661|on ] OK share_tail=0.1628 deg=False (3.2s) progress 180/300 ETA 4.8min
+2026-06-21 23:06:55.024 | INFO     | __main__:_process_length:439 - [medium|000000003845|off] OK share_tail=0.1615 deg=False (2.5s) progress 181/300 ETA 4.7min
+2026-06-21 23:06:59.347 | INFO     | __main__:_process_length:501 - [medium|000000003845|on ] OK share_tail=0.2914 deg=False (4.3s) progress 182/300 ETA 4.7min
+2026-06-21 23:07:02.808 | INFO     | __main__:_process_length:439 - [medium|000000003934|off] OK share_tail=0.2749 deg=False (2.4s) progress 183/300 ETA 4.7min
+2026-06-21 23:07:06.759 | INFO     | __main__:_process_length:501 - [medium|000000003934|on ] OK share_tail=0.3111 deg=False (3.9s) progress 184/300 ETA 4.7min
+2026-06-21 23:07:11.173 | INFO     | __main__:_process_length:439 - [medium|000000004134|off] OK share_tail=0.3496 deg=False (3.0s) progress 185/300 ETA 4.6min
+2026-06-21 23:07:16.403 | INFO     | __main__:_process_length:501 - [medium|000000004134|on ] OK share_tail=0.3943 deg=False (5.2s) progress 186/300 ETA 4.6min
+2026-06-21 23:07:18.306 | INFO     | __main__:_process_length:439 - [medium|000000004395|off] OK share_tail=0.1587 deg=False (1.3s) progress 187/300 ETA 4.6min
+2026-06-21 23:07:20.476 | INFO     | __main__:_process_length:501 - [medium|000000004395|on ] OK share_tail=0.1622 deg=False (2.2s) progress 188/300 ETA 4.5min
+2026-06-21 23:07:24.327 | INFO     | __main__:_process_length:439 - [medium|000000004495|off] OK share_tail=0.1209 deg=False (2.6s) progress 189/300 ETA 4.5min
+2026-06-21 23:07:27.853 | INFO     | __main__:_process_length:501 - [medium|000000004495|on ] OK share_tail=0.2246 deg=False (3.5s) progress 190/300 ETA 4.5min
+2026-06-21 23:07:30.258 | INFO     | __main__:_process_length:439 - [medium|000000004765|off] OK share_tail=0.2204 deg=False (1.6s) progress 191/300 ETA 4.4min
+2026-06-21 23:07:33.039 | INFO     | __main__:_process_length:501 - [medium|000000004765|on ] OK share_tail=0.2464 deg=False (2.8s) progress 192/300 ETA 4.4min
+2026-06-21 23:07:34.610 | INFO     | __main__:_process_length:439 - [medium|000000004795|off] OK share_tail=0.2731 deg=False (1.1s) progress 193/300 ETA 4.4min
+2026-06-21 23:07:36.367 | INFO     | __main__:_process_length:501 - [medium|000000004795|on ] OK share_tail=0.2958 deg=False (1.8s) progress 194/300 ETA 4.3min
+2026-06-21 23:07:40.888 | INFO     | __main__:_process_length:439 - [medium|000000005001|off] OK share_tail=0.2594 deg=False (3.1s) progress 195/300 ETA 4.3min
+2026-06-21 23:07:45.961 | INFO     | __main__:_process_length:501 - [medium|000000005001|on ] OK share_tail=0.4063 deg=False (5.1s) progress 196/300 ETA 4.3min
+2026-06-21 23:07:49.869 | INFO     | __main__:_process_length:439 - [medium|000000005037|off] OK share_tail=0.0585 deg=False (2.7s) progress 197/300 ETA 4.2min
+2026-06-21 23:07:53.910 | INFO     | __main__:_process_length:501 - [medium|000000005037|on ] OK share_tail=0.0915 deg=False (4.0s) progress 198/300 ETA 4.2min
+2026-06-21 23:07:56.095 | INFO     | __main__:_process_length:439 - [medium|000000005060|off] OK share_tail=0.1823 deg=False (1.5s) progress 199/300 ETA 4.2min
+2026-06-21 23:07:58.563 | INFO     | __main__:_process_length:501 - [medium|000000005060|on ] OK share_tail=0.1966 deg=False (2.5s) progress 200/300 ETA 4.1min
+2026-06-21 23:07:58.567 | INFO     | __main__:_process_length:365 - [long] resume: diag=0 rows, eval=0 rows, captions_cached=0
+2026-06-21 23:08:06.989 | INFO     | __main__:_process_length:439 - [long|000000000139|off] OK share_tail=0.3237 deg=False (5.7s) progress 201/300 ETA 4.1min
+2026-06-21 23:08:16.889 | INFO     | __main__:_process_length:501 - [long|000000000139|on ] OK share_tail=0.6707 deg=False (9.9s) progress 202/300 ETA 4.2min
+2026-06-21 23:08:22.688 | INFO     | __main__:_process_length:439 - [long|000000000285|off] OK share_tail=0.0417 deg=False (3.9s) progress 203/300 ETA 4.1min
+2026-06-21 23:08:29.135 | INFO     | __main__:_process_length:501 - [long|000000000285|on ] OK share_tail=0.1890 deg=False (6.4s) progress 204/300 ETA 4.1min
+2026-06-21 23:08:36.214 | INFO     | __main__:_process_length:439 - [long|000000000632|off] OK share_tail=0.1953 deg=False (4.8s) progress 205/300 ETA 4.1min
+2026-06-21 23:08:52.235 | INFO     | __main__:_process_length:501 - [long|000000000632|on ] OK share_tail=0.3672 deg=False (16.0s) progress 206/300 ETA 4.2min
+2026-06-21 23:08:58.086 | INFO     | __main__:_process_length:439 - [long|000000000724|off] OK share_tail=0.0600 deg=False (4.0s) progress 207/300 ETA 4.2min
+2026-06-21 23:09:05.130 | INFO     | __main__:_process_length:501 - [long|000000000724|on ] OK share_tail=0.2366 deg=False (7.0s) progress 208/300 ETA 4.1min
+2026-06-21 23:09:12.213 | INFO     | __main__:_process_length:439 - [long|000000000776|off] OK share_tail=0.0718 deg=False (4.8s) progress 209/300 ETA 4.1min
+2026-06-21 23:09:28.254 | INFO     | __main__:_process_length:501 - [long|000000000776|on ] OK share_tail=0.4094 deg=True (16.0s) progress 210/300 ETA 4.2min
+2026-06-21 23:09:33.938 | INFO     | __main__:_process_length:439 - [long|000000000785|off] OK share_tail=0.0872 deg=False (3.8s) progress 211/300 ETA 4.2min
+2026-06-21 23:09:40.586 | INFO     | __main__:_process_length:501 - [long|000000000785|on ] OK share_tail=0.1525 deg=False (6.6s) progress 212/300 ETA 4.1min
+2026-06-21 23:09:49.573 | INFO     | __main__:_process_length:439 - [long|000000000802|off] OK share_tail=0.2192 deg=False (6.1s) progress 213/300 ETA 4.1min
+2026-06-21 23:09:58.999 | INFO     | __main__:_process_length:501 - [long|000000000802|on ] OK share_tail=0.6076 deg=False (9.4s) progress 214/300 ETA 4.1min
+2026-06-21 23:10:08.045 | INFO     | __main__:_process_length:439 - [long|000000000872|off] OK share_tail=0.0643 deg=False (6.1s) progress 215/300 ETA 4.1min
+2026-06-21 23:10:17.711 | INFO     | __main__:_process_length:501 - [long|000000000872|on ] OK share_tail=0.2500 deg=False (9.7s) progress 216/300 ETA 4.1min
+2026-06-21 23:10:23.454 | INFO     | __main__:_process_length:439 - [long|000000000885|off] OK share_tail=0.0564 deg=False (3.9s) progress 217/300 ETA 4.1min
+2026-06-21 23:10:30.773 | INFO     | __main__:_process_length:501 - [long|000000000885|on ] OK share_tail=0.2163 deg=False (7.3s) progress 218/300 ETA 4.1min
+2026-06-21 23:10:39.316 | INFO     | __main__:_process_length:439 - [long|000000001000|off] OK share_tail=0.0730 deg=False (5.8s) progress 219/300 ETA 4.0min
+2026-06-21 23:10:48.709 | INFO     | __main__:_process_length:501 - [long|000000001000|on ] OK share_tail=0.2344 deg=False (9.4s) progress 220/300 ETA 4.0min
+2026-06-21 23:10:57.197 | INFO     | __main__:_process_length:439 - [long|000000001268|off] OK share_tail=0.0889 deg=False (5.7s) progress 221/300 ETA 4.0min
+2026-06-21 23:11:06.573 | INFO     | __main__:_process_length:501 - [long|000000001268|on ] OK share_tail=0.1930 deg=False (9.4s) progress 222/300 ETA 4.0min
+2026-06-21 23:11:13.662 | INFO     | __main__:_process_length:439 - [long|000000001296|off] OK share_tail=0.1333 deg=False (4.8s) progress 223/300 ETA 4.0min
+2026-06-21 23:11:21.946 | INFO     | __main__:_process_length:501 - [long|000000001296|on ] OK share_tail=0.2893 deg=False (8.3s) progress 224/300 ETA 4.0min
+2026-06-21 23:11:29.761 | INFO     | __main__:_process_length:439 - [long|000000001353|off] OK share_tail=0.0599 deg=False (5.3s) progress 225/300 ETA 3.9min
+2026-06-21 23:11:46.334 | INFO     | __main__:_process_length:501 - [long|000000001353|on ] OK share_tail=0.2233 deg=True (16.6s) progress 226/300 ETA 3.9min
+2026-06-21 23:11:56.169 | INFO     | __main__:_process_length:439 - [long|000000001425|off] OK share_tail=0.1823 deg=False (6.6s) progress 227/300 ETA 3.9min
+2026-06-21 23:12:06.196 | INFO     | __main__:_process_length:501 - [long|000000001425|on ] OK share_tail=0.4568 deg=False (10.0s) progress 228/300 ETA 3.9min
+2026-06-21 23:12:14.801 | INFO     | __main__:_process_length:439 - [long|000000001490|off] OK share_tail=0.2132 deg=False (5.8s) progress 229/300 ETA 3.9min
+2026-06-21 23:12:24.279 | INFO     | __main__:_process_length:501 - [long|000000001490|on ] OK share_tail=0.3587 deg=False (9.5s) progress 230/300 ETA 3.9min
+2026-06-21 23:12:32.037 | INFO     | __main__:_process_length:439 - [long|000000001503|off] OK share_tail=0.2466 deg=False (5.2s) progress 231/300 ETA 3.8min
+2026-06-21 23:12:48.585 | INFO     | __main__:_process_length:501 - [long|000000001503|on ] OK share_tail=0.5733 deg=True (16.5s) progress 232/300 ETA 3.8min
+2026-06-21 23:12:56.687 | INFO     | __main__:_process_length:439 - [long|000000001532|off] OK share_tail=0.2374 deg=False (5.5s) progress 233/300 ETA 3.8min
+2026-06-21 23:13:13.483 | INFO     | __main__:_process_length:501 - [long|000000001532|on ] OK share_tail=0.3749 deg=True (16.8s) progress 234/300 ETA 3.8min
+2026-06-21 23:13:21.303 | INFO     | __main__:_process_length:439 - [long|000000001584|off] OK share_tail=0.2899 deg=False (5.3s) progress 235/300 ETA 3.8min
+2026-06-21 23:13:29.866 | INFO     | __main__:_process_length:501 - [long|000000001584|on ] OK share_tail=0.5536 deg=False (8.6s) progress 236/300 ETA 3.7min
+2026-06-21 23:13:33.661 | INFO     | __main__:_process_length:439 - [long|000000001675|off] OK share_tail=0.0443 deg=False (2.6s) progress 237/300 ETA 3.7min
+2026-06-21 23:13:38.447 | INFO     | __main__:_process_length:501 - [long|000000001675|on ] OK share_tail=0.0822 deg=False (4.8s) progress 238/300 ETA 3.6min
+2026-06-21 23:13:44.641 | INFO     | __main__:_process_length:439 - [long|000000001761|off] OK share_tail=0.0885 deg=False (4.2s) progress 239/300 ETA 3.6min
+2026-06-21 23:13:51.500 | INFO     | __main__:_process_length:501 - [long|000000001761|on ] OK share_tail=0.2604 deg=False (6.9s) progress 240/300 ETA 3.5min
+2026-06-21 23:13:56.858 | INFO     | __main__:_process_length:439 - [long|000000001818|off] OK share_tail=0.2705 deg=False (3.6s) progress 241/300 ETA 3.5min
+2026-06-21 23:14:03.141 | INFO     | __main__:_process_length:501 - [long|000000001818|on ] OK share_tail=0.3705 deg=False (6.3s) progress 242/300 ETA 3.4min
+2026-06-21 23:14:12.480 | INFO     | __main__:_process_length:439 - [long|000000001993|off] OK share_tail=0.3185 deg=False (6.3s) progress 243/300 ETA 3.4min
+2026-06-21 23:14:30.223 | INFO     | __main__:_process_length:501 - [long|000000001993|on ] OK share_tail=0.8712 deg=True (17.7s) progress 244/300 ETA 3.4min
+2026-06-21 23:14:37.204 | INFO     | __main__:_process_length:439 - [long|000000002006|off] OK share_tail=0.0909 deg=False (4.7s) progress 245/300 ETA 3.3min
+2026-06-21 23:14:45.287 | INFO     | __main__:_process_length:501 - [long|000000002006|on ] OK share_tail=0.4806 deg=False (8.1s) progress 246/300 ETA 3.3min
+2026-06-21 23:14:50.532 | INFO     | __main__:_process_length:439 - [long|000000002149|off] OK share_tail=0.0894 deg=False (3.6s) progress 247/300 ETA 3.2min
+2026-06-21 23:14:56.588 | INFO     | __main__:_process_length:501 - [long|000000002149|on ] OK share_tail=0.2756 deg=False (6.0s) progress 248/300 ETA 3.2min
+2026-06-21 23:15:06.269 | INFO     | __main__:_process_length:439 - [long|000000002153|off] OK share_tail=0.0825 deg=False (6.5s) progress 249/300 ETA 3.2min
+2026-06-21 23:15:24.273 | INFO     | __main__:_process_length:501 - [long|000000002153|on ] OK share_tail=0.4404 deg=True (18.0s) progress 250/300 ETA 3.1min
+2026-06-21 23:15:33.841 | INFO     | __main__:_process_length:439 - [long|000000002157|off] OK share_tail=0.1931 deg=False (6.5s) progress 251/300 ETA 3.1min
+2026-06-21 23:15:45.255 | INFO     | __main__:_process_length:501 - [long|000000002157|on ] OK share_tail=0.5409 deg=True (11.4s) progress 252/300 ETA 3.1min
+2026-06-21 23:15:53.927 | INFO     | __main__:_process_length:439 - [long|000000002261|off] OK share_tail=0.1062 deg=False (5.9s) progress 253/300 ETA 3.0min
+2026-06-21 23:16:03.472 | INFO     | __main__:_process_length:501 - [long|000000002261|on ] OK share_tail=0.3201 deg=False (9.5s) progress 254/300 ETA 3.0min
+2026-06-21 23:16:11.799 | INFO     | __main__:_process_length:439 - [long|000000002299|off] OK share_tail=0.1399 deg=False (5.6s) progress 255/300 ETA 2.9min
+2026-06-21 23:16:28.757 | INFO     | __main__:_process_length:501 - [long|000000002299|on ] OK share_tail=0.3553 deg=True (17.0s) progress 256/300 ETA 2.9min
+2026-06-21 23:16:35.963 | INFO     | __main__:_process_length:439 - [long|000000002431|off] OK share_tail=0.2175 deg=False (4.9s) progress 257/300 ETA 2.8min
+2026-06-21 23:16:48.730 | INFO     | __main__:_process_length:501 - [long|000000002431|on ] OK share_tail=0.3215 deg=True (12.8s) progress 258/300 ETA 2.8min
+2026-06-21 23:16:55.767 | INFO     | __main__:_process_length:439 - [long|000000002473|off] OK share_tail=0.0604 deg=False (4.8s) progress 259/300 ETA 2.7min
+2026-06-21 23:17:04.399 | INFO     | __main__:_process_length:501 - [long|000000002473|on ] OK share_tail=0.1981 deg=False (8.6s) progress 260/300 ETA 2.7min
+2026-06-21 23:17:12.956 | INFO     | __main__:_process_length:439 - [long|000000002532|off] OK share_tail=0.1430 deg=False (5.8s) progress 261/300 ETA 2.6min
+2026-06-21 23:17:22.465 | INFO     | __main__:_process_length:501 - [long|000000002532|on ] OK share_tail=0.4224 deg=False (9.5s) progress 262/300 ETA 2.6min
+2026-06-21 23:17:28.385 | INFO     | __main__:_process_length:439 - [long|000000002587|off] OK share_tail=0.1339 deg=False (4.0s) progress 263/300 ETA 2.5min
+2026-06-21 23:17:34.928 | INFO     | __main__:_process_length:501 - [long|000000002587|on ] OK share_tail=0.3636 deg=False (6.5s) progress 264/300 ETA 2.4min
+2026-06-21 23:17:39.961 | INFO     | __main__:_process_length:439 - [long|000000002592|off] OK share_tail=0.0857 deg=False (3.4s) progress 265/300 ETA 2.4min
+2026-06-21 23:17:46.331 | INFO     | __main__:_process_length:501 - [long|000000002592|on ] OK share_tail=0.1847 deg=False (6.4s) progress 266/300 ETA 2.3min
+2026-06-21 23:17:53.990 | INFO     | __main__:_process_length:439 - [long|000000002685|off] OK share_tail=0.2562 deg=False (5.2s) progress 267/300 ETA 2.2min
+2026-06-21 23:18:02.624 | INFO     | __main__:_process_length:501 - [long|000000002685|on ] OK share_tail=0.5260 deg=False (8.6s) progress 268/300 ETA 2.2min
+2026-06-21 23:18:11.578 | INFO     | __main__:_process_length:439 - [long|000000002923|off] OK share_tail=0.2496 deg=False (6.1s) progress 269/300 ETA 2.1min
+2026-06-21 23:18:21.209 | INFO     | __main__:_process_length:501 - [long|000000002923|on ] OK share_tail=0.4520 deg=False (9.6s) progress 270/300 ETA 2.1min
+2026-06-21 23:18:27.357 | INFO     | __main__:_process_length:439 - [long|000000003156|off] OK share_tail=0.0595 deg=False (4.2s) progress 271/300 ETA 2.0min
+2026-06-21 23:18:34.263 | INFO     | __main__:_process_length:501 - [long|000000003156|on ] OK share_tail=0.1131 deg=False (6.9s) progress 272/300 ETA 1.9min
+2026-06-21 23:18:42.935 | INFO     | __main__:_process_length:439 - [long|000000003255|off] OK share_tail=0.1575 deg=False (5.9s) progress 273/300 ETA 1.9min
+2026-06-21 23:18:52.455 | INFO     | __main__:_process_length:501 - [long|000000003255|on ] OK share_tail=0.2635 deg=False (9.5s) progress 274/300 ETA 1.8min
+2026-06-21 23:18:58.494 | INFO     | __main__:_process_length:439 - [long|000000003501|off] OK share_tail=0.0892 deg=False (4.1s) progress 275/300 ETA 1.8min
+2026-06-21 23:19:05.169 | INFO     | __main__:_process_length:501 - [long|000000003501|on ] OK share_tail=0.2317 deg=False (6.7s) progress 276/300 ETA 1.7min
+2026-06-21 23:19:11.935 | INFO     | __main__:_process_length:439 - [long|000000003553|off] OK share_tail=0.1890 deg=False (4.6s) progress 277/300 ETA 1.6min
+2026-06-21 23:19:18.752 | INFO     | __main__:_process_length:501 - [long|000000003553|on ] OK share_tail=0.4630 deg=False (6.8s) progress 278/300 ETA 1.6min
+2026-06-21 23:19:24.623 | INFO     | __main__:_process_length:439 - [long|000000003661|off] OK share_tail=0.1413 deg=False (4.0s) progress 279/300 ETA 89s
+2026-06-21 23:19:30.921 | INFO     | __main__:_process_length:501 - [long|000000003661|on ] OK share_tail=0.3402 deg=False (6.3s) progress 280/300 ETA 85s
+2026-06-21 23:19:39.547 | INFO     | __main__:_process_length:439 - [long|000000003845|off] OK share_tail=0.1975 deg=False (5.8s) progress 281/300 ETA 81s
+2026-06-21 23:19:56.727 | INFO     | __main__:_process_length:501 - [long|000000003845|on ] OK share_tail=0.4353 deg=True (17.2s) progress 282/300 ETA 77s
+2026-06-21 23:20:06.418 | INFO     | __main__:_process_length:439 - [long|000000003934|off] OK share_tail=0.1759 deg=False (6.6s) progress 283/300 ETA 73s
+2026-06-21 23:20:24.412 | INFO     | __main__:_process_length:501 - [long|000000003934|on ] OK share_tail=0.5751 deg=False (18.0s) progress 284/300 ETA 70s
+2026-06-21 23:20:32.358 | INFO     | __main__:_process_length:439 - [long|000000004134|off] OK share_tail=0.1471 deg=False (5.4s) progress 285/300 ETA 66s
+2026-06-21 23:20:40.973 | INFO     | __main__:_process_length:501 - [long|000000004134|on ] OK share_tail=0.2548 deg=False (8.6s) progress 286/300 ETA 62s
+2026-06-21 23:20:49.933 | INFO     | __main__:_process_length:439 - [long|000000004395|off] OK share_tail=0.0766 deg=False (6.1s) progress 287/300 ETA 57s
+2026-06-21 23:21:07.382 | INFO     | __main__:_process_length:501 - [long|000000004395|on ] OK share_tail=0.3835 deg=True (17.4s) progress 288/300 ETA 53s
+2026-06-21 23:21:17.246 | INFO     | __main__:_process_length:439 - [long|000000004495|off] OK share_tail=0.4450 deg=False (6.7s) progress 289/300 ETA 49s
+2026-06-21 23:21:27.273 | INFO     | __main__:_process_length:501 - [long|000000004495|on ] OK share_tail=0.8244 deg=False (10.0s) progress 290/300 ETA 45s
+2026-06-21 23:21:34.718 | INFO     | __main__:_process_length:439 - [long|000000004765|off] OK share_tail=0.0519 deg=False (5.0s) progress 291/300 ETA 41s
+2026-06-21 23:21:43.221 | INFO     | __main__:_process_length:501 - [long|000000004765|on ] OK share_tail=0.1463 deg=False (8.5s) progress 292/300 ETA 36s
+2026-06-21 23:21:47.703 | INFO     | __main__:_process_length:439 - [long|000000004795|off] OK share_tail=0.0769 deg=False (3.0s) progress 293/300 ETA 32s
+2026-06-21 23:21:53.138 | INFO     | __main__:_process_length:501 - [long|000000004795|on ] OK share_tail=0.1340 deg=False (5.4s) progress 294/300 ETA 27s
+2026-06-21 23:22:02.104 | INFO     | __main__:_process_length:439 - [long|000000005001|off] OK share_tail=0.1177 deg=False (6.1s) progress 295/300 ETA 23s
+2026-06-21 23:22:19.564 | INFO     | __main__:_process_length:501 - [long|000000005001|on ] OK share_tail=0.5731 deg=True (17.5s) progress 296/300 ETA 18s
+2026-06-21 23:22:25.777 | INFO     | __main__:_process_length:439 - [long|000000005037|off] OK share_tail=0.0439 deg=False (4.2s) progress 297/300 ETA 14s
+2026-06-21 23:22:32.708 | INFO     | __main__:_process_length:501 - [long|000000005037|on ] OK share_tail=0.1414 deg=False (6.9s) progress 298/300 ETA 9s
+2026-06-21 23:22:42.576 | INFO     | __main__:_process_length:439 - [long|000000005060|off] OK share_tail=0.0911 deg=False (6.7s) progress 299/300 ETA 5s
+2026-06-21 23:22:52.999 | INFO     | __main__:_process_length:501 - [long|000000005060|on ] OK share_tail=0.5447 deg=False (10.4s) progress 300/300 ETA 0s
+2026-06-21 23:22:53.000 | INFO     | __main__:main:703 - ======================================================================
+2026-06-21 23:22:53.000 | INFO     | __main__:main:704 - DONE. cells_executed=300 cells_skipped=0 elapsed=23.2min
+2026-06-21 23:22:53.233 | INFO     | __main__:main:718 - Per-length results:
+2026-06-21 23:22:53.233 | INFO     | __main__:main:720 -   [short] off n=50 median_share_tail=0.29215341806411743  on n=50 median_share_tail=0.3039759248495102
+2026-06-21 23:22:53.233 | INFO     | __main__:main:724 -   [short] degenerated off=0.0%  on=0.0%
+2026-06-21 23:22:53.233 | INFO     | __main__:main:720 -   [medium] off n=50 median_share_tail=0.15569838881492615  on n=50 median_share_tail=0.20617074519395828
+2026-06-21 23:22:53.233 | INFO     | __main__:main:724 -   [medium] degenerated off=0.0%  on=0.0%
+2026-06-21 23:22:53.233 | INFO     | __main__:main:720 -   [long] off n=50 median_share_tail=0.1254732683300972  on n=50 median_share_tail=0.3570253998041153
+2026-06-21 23:22:53.233 | INFO     | __main__:main:724 -   [long] degenerated off=0.0%  on=24.0%
+2026-06-21 23:22:53.233 | INFO     | __main__:main:728 - summary saved to: results/diagnostico/llava-1.5-7b/short/run_all_v1/run_all_summary.json
+2026-06-21 23:22:53.233 | INFO     | __main__:main:729 - log file        : results/diagnostico/llava-1.5-7b/short/run_all_v1/logs/run_all.log
+2026-06-21 23:22:53.233 | INFO     | __main__:main:730 - ======================================================================

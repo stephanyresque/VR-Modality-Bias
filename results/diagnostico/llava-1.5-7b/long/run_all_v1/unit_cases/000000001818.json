@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001818",
+  "image_path": "data/processed/mscoco_baseline/images/000000001818.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features two zebras standing close to each other on a grassy field. One zebra is positioned towards the left side of the frame while the other occupies most of the right side. They appear to be interacting with one another or possibly nuzzling their heads together. In addition to these two prominent zebras, there are several smaller figures scattered throughout the background, likely representing more members of their herd.",
+    "free_caption": "The image features two zebras standing close to each other on a grassy field. One zebra is positioned towards the left side of the frame while the other occupies most of the right side. They appear to be interacting with one another or possibly nuzzling their heads together. In addition to these two prominent zebras, there are several smaller figures scattered throughout the background, likely representing more members of their herd.",
+    "share_tail": 0.27052579040718894,
+    "residual_ratio": 0.7110525145477328,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 90,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features two zebras standing close to each other on a grassy field. One zebra is positioned towards the left side of the frame while the other occupies most of the right side. They appear to be interacting with one another or possibly nuzzling their heads together. In addition to these two prominent zebras, there are several smaller figures scattered throughout the background, likely representing more members of their herd.",
+    "free_caption": "The image features two zebras standing close to each other on a grassy field with tall green grass surrounding them. One zebra is nuzzling its head underneath the neck of another zebra, creating an intimate moment between the animals. This interaction suggests that they might be engaging in social behavior or bonding. In addition to these two prominent zebras, there are several smaller black and white stripes scattered throughout the background, adding depth and texture to the scene.",
+    "share_tail": 0.370548543429073,
+    "residual_ratio": 0.7860922889474563,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 90,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

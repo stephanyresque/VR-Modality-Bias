@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002153",
+  "image_path": "data/processed/mscoco_baseline/images/000000002153.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The pitcher is throwing a baseball to home plate while the batter stands ready with his bat.",
+    "free_caption": "The pitcher is throwing a baseball to home plate while the batter stands ready with his bat.",
+    "share_tail": 0.17138436193683393,
+    "residual_ratio": 0.30606809460173323,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The pitcher is throwing a baseball to home plate while the batter stands ready with his bat.",
+    "free_caption": "The pitcher is throwing a baseball to home plate while the batter stands ready with his bat.",
+    "share_tail": 0.17855808434005252,
+    "residual_ratio": 0.31223786593279335,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

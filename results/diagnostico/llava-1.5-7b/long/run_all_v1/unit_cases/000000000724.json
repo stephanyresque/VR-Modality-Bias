@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000724",
+  "image_path": "data/processed/mscoco_baseline/images/000000000724.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an intersection with a red stop sign prominently displayed on top of a metal pole. There are several vehicles present at this location, including two trucks parked near each other, one closer to the left side of the frame and another further back towards the center. Additionally, there is a car positioned slightly behind the first truck on the left side. Another car can be seen farther away from the main group, located more toward the right edge of the image.",
+    "free_caption": "The image features an intersection with a red stop sign prominently displayed on top of a metal pole. There are several vehicles present at this location, including two trucks parked near each other, one closer to the left side of the frame and another further back towards the center. Additionally, there is a car positioned slightly behind the first truck on the left side. Another car can be seen farther away from the main group, located more toward the right edge of the image.",
+    "share_tail": 0.059971409132769465,
+    "residual_ratio": 0.8154560868403621,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 99,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an intersection with a red stop sign prominently displayed on top of a metal pole. There are several vehicles present at this location, including two trucks parked near each other, one closer to the left side of the frame and another further back towards the center. Additionally, there is a car positioned slightly behind the first truck on the left side. Another car can be seen farther away from the main group, located more toward the right edge of the image.",
+    "free_caption": "The image features an intersection with a red stop sign prominently displayed on a pole at the corner. There are several vehicles present around the area, including two trucks parked nearby, one closer to the left side of the frame and another further back towards the center. Additionally, there is a car located near the right edge of the image.\n\nThe street appears busy as multiple traffic lights can be seen throughout the scene. Some are positioned close together while others are spaced apart from each other. Trees line both sides of the roadway, providing shade over the street.",
+    "share_tail": 0.23657261881601693,
+    "residual_ratio": 0.862943219619568,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 99,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

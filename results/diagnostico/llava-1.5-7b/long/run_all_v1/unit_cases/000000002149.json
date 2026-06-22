@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002149",
+  "image_path": "data/processed/mscoco_baseline/images/000000002149.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an assortment of green apples arranged on top of a white plate or bowl. There are at least nine distinct apples displayed in various positions around the dish. Some apples can be seen closer to the front edge of the plate while others are positioned more towards the back. Overall, it is a visually appealing arrangement that showcases the vibrant color of these fresh fruits.",
+    "free_caption": "The image features an assortment of green apples arranged on top of a white plate or bowl. There are at least nine distinct apples displayed in various positions around the dish. Some apples can be seen closer to the front edge of the plate while others are positioned more towards the back. Overall, it is a visually appealing arrangement that showcases the vibrant color of these fresh fruits.",
+    "share_tail": 0.08942010206258537,
+    "residual_ratio": 0.8545055629570877,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 88,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an assortment of green apples arranged on top of a white plate or bowl. There are at least nine distinct apples displayed in various positions around the dish. Some apples can be seen closer to the front edge of the plate while others are positioned more towards the back. Overall, it is a visually appealing arrangement that showcases the vibrant color of these fresh fruits.",
+    "free_caption": "The image features an assortment of green apples arranged on a white plate or bowl placed on top of a dining table. There are at least nine distinct apples displayed in various positions around the plate, with some closer to the front while others are situated towards the back. Some apples have their stems still attached, adding to the natural appearance of the fruit arrangement. Overall, it is a visually appealing display of fresh green apples.",
+    "share_tail": 0.27561044478861574,
+    "residual_ratio": 0.9024480412586033,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 88,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

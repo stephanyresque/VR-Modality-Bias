@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004495",
+  "image_path": "data/processed/mscoco_baseline/images/000000004495.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The living room features a couch with a television on top of it. There is also a chair positioned nearby. In addition to these furnishings, there are two people present in the scene, one standing closer to the left side while the other person stands nearer to the right side of the frame.",
+    "free_caption": "The living room features a couch with a television on top of it. There is also a chair positioned nearby. In addition to these furnishings, there are two people present in the scene, one standing closer to the left side while the other person stands nearer to the right side of the frame.",
+    "share_tail": 0.12094911898492693,
+    "residual_ratio": 0.7997798294778403,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The living room features a couch with a television on top of it. There is also a chair positioned nearby. In addition to these furnishings, there are two people present in the scene, one standing closer to the left side while the other person stands nearer to the right side of the frame.",
+    "free_caption": "The living room features a couch with a television on top of it. There is also a chair positioned nearby.",
+    "share_tail": 0.22464123874862862,
+    "residual_ratio": 0.8481536887217966,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

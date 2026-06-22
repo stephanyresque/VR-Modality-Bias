@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004495",
+  "image_path": "data/processed/mscoco_baseline/images/000000004495.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The living room is furnished with two couches placed against opposite walls, creating an L-shaped layout. One couch is situated on the left side of the room, while the other occupies the right side. There are also three chairs in the space – one near each wall and another closer to the center. In addition to these seating options, there's a TV mounted on the wall above the first couch, providing entertainment for those sitting down.\n\nThe room has a yellow color scheme that adds warmth to the atmosphere. A remote control can be seen resting on top of one of the couches, indicating that someone might have been watching television recently or plans to do so later. Overall, this cozy living area offers ample seating and entertainment options for its inhabitants.",
+    "free_caption": "The living room is furnished with two couches placed against opposite walls, creating an L-shaped layout. One couch is situated on the left side of the room, while the other occupies the right side. There are also three chairs in the space – one near each wall and another closer to the center. In addition to these seating options, there's a TV mounted on the wall above the first couch, providing entertainment for those sitting down.\n\nThe room has a yellow color scheme that adds warmth to the atmosphere. A remote control can be seen resting on top of one of the couches, indicating that someone might have been watching television recently or plans to do so later. Overall, this cozy living area offers ample seating and entertainment options for its inhabitants.",
+    "share_tail": 0.4450150556415197,
+    "residual_ratio": 0.8655208173791291,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The living room is furnished with two couches placed against opposite walls, creating an L-shaped layout. One couch is situated on the left side of the room, while the other occupies the right side. There are also three chairs in the space – one near each wall and another closer to the center. In addition to these seating options, there's a TV mounted on the wall above the first couch, providing entertainment for those sitting down.\n\nThe room has a yellow color scheme that adds warmth to the atmosphere. A remote control can be seen resting on top of one of the couches, indicating that someone might have been watching television recently or plans to do so later. Overall, this cozy living area offers ample seating and entertainment options for its inhabitants.",
+    "free_caption": "The living room is furnished with two couches placed on opposite sides of the space. One couch is situated near the left side of the room while the other occupies the right side. In front of one of these couches, there's a red plaid chair that adds to the cozy atmosphere of the room. A television set can be seen mounted on the wall above the blue couch, providing entertainment options for those seated or standing nearby. Additionally, a small wooden table stands between the two couches, possibly serving as an end table.",
+    "share_tail": 0.8244334149701397,
+    "residual_ratio": 0.9804395414162443,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002587",
+  "image_path": "data/processed/mscoco_baseline/images/000000002587.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features two bananas placed next to each other on a table or countertop. One banana is located towards the left side while the other one is positioned more centrally. In addition to these fruits, there are three donuts present in the scene. Two of them can be seen closer together near the center-right area, with another smaller donut situated further back on the right side. This arrangement creates an interesting contrast between the natural fruit and the sweet treats.",
+    "free_caption": "The image features two bananas placed next to each other on a table or countertop. One banana is located towards the left side while the other one is positioned more centrally. In addition to these fruits, there are three donuts present in the scene. Two of them can be seen closer together near the center-right area, with another smaller donut situated further back on the right side. This arrangement creates an interesting contrast between the natural fruit and the sweet treats.",
+    "share_tail": 0.13386317119055602,
+    "residual_ratio": 0.8107976041457006,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 100,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features two bananas placed next to each other on a table or countertop. One banana is located towards the left side while the other one is positioned more centrally. In addition to these fruits, there are three donuts present in the scene. Two of them can be seen closer together near the center-right area, with another smaller donut situated further back on the right side. This arrangement creates an interesting contrast between the natural fruit and the sweet treats.",
+    "free_caption": "The image features two bananas placed next to each other on a table or countertop. One banana is positioned closer to the left side while the other one is located more towards the right side. In addition to the bananas, there are three donuts present in the scene. Two of them are situated near the center of the image, with another one slightly off-center. These delicious treats appear to be wrapped up, possibly ready for consumption.",
+    "share_tail": 0.3635535508234762,
+    "residual_ratio": 0.8749160857642327,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 100,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002592",
+  "image_path": "data/processed/mscoco_baseline/images/000000002592.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a white coffee mug with a pirate skull on it sitting next to a black knife. There is also a table present in the background of the image.",
+    "free_caption": "The scene features a white coffee mug with a pirate skull on it sitting next to a black knife. There is also a table present in the background of the image.",
+    "share_tail": 0.34921939283587583,
+    "residual_ratio": 0.8804957549514368,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 37,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a white coffee mug with a pirate skull on it sitting next to a black knife. There is also a table present in the background of the image.",
+    "free_caption": "The scene features a white coffee mug with a pirate skull on it sitting next to a black knife. There is also a table present in the background of the image.",
+    "share_tail": 0.34716167449076146,
+    "residual_ratio": 0.8836022913706538,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 37,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

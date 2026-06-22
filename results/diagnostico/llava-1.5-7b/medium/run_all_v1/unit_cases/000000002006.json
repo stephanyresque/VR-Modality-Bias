@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002006",
+  "image_path": "data/processed/mscoco_baseline/images/000000002006.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a purple bus driving down a street with several people around it. One man is sitting on top of the bus while another person stands nearby. There are also two traffic lights present in the background, one closer to the left side of the frame and the other further back towards the right side.",
+    "free_caption": "The scene features a purple bus driving down a street with several people around it. One man is sitting on top of the bus while another person stands nearby. There are also two traffic lights present in the background, one closer to the left side of the frame and the other further back towards the right side.",
+    "share_tail": 0.03721175925293625,
+    "residual_ratio": 0.5749679709725967,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a purple bus driving down a street with several people around it. One man is sitting on top of the bus while another person stands nearby. There are also two traffic lights present in the background, one closer to the left side of the frame and the other further back towards the right side.",
+    "free_caption": "The scene features a purple bus driving down a street with several people around it. One man is sitting on the front of the bus while another person can be seen standing nearby. There are also two traffic lights present in the background.",
+    "share_tail": 0.13250068221299918,
+    "residual_ratio": 0.6347053207481532,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

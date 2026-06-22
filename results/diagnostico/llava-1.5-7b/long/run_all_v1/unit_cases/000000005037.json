@@ -1,0 +1,30 @@
+{
+  "image_id": "000000005037",
+  "image_path": "data/processed/mscoco_baseline/images/000000005037.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a large white bus driving down a street with its doors open. It appears to be picking up passengers or dropping them off at their destination. There are several people around the bus; some are standing close to it while others can be seen further away from the vehicle. One person is carrying a handbag, which suggests they might have just arrived at their stop or are preparing to board the bus. Overall, the scene depicts an active transportation hub where people gather and move about.",
+    "free_caption": "The image features a large white bus driving down a street with its doors open. It appears to be picking up passengers or dropping them off at their destination. There are several people around the bus; some are standing close to it while others can be seen further away from the vehicle. One person is carrying a handbag, which suggests they might have just arrived at their stop or are preparing to board the bus. Overall, the scene depicts an active transportation hub where people gather and move about.",
+    "share_tail": 0.04388790715881779,
+    "residual_ratio": 0.7676914761611422,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 105,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a large white bus driving down a street with its doors open. It appears to be picking up passengers or dropping them off at their destination. There are several people around the bus; some are standing close to it while others can be seen further away from the vehicle. One person is carrying a handbag, which suggests they might have just arrived at their stop or are preparing to board the bus. Overall, the scene depicts an active transportation hub where people gather and move about.",
+    "free_caption": "The image features a large white bus driving down a street with its doors open. It is likely that passengers are boarding or disembarking from this public transit vehicle. There are several people around the bus; some are standing near it while others can be seen further away on the sidewalk. One person appears to have a handbag with them as they stand close to the bus. Additionally, there's an umbrella placed nearby, possibly belonging to one of the pedestrians.",
+    "share_tail": 0.1414313726802281,
+    "residual_ratio": 0.8130980327968502,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 105,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

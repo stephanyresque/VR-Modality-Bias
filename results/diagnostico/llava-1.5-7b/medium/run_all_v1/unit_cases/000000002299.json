@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002299",
+  "image_path": "data/processed/mscoco_baseline/images/000000002299.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The black and white photograph features a group of children posing for a picture together. They are all dressed up with ties, indicating a formal occasion. There is a mix of boys and girls among them, creating an atmosphere of camaraderie and unity.",
+    "free_caption": "The black and white photograph features a group of children posing for a picture together. They are all dressed up with ties, indicating a formal occasion. There is a mix of boys and girls among them, creating an atmosphere of camaraderie and unity.",
+    "share_tail": 0.1045460239223213,
+    "residual_ratio": 0.9242776834412519,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 53,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The black and white photograph features a group of children posing for a picture together. They are all dressed up with ties, indicating a formal occasion. There is a mix of boys and girls among them, creating an atmosphere of camaraderie and unity.",
+    "free_caption": "The black and white photograph features a group of children posing for a picture together. They are all dressed up with ties, some wearing dresses while others wear suits. There is also an adult present among them, possibly their teacher or school principal. The scene appears to take place outdoors as there are several chairs scattered around the area where the kids are sitting.",
+    "share_tail": 0.13875949911574298,
+    "residual_ratio": 0.9321760804210273,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 53,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000285",
+  "image_path": "data/processed/mscoco_baseline/images/000000000285.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a large brown bear sitting on grass with its mouth open. It appears to be looking at something off-camera while resting outdoors.",
+    "free_caption": "The image features a large brown bear sitting on grass with its mouth open. It appears to be looking at something off-camera while resting outdoors.",
+    "share_tail": 0.07507047903168902,
+    "residual_ratio": 0.73190084141676,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 32,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a large brown bear sitting on grass with its mouth open. It appears to be looking at something off-camera while resting outdoors.",
+    "free_caption": "The image features a large brown bear sitting on grass with its mouth open. It appears to be looking at something off-camera while resting outdoors.",
+    "share_tail": 0.08548335221693207,
+    "residual_ratio": 0.7375749606994867,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 32,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

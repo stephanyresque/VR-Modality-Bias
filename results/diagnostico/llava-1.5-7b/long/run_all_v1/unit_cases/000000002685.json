@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002685",
+  "image_path": "data/processed/mscoco_baseline/images/000000002685.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a lively social gathering with several people standing around a bar area. There are at least nine individuals present, engaged in conversation or enjoying their time together. Some guests can be seen holding wine glasses, while others have handbags placed nearby.\n\nThe room features a dining table situated towards the left side of the space, surrounded by chairs. Various bottles are scattered throughout the scene, indicating that this is likely an event where drinks are being served. Additionally, there's a clock on the wall near the center of the room, providing a sense of time during the festivities.",
+    "free_caption": "The image depicts a lively social gathering with several people standing around a bar area. There are at least nine individuals present, engaged in conversation or enjoying their time together. Some guests can be seen holding wine glasses, while others have handbags placed nearby.\n\nThe room features a dining table situated towards the left side of the space, surrounded by chairs. Various bottles are scattered throughout the scene, indicating that this is likely an event where drinks are being served. Additionally, there's a clock on the wall near the center of the room, providing a sense of time during the festivities.",
+    "share_tail": 0.256237410655889,
+    "residual_ratio": 0.9614835054064809,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 131,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a lively social gathering with several people standing around a bar area. There are at least nine individuals present, engaged in conversation or enjoying their time together. Some guests can be seen holding wine glasses, while others have handbags placed nearby.\n\nThe room features a dining table situated towards the left side of the space, surrounded by chairs. Various bottles are scattered throughout the scene, indicating that this is likely an event where drinks are being served. Additionally, there's a clock on the wall near the center of the room, providing a sense of time during the festivities.",
+    "free_caption": "The image depicts a lively social gathering with several people standing around a bar area. There are at least nine individuals present, engaged in conversation or enjoying their time together. Some guests can be seen holding wine glasses while others have handbags nearby.\n\nThe room features a wooden dining table surrounded by chairs, where some guests may sit to enjoy their drinks. Various bottles of wine are displayed on shelves throughout the space, adding to the ambiance of the event. Several wine glasses are also placed around the room. In addition to the wine, there is a sign behind the counter.",
+    "share_tail": 0.5259916614120651,
+    "residual_ratio": 0.9801331524775542,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 131,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

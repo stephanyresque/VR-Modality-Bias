@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002431",
+  "image_path": "data/processed/mscoco_baseline/images/000000002431.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a wooden dining table with various food items on it. There is a white plate containing bread, cheese, and crackers. Additionally, there are two bowls placed near each other, one of which contains soup. Two wine glasses can also be seen on the table, along with utensils such as forks and knives. A person is present at the edge of the frame, possibly preparing to enjoy this meal.",
+    "free_caption": "The scene features a wooden dining table with various food items on it. There is a white plate containing bread, cheese, and crackers. Additionally, there are two bowls placed near each other, one of which contains soup. Two wine glasses can also be seen on the table, along with utensils such as forks and knives. A person is present at the edge of the frame, possibly preparing to enjoy this meal.",
+    "share_tail": 0.16182650130227233,
+    "residual_ratio": 0.7711414923965835,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 93,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a wooden dining table with various food items on it. There is a white plate containing bread, cheese, and crackers. Additionally, there are two bowls placed near each other, one of which contains soup. Two wine glasses can also be seen on the table, along with utensils such as forks and knives. A person is present at the edge of the frame, possibly preparing to enjoy this meal.",
+    "free_caption": "The scene features a wooden dining table with various food items on it. There is a white plate containing bread, cheese, and crackers. Additionally, there are two bowls placed near each other, one of which contains soup. Two cups can also be seen on the table, along with a wine glass positioned towards the top right corner. Utensils such as forks and knives are present around the table, indicating that people have been eating.",
+    "share_tail": 0.2599687738951794,
+    "residual_ratio": 0.8264143080284477,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 93,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

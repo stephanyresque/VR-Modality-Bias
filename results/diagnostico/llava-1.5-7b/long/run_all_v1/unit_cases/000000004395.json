@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004395",
+  "image_path": "data/processed/mscoco_baseline/images/000000004395.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a man wearing a yellow shirt with a brown tie standing next to a window. He appears to be looking downward or possibly staring at something outside the frame. His attire suggests that he might be dressed up for an event or formal occasion. In addition to his outfit, there is another person partially visible on the right side of the image.\n\nThe room has two chairs placed near each other, one closer to the left edge of the picture and the other towards the center-right area. There are also three ties in the scene; one tied around the neck of the man in the yellow shirt, another hanging from the chair's back, and the third one located further away from the main subjects.",
+    "free_caption": "The image features a man wearing a yellow shirt with a brown tie standing next to a window. He appears to be looking downward or possibly staring at something outside the frame. His attire suggests that he might be dressed up for an event or formal occasion. In addition to his outfit, there is another person partially visible on the right side of the image.\n\nThe room has two chairs placed near each other, one closer to the left edge of the picture and the other towards the center-right area. There are also three ties in the scene; one tied around the neck of the man in the yellow shirt, another hanging from the chair's back, and the third one located further away from the main subjects.",
+    "share_tail": 0.07658387920387517,
+    "residual_ratio": 0.8455076775348035,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a man wearing a yellow shirt with a brown tie standing next to a window. He appears to be looking downward or possibly staring at something outside the frame. His attire suggests that he might be dressed up for an event or formal occasion. In addition to his outfit, there is another person partially visible on the right side of the image.\n\nThe room has two chairs placed near each other, one closer to the left edge of the picture and the other towards the center-right area. There are also three ties in the scene; one tied around the neck of the man in the yellow shirt, another hanging from the chair's back, and the third one located further away from the main subjects.",
+    "free_caption": "The image features a man wearing a yellow shirt with a brown tie standing next to a window. He is looking downward at his hands while posing for the picture. There are two ties visible on him - one closer to the center of the frame and another slightly further away from it. Additionally, there's an orange tie that can be seen near the bottom left corner of the photo.\n\nThe room has a few other elements such as a chair located towards the top right side of the image, and a striped tie hanging off the edge of the frame. Furthermore, a small part of a brown tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie tie white shirt glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass glass hair hair hair hair hair mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouth mouthmouth mouthmouth mouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouthmouth",
+    "share_tail": 0.3835138209687675,
+    "residual_ratio": 0.9088496188122432,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'mouth' x27",
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

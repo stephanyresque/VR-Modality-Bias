@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004134",
+  "image_path": "data/processed/mscoco_baseline/images/000000004134.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features two men shaking hands at a formal event. One man is wearing glasses while another has his back turned away from them. They are surrounded by several other people who appear engaged in conversation or attending the gathering. There are multiple dining tables with chairs placed around them, indicating an indoor venue for this social occasion.",
+    "free_caption": "The scene features two men shaking hands at a formal event. One man is wearing glasses while another has his back turned away from them. They are surrounded by several other people who appear engaged in conversation or attending the gathering. There are multiple dining tables with chairs placed around them, indicating an indoor venue for this social occasion.",
+    "share_tail": 0.3496121277742045,
+    "residual_ratio": 0.7614010249075919,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 73,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features two men shaking hands at a formal event. One man is wearing glasses while another has his back turned away from them. They are surrounded by several other people who appear engaged in conversation or attending the gathering. There are multiple dining tables with chairs placed around them, indicating an indoor venue for this social occasion.",
+    "free_caption": "The scene features two men shaking hands at a formal event. One man is wearing a suit with a yellow tie while the other has an orange shirt on. They are surrounded by several people who appear to be attending the same gathering. There are multiple dining tables set up throughout the room, along with chairs placed around them. Additionally, there are wine glasses and cups scattered across the tables.",
+    "share_tail": 0.3942689798026571,
+    "residual_ratio": 0.787345247232913,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 73,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001000",
+  "image_path": "data/processed/mscoco_baseline/images/000000001000.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a group of young people gathered on a tennis court, posing together with their coaches. There are at least thirteen individuals present, some standing closer to each other while others maintain more distance from one another. They appear to be enjoying themselves as they pose for this special moment.\n\nThe tennis court is equipped with two sports balls placed near the center of the court, along with three tennis rackets scattered around the area. One racket can be seen close to the left side of the court, another towards the right side, and the third one located further back. Additionally, there's an umbrella situated off-court, possibly providing shade or protection during breaks between matches.",
+    "free_caption": "The image features a group of young people gathered on a tennis court, posing together with their coaches. There are at least thirteen individuals present, some standing closer to each other while others maintain more distance from one another. They appear to be enjoying themselves as they pose for this special moment.\n\nThe tennis court is equipped with two sports balls placed near the center of the court, along with three tennis rackets scattered around the area. One racket can be seen close to the left side of the court, another towards the right side, and the third one located further back. Additionally, there's an umbrella situated off-court, possibly providing shade or protection during breaks between matches.",
+    "share_tail": 0.07300296889993427,
+    "residual_ratio": 0.7657243634851331,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 147,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a group of young people gathered on a tennis court, posing together with their coaches. There are at least thirteen individuals present, some standing closer to each other while others maintain more distance from one another. They appear to be enjoying themselves as they pose for this special moment.\n\nThe tennis court is equipped with two sports balls placed near the center of the court, along with three tennis rackets scattered around the area. One racket can be seen close to the left side of the court, another towards the right side, and the third one located further back. Additionally, there's an umbrella situated off-court, possibly providing shade or protection during breaks between matches.",
+    "free_caption": "The image features a group of young tennis players posing together on a blue court with their coaches. There are at least thirteen people present in the picture, including both children and adults. They appear to be enjoying themselves as they stand around each other, some holding tennis rackets while others have backpacks nearby.\n\nThe tennis court is surrounded by green fencing, which adds an element of organization to the scene. In addition to the tennis rackets held by the kids, there are also two sports balls visible within the frame. Some of the individuals can be seen wearing hats, adding a touch of style to the photo.",
+    "share_tail": 0.2343833456081941,
+    "residual_ratio": 0.840370207311404,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 147,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

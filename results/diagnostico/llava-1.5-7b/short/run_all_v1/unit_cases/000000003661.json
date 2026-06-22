@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003661",
+  "image_path": "data/processed/mscoco_baseline/images/000000003661.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Several bananas are stacked on a table with some of them being ripe.",
+    "free_caption": "Several bananas are stacked on a table with some of them being ripe.",
+    "share_tail": 0.2942322844831298,
+    "residual_ratio": 0.5238419109092587,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Several bananas are stacked on a table with some of them being ripe.",
+    "free_caption": "Several bananas are stacked on a table with some of them being ripe.",
+    "share_tail": 0.29868023719085524,
+    "residual_ratio": 0.539580492879479,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

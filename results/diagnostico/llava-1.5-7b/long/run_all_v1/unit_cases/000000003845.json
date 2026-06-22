@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003845",
+  "image_path": "data/processed/mscoco_baseline/images/000000003845.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a dining table with a plate filled with various food items placed on it. On this plate, there is an entree consisting of chicken, broccoli, carrots, cauliflower, and rice. In addition to the main course, there are two cups present – one near the top left corner of the table and another at the bottom right side.\n\nA fork can be seen resting next to the plate, while a spoon lies closer to the center-left area of the table. There's also a knife located towards the upper part of the table. Another smaller portion of food is situated further away from the main plate, close to the edge of the table.",
+    "free_caption": "The image features a dining table with a plate filled with various food items placed on it. On this plate, there is an entree consisting of chicken, broccoli, carrots, cauliflower, and rice. In addition to the main course, there are two cups present – one near the top left corner of the table and another at the bottom right side.\n\nA fork can be seen resting next to the plate, while a spoon lies closer to the center-left area of the table. There's also a knife located towards the upper part of the table. Another smaller portion of food is situated further away from the main plate, close to the edge of the table.",
+    "share_tail": 0.19746056719709748,
+    "residual_ratio": 0.888901069188511,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 148,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a dining table with a plate filled with various food items placed on it. On this plate, there is an entree consisting of chicken, broccoli, carrots, cauliflower, and rice. In addition to the main course, there are two cups present – one near the top left corner of the table and another at the bottom right side.\n\nA fork can be seen resting next to the plate, while a spoon lies closer to the center-left area of the table. There's also a knife located towards the upper part of the table. Another smaller portion of food is situated further away from the main plate, close to the edge of the table.",
+    "free_caption": "The image features a dining table with a plate filled with various food items placed on it. On this plate, there is an entree consisting of chicken, rice, broccoli, carrots, cauliflower, and white meat. In addition to the main course, there are two glasses positioned at one end of the table.\n\nThe table setup includes silverware such as a fork and knife, which can be seen near the edge of the table. There's also a spoon next to the plate. Furthermore, a cup of choputu is present on the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the the",
+    "share_tail": 0.43531313437424224,
+    "residual_ratio": 0.9383416638632117,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'the' x30",
+    "caption_len": 148,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

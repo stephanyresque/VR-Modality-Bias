@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002157",
+  "image_path": "data/processed/mscoco_baseline/images/000000002157.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an outdoor dining table set with various plates of food, including a delicious cake placed towards the left side of the table. There are multiple wine glasses scattered across the table, some closer to the center while others are positioned nearer to the edges. In addition to the wine glasses, there is also a cup situated on the right side of the table.\n\nThe table appears to be well-prepared for guests as it has several bowls containing different types of snacks or appetizers. Some of these bowls can be found at the top right corner of the table, while another one is located more centrally. Furthermore, two sandwiches are present on the table, one close to the middle and the other slightly further away from the center.",
+    "free_caption": "The image features an outdoor dining table set with various plates of food, including a delicious cake placed towards the left side of the table. There are multiple wine glasses scattered across the table, some closer to the center while others are positioned nearer to the edges. In addition to the wine glasses, there is also a cup situated on the right side of the table.\n\nThe table appears to be well-prepared for guests as it has several bowls containing different types of snacks or appetizers. Some of these bowls can be found at the top right corner of the table, while another one is located more centrally. Furthermore, two sandwiches are present on the table, one close to the middle and the other slightly further away from the center.",
+    "share_tail": 0.1931289559579599,
+    "residual_ratio": 0.8393943315412928,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 165,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an outdoor dining table set with various plates of food, including a delicious cake placed towards the left side of the table. There are multiple wine glasses scattered across the table, some closer to the center while others are positioned nearer to the edges. In addition to the wine glasses, there is also a cup situated on the right side of the table.\n\nThe table appears to be well-prepared for guests as it has several bowls containing different types of snacks or appetizers. Some of these bowls can be found at the top right corner of the table, while another one is located more centrally. Furthermore, two sandwiches are present on the table, one close to the middle and the other slightly further away from the center.",
+    "free_caption": "The image features an outdoor dining table set with various plates, bowls, cups, wine glasses, and utensils. There is a large cake adorned with blueberries on top, placed prominently at one end of the table. Accompanying the cake are several other desserts such as cheese cake, grapes, raspberry cookies, and grapefruit. In addition to these treats, there are also some carrots, oranges, and orange slices.\n\nThe table has a red clothed tableclothes a red red cloth. The table is filled with a variety of food items like a platecake, and wine breadbe fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit fruit f.",
+    "share_tail": 0.5409267562367822,
+    "residual_ratio": 0.9274313622533742,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'fruit' x29",
+    "caption_len": 165,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

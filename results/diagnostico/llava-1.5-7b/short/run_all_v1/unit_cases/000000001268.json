@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001268",
+  "image_path": "data/processed/mscoco_baseline/images/000000001268.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Man sitting on a bench with his back to the camera while another person takes pictures of birds near him.",
+    "free_caption": "Man sitting on a bench with his back to the camera while another person takes pictures of birds near him.",
+    "share_tail": 0.28732892660921244,
+    "residual_ratio": 0.3818630965789815,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 22,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Man sitting on a bench with his back to the camera while another person takes pictures of birds near him.",
+    "free_caption": "Man sitting on a bench with his back to the water while woman takes picture of swan.",
+    "share_tail": 0.3051843929530936,
+    "residual_ratio": 0.39895095550187304,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 22,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

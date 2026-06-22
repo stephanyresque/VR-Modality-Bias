@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000785",
+  "image_path": "data/processed/mscoco_baseline/images/000000000785.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a woman wearing skis on a snow-covered slope. She is skiing downhill with her arms outstretched to maintain balance as she glides through the snow. Her skis are clearly visible beneath her feet, providing support and stability during this activity. In addition to the main female skier, there are two other people present in the background, possibly enjoying their time at the ski resort or observing others' skiing skills.",
+    "free_caption": "The image features a woman wearing skis on a snow-covered slope. She is skiing downhill with her arms outstretched to maintain balance as she glides through the snow. Her skis are clearly visible beneath her feet, providing support and stability during this activity. In addition to the main female skier, there are two other people present in the background, possibly enjoying their time at the ski resort or observing others' skiing skills.",
+    "share_tail": 0.08720180456750429,
+    "residual_ratio": 0.6238212953132164,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 96,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a woman wearing skis on a snow-covered slope. She is skiing downhill with her arms outstretched to maintain balance as she glides through the snow. Her skis are clearly visible beneath her feet, providing support and stability during this activity. In addition to the main female skier, there are two other people present in the background, possibly enjoying their time at the ski resort or observing others' skiing skills.",
+    "free_caption": "The image features a woman wearing skis while skiing downhill on a snow-covered slope. She is smiling as she enjoys her time outdoors. Her red jacket adds warmth to her appearance. In addition to her skis, there are two poles that help her maintain balance during her descent.\n\nThe surrounding area consists of several orange flags placed at various locations along the slope. These flags may serve as markers or indicators for different levels of difficulty or specific routes within the ski resort.",
+    "share_tail": 0.152525956534002,
+    "residual_ratio": 0.6804618748035396,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 96,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

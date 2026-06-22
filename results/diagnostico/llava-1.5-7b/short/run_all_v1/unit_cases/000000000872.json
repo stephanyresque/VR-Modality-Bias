@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000872",
+  "image_path": "data/processed/mscoco_baseline/images/000000000872.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Two men playing baseball on a field with trees behind them.",
+    "free_caption": "Two men playing baseball on a field with trees behind them.",
+    "share_tail": 0.2900745702825654,
+    "residual_ratio": 0.31585316265366936,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 12,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Two men playing baseball on a field with trees behind them.",
+    "free_caption": "Two men playing baseball on a field with trees behind them.",
+    "share_tail": 0.29239618731177036,
+    "residual_ratio": 0.3189904584291962,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 12,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003661",
+  "image_path": "data/processed/mscoco_baseline/images/000000003661.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an arrangement of bananas on top of each other, creating a visually appealing stack. There are at least six bananas in various positions within this stack, with some overlapping others. They appear to be placed on a dining table or countertop, which serves as their base. In addition to the bananas, there is also a bottle located near the left side of the frame, possibly containing a drink or condiment that complements the fruit display.",
+    "free_caption": "The image features an arrangement of bananas on top of each other, creating a visually appealing stack. There are at least six bananas in various positions within this stack, with some overlapping others. They appear to be placed on a dining table or countertop, which serves as their base. In addition to the bananas, there is also a bottle located near the left side of the frame, possibly containing a drink or condiment that complements the fruit display.",
+    "share_tail": 0.1413393143021779,
+    "residual_ratio": 0.8313710772351205,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 99,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an arrangement of bananas on top of each other, creating a visually appealing stack. There are at least six bananas in various positions within this stack, with some overlapping others. They appear to be placed on a dining table or countertop, which serves as their base. In addition to the bananas, there is also a bottle located near the left side of the frame, possibly containing a drink or condiment that complements the fruit display.",
+    "free_caption": "The image features an arrangement of bananas on top of each other, creating a visually appealing stack. There are at least six bananas in various positions within this stack, with some overlapping others. They appear to be placed on a wooden table or countertop, which serves as their base. In addition to the bananas, there is also a small blue box located near the edge of the frame.",
+    "share_tail": 0.3401923879759406,
+    "residual_ratio": 0.8908266056527261,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 99,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

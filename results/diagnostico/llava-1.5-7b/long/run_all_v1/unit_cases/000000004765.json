@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004765",
+  "image_path": "data/processed/mscoco_baseline/images/000000004765.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment where a person is skillfully riding a wave on top of their surfboard. They are wearing a yellow shirt while maintaining balance as they glide through the water. Another individual can be seen further back in the scene, possibly observing or waiting to join the action.\n\nThe ocean waves surrounding them create a dynamic environment that showcases the thrill of surfing. There's also another surfboard located near the center-right part of the image, suggesting that this could be a popular spot for surfers to gather and enjoy the sport together.",
+    "free_caption": "The image captures an exciting moment where a person is skillfully riding a wave on top of their surfboard. They are wearing a yellow shirt while maintaining balance as they glide through the water. Another individual can be seen further back in the scene, possibly observing or waiting to join the action.\n\nThe ocean waves surrounding them create a dynamic environment that showcases the thrill of surfing. There's also another surfboard located near the center-right part of the image, suggesting that this could be a popular spot for surfers to gather and enjoy the sport together.",
+    "share_tail": 0.05189410460080853,
+    "residual_ratio": 0.9751123902671858,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 127,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment where a person is skillfully riding a wave on top of their surfboard. They are wearing a yellow shirt while maintaining balance as they glide through the water. Another individual can be seen further back in the scene, possibly observing or waiting to join the action.\n\nThe ocean waves surrounding them create a dynamic environment that showcases the thrill of surfing. There's also another surfboard located near the center-right part of the image, suggesting that this could be a popular spot for surfers to gather and enjoy the sport together.",
+    "free_caption": "The image captures an exciting moment where a man is skillfully riding a wave on his surfboard. He appears to be fully engaged with the sport as he navigates through the water. The surfer's stance suggests that he has good control over his board while maintaining balance amidst the waves.\n\nThe ocean environment features several other people scattered throughout the scene, likely enjoying their time at the beach or watching others ride the waves. Some are closer to the shoreline, while others can be seen further out into the water. Overall, it seems like a lively day at the beach filled with various activities.",
+    "share_tail": 0.1463463196523526,
+    "residual_ratio": 0.9786380008228858,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 127,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

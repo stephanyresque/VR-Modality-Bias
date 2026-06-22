@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002006",
+  "image_path": "data/processed/mscoco_baseline/images/000000002006.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a large purple bus driving down a street with several people around it. One man is sitting on top of the bus, possibly enjoying the view or waiting to board. Another person can be seen standing near the front of the bus, while two more individuals are located further back along the sidewalk. There's also another person closer to the center of the scene.\n\nThe bus occupies most of the frame, stretching from one end of the image to the other. It appears to be a public transit vehicle, providing transportation services within the city.",
+    "free_caption": "The image features a large purple bus driving down a street with several people around it. One man is sitting on top of the bus, possibly enjoying the view or waiting to board. Another person can be seen standing near the front of the bus, while two more individuals are located further back along the sidewalk. There's also another person closer to the center of the scene.\n\nThe bus occupies most of the frame, stretching from one end of the image to the other. It appears to be a public transit vehicle, providing transportation services within the city.",
+    "share_tail": 0.09092831763812215,
+    "residual_ratio": 0.7302207132313169,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 119,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a large purple bus driving down a street with several people around it. One man is sitting on top of the bus, possibly enjoying the view or waiting to board. Another person can be seen standing near the front of the bus, while two more individuals are located further back along the sidewalk. There's also another person closer to the center of the scene.\n\nThe bus occupies most of the frame, stretching from one end of the image to the other. It appears to be a public transit vehicle, providing transportation services within the city.",
+    "free_caption": "The image features a large purple bus driving down a street with several people around it. There are two men sitting on the front part of the bus, possibly enjoying their ride or waiting to get off at their destination. Another person is standing near the middle of the bus, while another individual can be seen further back towards the right side of the vehicle.\n\nThe bus has various destinations displayed on its exterior, including South Shields, Metro Centre, Swinburn, Ben's, and V Bens. Additionally, there is an advertisement on the side of the bus that says \"Metro centre\".",
+    "share_tail": 0.48063931486020345,
+    "residual_ratio": 0.8607500453008964,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 119,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

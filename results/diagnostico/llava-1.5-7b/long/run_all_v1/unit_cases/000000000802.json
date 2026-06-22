@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000802",
+  "image_path": "data/processed/mscoco_baseline/images/000000000802.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a small kitchen with white appliances and wooden cabinets. There is an oven located on one side of the room, while another oven can be seen further back. Two refrigerators are present; one occupies most of the space from left to right, while the other is situated closer to the center-left area of the kitchen. Additionally, there's a sink positioned near the middle of the room.\n\nThe kitchen appears to be well-organized, featuring several knives placed neatly around the countertops. Some bottles are also scattered throughout the space, adding to its lived-in atmosphere. Overall, this compact yet functional kitchen offers ample storage and workspace for daily tasks.",
+    "free_caption": "The image depicts a small kitchen with white appliances and wooden cabinets. There is an oven located on one side of the room, while another oven can be seen further back. Two refrigerators are present; one occupies most of the space from left to right, while the other is situated closer to the center-left area of the kitchen. Additionally, there's a sink positioned near the middle of the room.\n\nThe kitchen appears to be well-organized, featuring several knives placed neatly around the countertops. Some bottles are also scattered throughout the space, adding to its lived-in atmosphere. Overall, this compact yet functional kitchen offers ample storage and workspace for daily tasks.",
+    "share_tail": 0.21920345713383038,
+    "residual_ratio": 0.9747736480871476,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 155,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a small kitchen with white appliances and wooden cabinets. There is an oven located on one side of the room, while another oven can be seen further back. Two refrigerators are present; one occupies most of the space from left to right, while the other is situated closer to the center-left area of the kitchen. Additionally, there's a sink positioned near the middle of the room.\n\nThe kitchen appears to be well-organized, featuring several knives placed neatly around the countertops. Some bottles are also scattered throughout the space, adding to its lived-in atmosphere. Overall, this compact yet functional kitchen offers ample storage and workspace for daily tasks.",
+    "free_caption": "The image depicts a small kitchen with white appliances such as an oven, refrigerator, microwave, and dishwasher. There is also a sink present within this compact space. The kitchen features wooden cabinets that provide storage options for various items. In addition to these essential elements, there are several other items scattered throughout the room. These include two bottles placed on different surfaces, three knives located near the center of the kitchen area, and four spoons situated close together. Overall, it's a well-equipped kitchenette.",
+    "share_tail": 0.6076258788349719,
+    "residual_ratio": 0.9891450847684152,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 155,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

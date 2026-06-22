@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002532",
+  "image_path": "data/processed/mscoco_baseline/images/000000002532.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a person standing on top of a snow-covered mountain with skis attached to their feet. They are wearing black pants and appear to be enjoying the winter landscape around them. In addition to the main individual, there is another person further back in the scene, possibly observing or waiting for their turn to ski down the slope.\n\nThe mountainous terrain stretches across the entire background of the photo, creating an impressive natural scenery. There are also two trees visible in the distance, adding more depth and dimension to the environment. Overall, it's a captivating winter scene that showcases outdoor recreational activities amidst breathtaking surroundings.",
+    "free_caption": "The image features a person standing on top of a snow-covered mountain with skis attached to their feet. They are wearing black pants and appear to be enjoying the winter landscape around them. In addition to the main individual, there is another person further back in the scene, possibly observing or waiting for their turn to ski down the slope.\n\nThe mountainous terrain stretches across the entire background of the photo, creating an impressive natural scenery. There are also two trees visible in the distance, adding more depth and dimension to the environment. Overall, it's a captivating winter scene that showcases outdoor recreational activities amidst breathtaking surroundings.",
+    "share_tail": 0.1429753945138874,
+    "residual_ratio": 0.7700305397339048,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 147,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a person standing on top of a snow-covered mountain with skis attached to their feet. They are wearing black pants and appear to be enjoying the winter landscape around them. In addition to the main individual, there is another person further back in the scene, possibly observing or waiting for their turn to ski down the slope.\n\nThe mountainous terrain stretches across the entire background of the photo, creating an impressive natural scenery. There are also two trees visible in the distance, adding more depth and dimension to the environment. Overall, it's a captivating winter scene that showcases outdoor recreational activities amidst breathtaking surroundings.",
+    "free_caption": "The image features a person standing on top of a snow-covered mountain with skis attached to their feet. They are wearing black pants and appear to be enjoying the winter landscape. In addition to the main individual, there is another person further back in the scene, possibly observing or waiting for their turn to ski down the slope.\n\nThe mountainous terrain is covered by a thick layer of white snow, creating an ideal environment for skiing activities. There are several rocks scattered across the area, adding to the natural beauty of the location. Overall, it's a picturesque winter scene that captures the essence of outdoor adventure and leisure.",
+    "share_tail": 0.4223558860191439,
+    "residual_ratio": 0.8574657234444136,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 147,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

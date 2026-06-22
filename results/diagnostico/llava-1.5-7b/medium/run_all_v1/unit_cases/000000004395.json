@@ -1,0 +1,30 @@
+{
+  "image_id": "000000004395",
+  "image_path": "data/processed/mscoco_baseline/images/000000004395.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The man is wearing a yellow shirt with a brown tie. He has dark hair and appears to be looking downward at something.",
+    "free_caption": "The man is wearing a yellow shirt with a brown tie. He has dark hair and appears to be looking downward at something.",
+    "share_tail": 0.15865373266010302,
+    "residual_ratio": 0.7303189623294642,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 28,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The man is wearing a yellow shirt with a brown tie. He has dark hair and appears to be looking downward at something.",
+    "free_caption": "The man is wearing a yellow shirt with a brown tie. He has his mouth open as if he's talking or making an expression.",
+    "share_tail": 0.16216326450463234,
+    "residual_ratio": 0.7357624982624147,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 28,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001761",
+  "image_path": "data/processed/mscoco_baseline/images/000000001761.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an airplane flying high above a large bridge that spans across the entire width of the frame. The plane is positioned towards the top left corner of the picture, while the bridge stretches from the middle to almost the right edge of the image. There are two people visible on the ground near the bottom-left side of the photo, possibly enjoying the view or attending to their surroundings. Additionally, there's another person standing further back on the right side of the image.",
+    "free_caption": "The image features an airplane flying high above a large bridge that spans across the entire width of the frame. The plane is positioned towards the top left corner of the picture, while the bridge stretches from the middle to almost the right edge of the image. There are two people visible on the ground near the bottom-left side of the photo, possibly enjoying the view or attending to their surroundings. Additionally, there's another person standing further back on the right side of the image.",
+    "share_tail": 0.08846339663024412,
+    "residual_ratio": 0.832916309887568,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 105,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an airplane flying high above a large bridge that spans across the entire width of the frame. The plane is positioned towards the top left corner of the picture, while the bridge stretches from the middle to almost the right edge of the image. There are two people visible on the ground near the bottom-left side of the photo, possibly enjoying the view or attending to their surroundings. Additionally, there's another person standing further back on the right side of the image.",
+    "free_caption": "The image features an airplane flying high above a large bridge that spans across the entire width of the frame. The plane is positioned towards the top left corner of the picture, while the bridge stretches from the bottom left to almost the right edge of the image. In addition to the bridge and the airplane, there are two smaller planes visible in the sky, one nearer to the center-left area and another closer to the middle section of the cloudy sky.",
+    "share_tail": 0.260393045781934,
+    "residual_ratio": 0.8694699491771686,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 105,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

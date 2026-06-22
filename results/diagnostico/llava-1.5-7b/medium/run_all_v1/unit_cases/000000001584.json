@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001584",
+  "image_path": "data/processed/mscoco_baseline/images/000000001584.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a red double-decker bus driving down a street with several people around it. There are at least nine individuals visible on the sidewalk, some of them carrying backpacks. In addition to the bus, there is another smaller vehicle further away on the right side of the road.",
+    "free_caption": "The scene features a red double-decker bus driving down a street with several people around it. There are at least nine individuals visible on the sidewalk, some of them carrying backpacks. In addition to the bus, there is another smaller vehicle further away on the right side of the road.",
+    "share_tail": 0.12805108475768395,
+    "residual_ratio": 0.6569250836353239,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 61,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a red double-decker bus driving down a street with several people around it. There are at least nine individuals visible on the sidewalk, some of them carrying backpacks. In addition to the bus, there is another smaller vehicle further away on the right side of the road.",
+    "free_caption": "The scene features a red double-decker bus driving down a street with several people around it. There are at least nine individuals scattered throughout the area, some closer to the bus while others stand further away. Additionally, there is another bus located towards the right side of the frame.",
+    "share_tail": 0.21692112351580137,
+    "residual_ratio": 0.7081372549572461,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 61,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

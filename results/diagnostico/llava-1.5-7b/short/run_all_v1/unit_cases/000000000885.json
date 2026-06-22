@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000885",
+  "image_path": "data/processed/mscoco_baseline/images/000000000885.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "A man wearing a white shirt is playing tennis on a court with his racket raised above him.",
+    "free_caption": "A man wearing a white shirt is playing tennis on a court with his racket raised above him.",
+    "share_tail": 0.1899688048719452,
+    "residual_ratio": 0.6521935417576882,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 22,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "A man wearing a white shirt is playing tennis on a court with his racket raised above him.",
+    "free_caption": "A man wearing a white shirt is playing tennis on a court with his racket raised to hit the ball.",
+    "share_tail": 0.21734228313026635,
+    "residual_ratio": 0.6731765811514787,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 22,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

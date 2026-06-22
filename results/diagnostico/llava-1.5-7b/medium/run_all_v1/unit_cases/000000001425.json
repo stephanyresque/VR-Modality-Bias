@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001425",
+  "image_path": "data/processed/mscoco_baseline/images/000000001425.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a plate with two sandwiches on it. One of them is half-eaten, while the other one remains intact. There are also two bowls present in the scene - one near the top left corner and another at the bottom right side. Additionally, there's a person partially visible in the upper part of the image, possibly enjoying their meal.",
+    "free_caption": "The image features a plate with two sandwiches on it. One of them is half-eaten, while the other one remains intact. There are also two bowls present in the scene - one near the top left corner and another at the bottom right side. Additionally, there's a person partially visible in the upper part of the image, possibly enjoying their meal.",
+    "share_tail": 0.22735199312256357,
+    "residual_ratio": 0.7375062761982982,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 79,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a plate with two sandwiches on it. One of them is half-eaten, while the other one remains intact. There are also two bowls present in the scene - one near the top left corner and another at the bottom right side. Additionally, there's a person partially visible in the upper part of the image, possibly enjoying their meal.",
+    "free_caption": "The image features a plate with two sandwiches on it. One of them is half-eaten, while the other one remains intact. There are also two bowls present in the scene - one placed near the top left corner and another at the bottom right side. Additionally, there's a person standing behind the plate, partially visible above the edge of the plate.",
+    "share_tail": 0.33304617481853765,
+    "residual_ratio": 0.7861576764360267,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 79,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002261",
+  "image_path": "data/processed/mscoco_baseline/images/000000002261.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment at the beach where a man is riding on top of a wave while lying down on his surfboard. He appears to be skillfully navigating through the water as he enjoys this thrilling activity. Another person can be seen further back in the scene, possibly watching or waiting for their turn to join the fun.\n\nThe ocean's waves are prominent throughout the image, with one large wave dominating the center-left area and another smaller wave located towards the right side. There are also two additional smaller waves present near the bottom left corner of the picture. Overall, it's a lively scene that showcases the excitement and adventure associated with surfing.",
+    "free_caption": "The image captures an exciting moment at the beach where a man is riding on top of a wave while lying down on his surfboard. He appears to be skillfully navigating through the water as he enjoys this thrilling activity. Another person can be seen further back in the scene, possibly watching or waiting for their turn to join the fun.\n\nThe ocean's waves are prominent throughout the image, with one large wave dominating the center-left area and another smaller wave located towards the right side. There are also two additional smaller waves present near the bottom left corner of the picture. Overall, it's a lively scene that showcases the excitement and adventure associated with surfing.",
+    "share_tail": 0.10624848237677298,
+    "residual_ratio": 0.9540519213097034,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 149,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment at the beach where a man is riding on top of a wave while lying down on his surfboard. He appears to be skillfully navigating through the water as he enjoys this thrilling activity. Another person can be seen further back in the scene, possibly watching or waiting for their turn to join the fun.\n\nThe ocean's waves are prominent throughout the image, with one large wave dominating the center-left area and another smaller wave located towards the right side. There are also two additional smaller waves present near the bottom left corner of the picture. Overall, it's a lively scene that showcases the excitement and adventure associated with surfing.",
+    "free_caption": "The image captures an exciting moment at the beach where a man is riding on top of a wave while lying down on his surfboard. He appears to be skillfully navigating through the ocean waves with ease. Another person can be seen further back in the water, possibly enjoying their time by the shore or waiting for their turn to catch some waves.\n\nThe scene takes place near the shoreline, as evidenced by the presence of sand close to the water's edge. This suggests that the beach may have a mix of both wet and dry areas. Overall, it's a lively depiction of people having fun in the ocean.",
+    "share_tail": 0.32011672319989487,
+    "residual_ratio": 0.9679547988674254,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 149,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

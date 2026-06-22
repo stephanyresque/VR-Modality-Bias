@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000285",
+  "image_path": "data/processed/mscoco_baseline/images/000000000285.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an adult brown bear sitting on top of grass with its head turned to the side. It appears to be looking at something off-camera or possibly observing another animal nearby. The bear is positioned towards the left side of the frame, occupying most of it from the center to almost the edge.\n\nThe surrounding environment consists mainly of green grass, which covers the ground where the bear sits. There are no other animals or people visible in this particular shot.",
+    "free_caption": "The image features an adult brown bear sitting on top of grass with its head turned to the side. It appears to be looking at something off-camera or possibly observing another animal nearby. The bear is positioned towards the left side of the frame, occupying most of it from the center to almost the edge.\n\nThe surrounding environment consists mainly of green grass, which covers the ground where the bear sits. There are no other animals or people visible in this particular shot.",
+    "share_tail": 0.041664064286143554,
+    "residual_ratio": 0.7476371028740333,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 98,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an adult brown bear sitting on top of grass with its head turned to the side. It appears to be looking at something off-camera or possibly observing another animal nearby. The bear is positioned towards the left side of the frame, occupying most of it from the center to almost the edge.\n\nThe surrounding environment consists mainly of green grass, which covers the ground where the bear sits. There are no other animals or people visible in this particular shot.",
+    "free_caption": "The image features an adult brown bear sitting on top of grass with its head turned to the side. It appears to be looking at something off-camera or possibly observing another animal nearby. The bear is situated towards the center of the frame, occupying most of it due to its large size.\n\nThe background consists mainly of green grass, which covers almost the entire area behind the bear. There are no other animals or people visible in this outdoor setting.",
+    "share_tail": 0.188950989034872,
+    "residual_ratio": 0.7938972730529256,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 98,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

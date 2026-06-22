@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002299",
+  "image_path": "data/processed/mscoco_baseline/images/000000002299.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The black-and-white photograph captures an old school classroom with numerous children posing together for a group picture. There are at least thirteen kids in various positions within the frame, some standing while others sit on chairs that can be seen throughout the room. They appear to be enjoying their time as they gather around each other.\n\nThe classroom is furnished with multiple chairs placed near the walls or along the edges of the room. Some chairs are positioned closer to the front of the room, while others are situated further back. Additionally, there's a tie hanging from one of the chairs, adding a touch of personal style to the scene.",
+    "free_caption": "The black-and-white photograph captures an old school classroom with numerous children posing together for a group picture. There are at least thirteen kids in various positions within the frame, some standing while others sit on chairs that can be seen throughout the room. They appear to be enjoying their time as they gather around each other.\n\nThe classroom is furnished with multiple chairs placed near the walls or along the edges of the room. Some chairs are positioned closer to the front of the room, while others are situated further back. Additionally, there's a tie hanging from one of the chairs, adding a touch of personal style to the scene.",
+    "share_tail": 0.13994009841157298,
+    "residual_ratio": 0.9497647359828026,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 143,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The black-and-white photograph captures an old school classroom with numerous children posing together for a group picture. There are at least thirteen kids in various positions within the frame, some standing while others sit on chairs that can be seen throughout the room. They appear to be enjoying their time as they gather around each other.\n\nThe classroom is furnished with multiple chairs placed near the walls or along the edges of the room. Some chairs are positioned closer to the front of the room, while others are situated further back. Additionally, there's a tie hanging from one of the chairs, adding a touch of personal style to the scene.",
+    "free_caption": "The black-and-white photograph captures an old school classroom with numerous children posing together for a group picture. There are at least thirteen kids in various positions within the frame, some sitting while others stand or kneel. They appear to be dressed up for this special occasion.\n\nThe room features several chairs scattered around the area, as well as multiple ties worn by the students. Some of these ties can be seen on the boys' shirt collars. In addition to the children, there is also a tie hanging from one of the girls's necklace.\n\nA smiling girl is holding a small object, which appears to be a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a",
+    "share_tail": 0.35533280828063796,
+    "residual_ratio": 0.969000505456098,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'a' x30",
+    "caption_len": 143,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003845",
+  "image_path": "data/processed/mscoco_baseline/images/000000003845.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a plate of food with rice on top, accompanied by chicken and vegetables such as broccoli and carrots. There is also a fork placed next to the plate. The dish appears to be ready for consumption, showcasing an appetizing meal.",
+    "free_caption": "The image features a plate of food with rice on top, accompanied by chicken and vegetables such as broccoli and carrots. There is also a fork placed next to the plate. The dish appears to be ready for consumption, showcasing an appetizing meal.",
+    "share_tail": 0.16149246370035958,
+    "residual_ratio": 0.6964058582136844,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 60,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a plate of food with rice on top, accompanied by chicken and vegetables such as broccoli and carrots. There is also a fork placed next to the plate. The dish appears to be ready for consumption, showcasing an appetizing meal.",
+    "free_caption": "The image features a plate of food with rice on top, accompanied by chicken and vegetables such as broccoli and carrots. There are two forks placed around the plate, one near the left edge and another closer to the right side. Additionally, there is a cup located at the top-left corner of the scene.",
+    "share_tail": 0.2914267910640839,
+    "residual_ratio": 0.7799188766234041,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 60,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

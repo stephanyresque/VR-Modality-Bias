@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000885",
+  "image_path": "data/processed/mscoco_baseline/images/000000000885.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment on a tennis court where two men are playing against each other during a match. One man is actively swinging his racket at a ball while another player watches from behind him. There are several chairs placed around the court, likely for players to rest between games or sets. In addition to the players, there's also a clock mounted on one side of the wall, allowing spectators to keep track of time during matches.",
+    "free_caption": "The image captures an exciting moment on a tennis court where two men are playing against each other during a match. One man is actively swinging his racket at a ball while another player watches from behind him. There are several chairs placed around the court, likely for players to rest between games or sets. In addition to the players, there's also a clock mounted on one side of the wall, allowing spectators to keep track of time during matches.",
+    "share_tail": 0.056401693061100024,
+    "residual_ratio": 0.9560073196472151,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 97,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment on a tennis court where two men are playing against each other during a match. One man is actively swinging his racket at a ball while another player watches from behind him. There are several chairs placed around the court, likely for players to rest between games or sets. In addition to the players, there's also a clock mounted on one side of the wall, allowing spectators to keep track of time during matches.",
+    "free_caption": "The image captures an exciting moment on a tennis court where two men are playing against each other during a match. One man is actively swinging his racket at a ball while another player watches from behind him. Both players have their tennis rackets ready to hit the sports ball that's located near them.\n\nThe tennis court features a blue wall with advertisements displayed around it. There are several chairs placed along the sidelines, likely for spectators or resting players. Additionally, there are multiple people watching the game unfold. Some of these individuals can be seen standing close to the court, while others are situated further away from the action.",
+    "share_tail": 0.21625156670555373,
+    "residual_ratio": 0.9661208559696592,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 97,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

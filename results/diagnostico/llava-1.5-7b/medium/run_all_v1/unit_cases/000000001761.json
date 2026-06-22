@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001761",
+  "image_path": "data/processed/mscoco_baseline/images/000000001761.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a large airplane flying high above an iconic bridge with two tall towers on either side of it. The plane is positioned towards the top left corner of the image, while the bridge spans across most of the frame.",
+    "free_caption": "The scene features a large airplane flying high above an iconic bridge with two tall towers on either side of it. The plane is positioned towards the top left corner of the image, while the bridge spans across most of the frame.",
+    "share_tail": 0.10254961188912534,
+    "residual_ratio": 0.8267499241157237,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 50,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a large airplane flying high above an iconic bridge with two tall towers on either side of it. The plane is positioned towards the top left corner of the image, while the bridge spans across most of the frame.",
+    "free_caption": "The scene features a large airplane flying high above an iconic bridge with two suspension cables. The plane is positioned towards the top of the image, while the bridge spans across most of the frame below it. There are also several smaller planes scattered throughout the sky, adding depth and interest to the overall composition.",
+    "share_tail": 0.1371012664130742,
+    "residual_ratio": 0.8391994246916816,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 50,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

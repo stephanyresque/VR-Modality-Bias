@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002157",
+  "image_path": "data/processed/mscoco_baseline/images/000000002157.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a dining table with various food items on it. There is a cake placed towards one end of the table, surrounded by plates containing different types of cheese and crackers. Additionally, there are multiple wine glasses scattered across the table, along with cups and bowls filled with other snacks. The arrangement suggests a casual gathering where guests can enjoy both sweet treats like the cake as well as savory options such as cheeses and crackers.",
+    "free_caption": "The scene features a dining table with various food items on it. There is a cake placed towards one end of the table, surrounded by plates containing different types of cheese and crackers. Additionally, there are multiple wine glasses scattered across the table, along with cups and bowls filled with other snacks. The arrangement suggests a casual gathering where guests can enjoy both sweet treats like the cake as well as savory options such as cheeses and crackers.",
+    "share_tail": 0.07818679180260496,
+    "residual_ratio": 0.7847059752854321,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 101,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a dining table with various food items on it. There is a cake placed towards one end of the table, surrounded by plates containing different types of cheese and crackers. Additionally, there are multiple wine glasses scattered across the table, along with cups and bowls filled with other snacks. The arrangement suggests a casual gathering where guests can enjoy both sweet treats like the cake as well as savory options such as cheeses and crackers.",
+    "free_caption": "The scene features a dining table with various food items on it. There is a cake placed towards one end of the table, surrounded by plates containing different types of cheese, crackers, grapes, raspberries, blueberries, and other fruits. In addition to the food, there are several wine glasses scattered across the table, as well as multiple carrots.",
+    "share_tail": 0.2107734297476393,
+    "residual_ratio": 0.8387168951861386,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 101,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

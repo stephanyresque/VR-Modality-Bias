@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003156",
+  "image_path": "data/processed/mscoco_baseline/images/000000003156.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a man wearing gloves who is kneeling down next to an open white toilet bowl. He appears to be working on or inspecting the toilet, possibly performing maintenance tasks. There are two sinks in the room; one is located near the left side of the frame while the other sink can be seen further back towards the right edge of the picture. Additionally, there's another person standing at the far end of the room, partially obscured by the first individual.",
+    "free_caption": "The image features a man wearing gloves who is kneeling down next to an open white toilet bowl. He appears to be working on or inspecting the toilet, possibly performing maintenance tasks. There are two sinks in the room; one is located near the left side of the frame while the other sink can be seen further back towards the right edge of the picture. Additionally, there's another person standing at the far end of the room, partially obscured by the first individual.",
+    "share_tail": 0.05949467399458168,
+    "residual_ratio": 0.8178120156549075,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 104,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a man wearing gloves who is kneeling down next to an open white toilet bowl. He appears to be working on or inspecting the toilet, possibly performing maintenance tasks. There are two sinks in the room; one is located near the left side of the frame while the other sink can be seen further back towards the right edge of the picture. Additionally, there's another person standing at the far end of the room, partially obscured by the first individual.",
+    "free_caption": "The image features a man wearing gloves who is kneeling down next to an open white toilet bowl. He appears to be working on or inspecting the toilet, possibly performing maintenance tasks. There are several other items present in the room, including two sinks located at different corners of the space, one nearer to the left side while the other is situated more towards the right side. Additionally, there's a checkered floor tile that adds character to the bathroom environment.",
+    "share_tail": 0.11312027175165369,
+    "residual_ratio": 0.8453568514727243,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 104,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

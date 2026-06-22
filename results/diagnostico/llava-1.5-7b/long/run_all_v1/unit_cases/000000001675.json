@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001675",
+  "image_path": "data/processed/mscoco_baseline/images/000000001675.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a black cat lying on top of an open laptop computer. It appears that the cat is either sleeping or resting comfortably on the keyboard area of the laptop. The laptop occupies most of the lower half of the frame, with its screen facing towards the left side of the image.",
+    "free_caption": "The image features a black cat lying on top of an open laptop computer. It appears that the cat is either sleeping or resting comfortably on the keyboard area of the laptop. The laptop occupies most of the lower half of the frame, with its screen facing towards the left side of the image.",
+    "share_tail": 0.04427783342788161,
+    "residual_ratio": 0.6180878925819931,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a black cat lying on top of an open laptop computer. It appears that the cat is either sleeping or resting comfortably on the keyboard area of the laptop. The laptop occupies most of the lower half of the frame, with its screen facing towards the left side of the image.",
+    "free_caption": "The image features a black cat lying on top of an open laptop computer. It appears that the cat is either sleeping or resting comfortably on the keyboard area of the laptop. The laptop occupies most of the space within the frame, with its screen facing towards the left side of the image. There are no other people or animals present in this scene, focusing solely on the interaction between the cat and the laptop.",
+    "share_tail": 0.08221556445356594,
+    "residual_ratio": 0.6435492132437348,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 62,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

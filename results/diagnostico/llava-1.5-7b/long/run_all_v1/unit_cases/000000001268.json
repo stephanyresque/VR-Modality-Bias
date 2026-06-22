@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001268",
+  "image_path": "data/processed/mscoco_baseline/images/000000001268.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a man sitting on a bench near a body of water, possibly a river or lake. He is wearing a red shirt and appears to be enjoying his time by the waterfront. Another person can be seen standing nearby, taking pictures with their camera. There are two birds present in the scene; one bird is perched close to the man seated on the bench while another bird is flying above them.\n\nIn addition to the people and wildlife, there are several boats scattered throughout the area. Some boats are closer to the shore, while others are further away from it. This suggests that this location might be popular among boaters who come here to relax and enjoy the view.",
+    "free_caption": "The image features a man sitting on a bench near a body of water, possibly a river or lake. He is wearing a red shirt and appears to be enjoying his time by the waterfront. Another person can be seen standing nearby, taking pictures with their camera. There are two birds present in the scene; one bird is perched close to the man seated on the bench while another bird is flying above them.\n\nIn addition to the people and wildlife, there are several boats scattered throughout the area. Some boats are closer to the shore, while others are further away from it. This suggests that this location might be popular among boaters who come here to relax and enjoy the view.",
+    "share_tail": 0.08890178161454013,
+    "residual_ratio": 0.8786042365228408,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 146,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a man sitting on a bench near a body of water, possibly a river or lake. He is wearing a red shirt and appears to be enjoying his time by the waterfront. Another person can be seen standing nearby, taking pictures with their camera. There are two birds present in the scene; one bird is perched close to the man seated on the bench while another bird is flying above them.\n\nIn addition to the people and wildlife, there are several boats scattered throughout the area. Some boats are closer to the shore, while others are further away from it. This suggests that this location might be popular among boaters who come here to relax and enjoy the view.",
+    "free_caption": "The image features a man sitting on a bench near a body of water, possibly a river or lake. He is wearing a red shirt and appears to be enjoying his time by the water's edge. Another person can be seen standing nearby, taking pictures with their camera. There are two birds present in the scene; one bird is perched close to the man while another bird is flying above them.\n\nIn addition to the people and birds, there are several boats scattered across the water, some closer to the bridge and others further away from it. Two handbags are also visible in the picture, likely belonging to the individuals in the scene.",
+    "share_tail": 0.19298004165666938,
+    "residual_ratio": 0.906701237937218,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 146,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

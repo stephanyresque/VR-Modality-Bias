@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003934",
+  "image_path": "data/processed/mscoco_baseline/images/000000003934.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a lively gathering where several people are playing video games on a Nintendo Wii console. In total, there are nine individuals present in various positions around the room. One young girl is standing up and actively engaged with the game using a remote control. Another person can be seen holding a wine glass, possibly enjoying some drinks during the party.\n\nThe living area features two couches placed against the walls, one nearer to the left side of the room and another towards the right side. There's also a chair located closer to the center of the space. Various bottles are scattered throughout the room, indicating that guests have been consuming refreshments while they play. Additionally, a cup can be spotted close to the middle-right part of the room.",
+    "free_caption": "The image depicts a lively gathering where several people are playing video games on a Nintendo Wii console. In total, there are nine individuals present in various positions around the room. One young girl is standing up and actively engaged with the game using a remote control. Another person can be seen holding a wine glass, possibly enjoying some drinks during the party.\n\nThe living area features two couches placed against the walls, one nearer to the left side of the room and another towards the right side. There's also a chair located closer to the center of the space. Various bottles are scattered throughout the room, indicating that guests have been consuming refreshments while they play. Additionally, a cup can be spotted close to the middle-right part of the room.",
+    "share_tail": 0.17587049399736346,
+    "residual_ratio": 0.9711691511067935,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 167,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a lively gathering where several people are playing video games on a Nintendo Wii console. In total, there are nine individuals present in various positions around the room. One young girl is standing up and actively engaged with the game using a remote control. Another person can be seen holding a wine glass, possibly enjoying some drinks during the party.\n\nThe living area features two couches placed against the walls, one nearer to the left side of the room and another towards the right side. There's also a chair located closer to the center of the space. Various bottles are scattered throughout the room, indicating that guests have been consuming refreshments while they play. Additionally, a cup can be spotted close to the middle-right part of the room.",
+    "free_caption": "The image depicts a lively gathering of people in a living room filled with furniture. There are several adults standing around, engaged in conversation or enjoying drinks from cups placed on surfaces throughout the space. Among them is a young girl wearing a colorful dress who appears to be playing a video game using a Wii remote control. She stands out as she plays her game while others watch and socialize nearby.\n\nThe living room features two couches, one located near the center of the room and another closer to the right side. Several bottles can be seen scattered across the room. In addition to the couches there is a man holding a red coucheseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseses",
+    "share_tail": 0.5750809322050957,
+    "residual_ratio": 0.9881261964389534,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 167,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

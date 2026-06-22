@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000632",
+  "image_path": "data/processed/mscoco_baseline/images/000000000632.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a cozy bedroom with a large blue quilted bed situated underneath a window that allows natural light to flood into the room. There are several books scattered throughout the space, indicating an interest in reading or studying. Some books can be found on shelves near the window, while others are placed around the room. In addition to the books, there is a potted plant located close to the window, adding a touch of greenery to the environment. Furthermore, a vase is present within the room, possibly holding flowers or other decorative items.",
+    "free_caption": "The image depicts a cozy bedroom with a large blue quilted bed situated underneath a window that allows natural light to flood into the room. There are several books scattered throughout the space, indicating an interest in reading or studying. Some books can be found on shelves near the window, while others are placed around the room. In addition to the books, there is a potted plant located close to the window, adding a touch of greenery to the environment. Furthermore, a vase is present within the room, possibly holding flowers or other decorative items.",
+    "share_tail": 0.19534707212785546,
+    "residual_ratio": 0.9852278601308267,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 121,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a cozy bedroom with a large blue quilted bed situated underneath a window that allows natural light to flood into the room. There are several books scattered throughout the space, indicating an interest in reading or studying. Some books can be found on shelves near the window, while others are placed around the room. In addition to the books, there is a potted plant located close to the window, adding a touch of greenery to the environment. Furthermore, a vase is present within the room, possibly holding flowers or other decorative items.",
+    "free_caption": "The image depicts a cozy bedroom with a large blue quilted bed situated underneath a window that allows natural light to flood the room. There are several potted plants placed around the room, adding a touch of greenery to space. In addition to the plants, there is an array of books scattered throughout the room on various shelves, creating a warm and inviting atmosphere.\n\nA chair can be seen near the footboard of the bed, providing additional seating options within the room. Furthermore, there's a small bench located next to the window. A variety of items such as bookshelfes, including a large black-and sun shelfeseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseseses",
+    "share_tail": 0.3671749334619422,
+    "residual_ratio": 0.9898255391155333,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 121,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

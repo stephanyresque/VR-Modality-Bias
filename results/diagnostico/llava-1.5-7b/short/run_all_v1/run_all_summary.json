@@ -1,0 +1,34 @@
+{
+  "per_length": {
+    "short": {
+      "n_off": 50,
+      "n_on": 50,
+      "median_share_tail_off": 0.29215341806411743,
+      "median_share_tail_on": 0.3039759248495102,
+      "pct_degenerated_off": 0.0,
+      "pct_degenerated_on": 0.0
+    },
+    "medium": {
+      "n_off": 50,
+      "n_on": 50,
+      "median_share_tail_off": 0.15569838881492615,
+      "median_share_tail_on": 0.20617074519395828,
+      "pct_degenerated_off": 0.0,
+      "pct_degenerated_on": 0.0
+    },
+    "long": {
+      "n_off": 50,
+      "n_on": 50,
+      "median_share_tail_off": 0.1254732683300972,
+      "median_share_tail_on": 0.3570253998041153,
+      "pct_degenerated_off": 0.0,
+      "pct_degenerated_on": 24.0
+    }
+  },
+  "totals": {
+    "n_off": 150,
+    "n_on": 150,
+    "n_degenerated_off": 0,
+    "n_degenerated_on": 12
+  }
+}

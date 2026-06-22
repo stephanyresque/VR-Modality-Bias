@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003156",
+  "image_path": "data/processed/mscoco_baseline/images/000000003156.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The man is kneeling down next to a white toilet with his hands on it. He appears to be working on fixing something related to the toilet.",
+    "free_caption": "The man is kneeling down next to a white toilet with his hands on it. He appears to be working on fixing something related to the toilet.",
+    "share_tail": 0.15256484934565923,
+    "residual_ratio": 0.8523970266032866,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 34,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The man is kneeling down next to a white toilet with his hands on it. He appears to be working on fixing something related to the toilet.",
+    "free_caption": "The man is kneeling down next to a white toilet with his hands on it. He appears to be working on fixing the toilet as he looks at its underside.",
+    "share_tail": 0.1684457601535198,
+    "residual_ratio": 0.8582384180644288,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 34,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

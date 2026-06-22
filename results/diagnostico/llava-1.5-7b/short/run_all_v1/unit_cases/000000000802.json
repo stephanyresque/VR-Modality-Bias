@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000802",
+  "image_path": "data/processed/mscoco_baseline/images/000000000802.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The kitchen is small with a white refrigerator on the right side of the room.",
+    "free_caption": "The kitchen is small with a white refrigerator on the right side of the room.",
+    "share_tail": 0.30328720813723287,
+    "residual_ratio": 0.7256756600748991,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The kitchen is small with a white refrigerator on the right side of the room.",
+    "free_caption": "The kitchen is small with a white refrigerator on the right side of the room.",
+    "share_tail": 0.3027674473534797,
+    "residual_ratio": 0.7326804723776874,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 19,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

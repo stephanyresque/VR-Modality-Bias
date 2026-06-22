@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000802",
+  "image_path": "data/processed/mscoco_baseline/images/000000000802.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The kitchen is small with a white refrigerator on one side and an oven on the other. There are two cabinets above the countertops, providing storage space for kitchen items.",
+    "free_caption": "The kitchen is small with a white refrigerator on one side and an oven on the other. There are two cabinets above the countertops, providing storage space for kitchen items.",
+    "share_tail": 0.20236206026609382,
+    "residual_ratio": 0.825758199493256,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 40,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The kitchen is small with a white refrigerator on one side and an oven on the other. There are two cabinets above the countertops, providing storage space for kitchen items.",
+    "free_caption": "The kitchen is small with a white refrigerator on one side and an oven on the other. There are two cabinets above the countertops, providing storage space for kitchen items.",
+    "share_tail": 0.2693435838138965,
+    "residual_ratio": 0.8503169074749034,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 40,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002473",
+  "image_path": "data/processed/mscoco_baseline/images/000000002473.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment on a snow-covered slope where a skier is performing a jump high up in the air with their skis crossed. There are several other people present in the background, likely watching or waiting to ski themselves. Some of them can be seen closer to the left side of the frame while others are scattered around the right side.\n\nThe primary focus remains on the person executing the impressive aerial maneuver. Their skis are clearly visible as they soar through the air, showcasing skill and control during this thrilling activity.",
+    "free_caption": "The image captures an exciting moment on a snow-covered slope where a skier is performing a jump high up in the air with their skis crossed. There are several other people present in the background, likely watching or waiting to ski themselves. Some of them can be seen closer to the left side of the frame while others are scattered around the right side.\n\nThe primary focus remains on the person executing the impressive aerial maneuver. Their skis are clearly visible as they soar through the air, showcasing skill and control during this thrilling activity.",
+    "share_tail": 0.06038874721162779,
+    "residual_ratio": 0.9659992661783016,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 120,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment on a snow-covered slope where a skier is performing a jump high up in the air with their skis crossed. There are several other people present in the background, likely watching or waiting to ski themselves. Some of them can be seen closer to the left side of the frame while others are scattered around the right side.\n\nThe primary focus remains on the person executing the impressive aerial maneuver. Their skis are clearly visible as they soar through the air, showcasing skill and control during this thrilling activity.",
+    "free_caption": "The image captures an exciting moment on a snow-covered slope where a skier is performing a jump high up in the air with their skis crossed. There are several people watching this impressive display from various positions around the slope. Some spectators can be seen closer to the jumper while others stand further away or at different angles. In total, there are five individuals observing the action.\n\nThe skier's skis are clearly visible as they soar through the sky during the jump. Additionally, two ski poles can be spotted in the scene, one nearer to the left side of the image and another towards the right side. This suggests that multiple skiers might have been involved in the event taking place.",
+    "share_tail": 0.19811178110125713,
+    "residual_ratio": 0.97497825665534,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 120,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

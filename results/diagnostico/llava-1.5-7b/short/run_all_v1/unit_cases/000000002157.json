@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002157",
+  "image_path": "data/processed/mscoco_baseline/images/000000002157.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "A table with a cake on it that is covered in blueberries.",
+    "free_caption": "A table with a cake on it that is covered in blueberries.",
+    "share_tail": 0.5595219720856497,
+    "residual_ratio": 0.6168186922912847,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "A table with a cake on it that is covered in blueberries.",
+    "free_caption": "A table with a cake on it that is covered in blueberries.",
+    "share_tail": 0.5717421507304468,
+    "residual_ratio": 0.6313165347949987,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

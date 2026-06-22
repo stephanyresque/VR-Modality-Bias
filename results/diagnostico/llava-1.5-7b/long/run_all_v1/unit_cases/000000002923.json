@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002923",
+  "image_path": "data/processed/mscoco_baseline/images/000000002923.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an open field with tall grass where several birds are walking around. There is one bird closer to the left side of the frame, another nearer to the center, and two more towards the right side. In addition to these birds, there's also a seagull flying above the field, adding variety to the avian presence.\n\nThe field appears to be situated next to water, as evidenced by the boats docked nearby. There are four boats visible in the background, varying in size and positioning. Some boats can be seen further back on the left side, while others are located closer to the middle and right side of the scene. Overall, this serene landscape captures the beauty of nature and its inhabitants.",
+    "free_caption": "The image features an open field with tall grass where several birds are walking around. There is one bird closer to the left side of the frame, another nearer to the center, and two more towards the right side. In addition to these birds, there's also a seagull flying above the field, adding variety to the avian presence.\n\nThe field appears to be situated next to water, as evidenced by the boats docked nearby. There are four boats visible in the background, varying in size and positioning. Some boats can be seen further back on the left side, while others are located closer to the middle and right side of the scene. Overall, this serene landscape captures the beauty of nature and its inhabitants.",
+    "share_tail": 0.2496139769714106,
+    "residual_ratio": 0.8177199782157066,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an open field with tall grass where several birds are walking around. There is one bird closer to the left side of the frame, another nearer to the center, and two more towards the right side. In addition to these birds, there's also a seagull flying above the field, adding variety to the avian presence.\n\nThe field appears to be situated next to water, as evidenced by the boats docked nearby. There are four boats visible in the background, varying in size and positioning. Some boats can be seen further back on the left side, while others are located closer to the middle and right side of the scene. Overall, this serene landscape captures the beauty of nature and its inhabitants.",
+    "free_caption": "The image features an open field with tall grass where several birds are walking around. There is one bird closer to the left side of the field, another nearer to the center, and two more towards the right side. In addition to these birds, there's also a seagull standing on the ground close to the middle-right area of the field.\n\nThe sky above this serene landscape appears cloudy, adding depth to the atmosphere. Several boats can be seen scattered throughout the marsh, some docked while others float freely across the water. Two small airplanes fly over the marsh, providing contrasting elements within the scene.",
+    "share_tail": 0.45200057780192965,
+    "residual_ratio": 0.882957617390085,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 154,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

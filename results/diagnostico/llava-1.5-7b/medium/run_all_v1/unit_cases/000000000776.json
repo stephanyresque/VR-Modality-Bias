@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000776",
+  "image_path": "data/processed/mscoco_baseline/images/000000000776.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a group of teddy bears sitting on top of each other. There are four teddy bears in total, with one large bear occupying most of the space while the others sit around it. They appear to be arranged for display or as part of an artistic arrangement.",
+    "free_caption": "The scene features a group of teddy bears sitting on top of each other. There are four teddy bears in total, with one large bear occupying most of the space while the others sit around it. They appear to be arranged for display or as part of an artistic arrangement.",
+    "share_tail": 0.0976461318622943,
+    "residual_ratio": 0.7117913417338854,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 60,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a group of teddy bears sitting on top of each other. There are four teddy bears in total, with one large bear occupying most of the space while the others sit around it. They appear to be arranged for display or as part of an artistic arrangement.",
+    "free_caption": "The scene features a group of teddy bears sitting on top of each other. There are four teddy bears in total, with one brown bear being particularly prominent among them. They appear to be arranged for a photo session, possibly showcasing their various colors and textures.",
+    "share_tail": 0.177395969120291,
+    "residual_ratio": 0.751269354483861,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 60,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

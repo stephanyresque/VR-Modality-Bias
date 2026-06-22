@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002473",
+  "image_path": "data/processed/mscoco_baseline/images/000000002473.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a skier performing an impressive jump off of a snowy hillside. There are several people watching the action unfold, including one person standing close to the left side of the frame and another on the right side. In addition to the skier, there is also a backpack located near the bottom-right corner of the image.",
+    "free_caption": "The scene features a skier performing an impressive jump off of a snowy hillside. There are several people watching the action unfold, including one person standing close to the left side of the frame and another on the right side. In addition to the skier, there is also a backpack located near the bottom-right corner of the image.",
+    "share_tail": 0.2132740322885279,
+    "residual_ratio": 0.7786839812853742,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 71,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a skier performing an impressive jump off of a snowy hillside. There are several people watching the action unfold, including one person standing close to the left side of the frame and another on the right side. In addition to the skier, there is also a backpack located near the bottom-right corner of the image.",
+    "free_caption": "The scene features a skier performing an impressive jump high above the snow-covered ground. There are several people watching this thrilling moment unfold. In addition to the skier, there is another person standing nearby with their back turned towards the action.",
+    "share_tail": 0.32333320550282557,
+    "residual_ratio": 0.822507194173436,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 71,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

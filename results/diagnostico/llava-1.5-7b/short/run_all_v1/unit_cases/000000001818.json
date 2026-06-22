@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001818",
+  "image_path": "data/processed/mscoco_baseline/images/000000001818.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Two zebras are standing next to each other with their heads touching.",
+    "free_caption": "Two zebras are standing next to each other with their heads touching.",
+    "share_tail": 0.40824380426051166,
+    "residual_ratio": 0.5237161041004282,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Two zebras are standing next to each other with their heads touching.",
+    "free_caption": "Two zebras are standing next to each other with their heads touching.",
+    "share_tail": 0.4223959211939026,
+    "residual_ratio": 0.5424358575284226,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 16,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

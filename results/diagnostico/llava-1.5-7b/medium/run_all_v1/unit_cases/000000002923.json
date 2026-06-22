@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002923",
+  "image_path": "data/processed/mscoco_baseline/images/000000002923.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a marshy area with several boats docked near the shore. There are two birds standing on the grass close to each other, possibly enjoying their time by the water. Additionally, there is another bird flying above them, adding life to the serene environment.",
+    "free_caption": "The scene features a marshy area with several boats docked near the shore. There are two birds standing on the grass close to each other, possibly enjoying their time by the water. Additionally, there is another bird flying above them, adding life to the serene environment.",
+    "share_tail": 0.08106098572009997,
+    "residual_ratio": 0.8138508305615961,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 57,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a marshy area with several boats docked near the shore. There are two birds standing on the grass close to each other, possibly enjoying their time by the water. Additionally, there is another bird flying above them, adding life to the serene environment.",
+    "free_caption": "The scene features a marshy area with several boats docked near the shore. There are four birds present in the field, two of which appear to be storks standing close together while another bird is flying above them. Additionally, there's a small white airplane soaring through the sky, adding an interesting element to this picturesque landscape.",
+    "share_tail": 0.11466790087380742,
+    "residual_ratio": 0.8330794261254734,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 57,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

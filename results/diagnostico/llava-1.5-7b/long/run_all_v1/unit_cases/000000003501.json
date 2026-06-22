@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003501",
+  "image_path": "data/processed/mscoco_baseline/images/000000003501.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a white bowl placed on top of a wooden dining table. Inside the bowl, there is an appetizing meal consisting of rice, beans, broccoli, and carrots. The vegetables are distributed throughout the bowl with some pieces closer to the edge while others are more centrally located. The combination of these ingredients creates a visually appealing and nutritious dish that can be enjoyed by those who partake in it.",
+    "free_caption": "The image features a white bowl placed on top of a wooden dining table. Inside the bowl, there is an appetizing meal consisting of rice, beans, broccoli, and carrots. The vegetables are distributed throughout the bowl with some pieces closer to the edge while others are more centrally located. The combination of these ingredients creates a visually appealing and nutritious dish that can be enjoyed by those who partake in it.",
+    "share_tail": 0.08916064910423294,
+    "residual_ratio": 0.8507652604780337,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 102,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a white bowl placed on top of a wooden dining table. Inside the bowl, there is an appetizing meal consisting of rice, beans, broccoli, and carrots. The vegetables are distributed throughout the bowl with some pieces closer to the edge while others are more centrally located. The combination of these ingredients creates a visually appealing and nutritious dish that can be enjoyed by those who partake in it.",
+    "free_caption": "The image features a white bowl filled with various food items placed on top of a wooden dining table. Inside the bowl, there is a mix of rice, beans, chili, and broccoli. The broccoli can be seen scattered throughout the bowl, while the other ingredients are mixed together to create a delicious meal. This colorful and nutritious dish appears ready to be enjoyed by someone at the dinner table.",
+    "share_tail": 0.23172872010608175,
+    "residual_ratio": 0.8835016883008804,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 102,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

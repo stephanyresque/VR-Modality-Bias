@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000872",
+  "image_path": "data/processed/mscoco_baseline/images/000000000872.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image captures an exciting moment during a baseball game on a field with green grass. Two men are playing against each other, one wearing a white shirt while the other is dressed in gray. They appear to be running towards home plate as they both attempt to catch the ball being thrown by another player. In total, there are four people present in the scene, including those who may not be directly involved in the play but could potentially be teammates or opponents waiting their turn at bat.\n\nThe sports ball can be seen flying through the air near the center-right part of the image. There's also a baseball glove located close to the right side of the frame, possibly belonging to one of the players trying to catch the ball.",
+    "free_caption": "The image captures an exciting moment during a baseball game on a field with green grass. Two men are playing against each other, one wearing a white shirt while the other is dressed in gray. They appear to be running towards home plate as they both attempt to catch the ball being thrown by another player. In total, there are four people present in the scene, including those who may not be directly involved in the play but could potentially be teammates or opponents waiting their turn at bat.\n\nThe sports ball can be seen flying through the air near the center-right part of the image. There's also a baseball glove located close to the right side of the frame, possibly belonging to one of the players trying to catch the ball.",
+    "share_tail": 0.06434327638729746,
+    "residual_ratio": 0.9558238928640085,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 156,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image captures an exciting moment during a baseball game on a field with green grass. Two men are playing against each other, one wearing a white shirt while the other is dressed in gray. They appear to be running towards home plate as they both attempt to catch the ball being thrown by another player. In total, there are four people present in the scene, including those who may not be directly involved in the play but could potentially be teammates or opponents waiting their turn at bat.\n\nThe sports ball can be seen flying through the air near the center-right part of the image. There's also a baseball glove located close to the right side of the frame, possibly belonging to one of the players trying to catch the ball.",
+    "free_caption": "The image captures an exciting moment during a baseball game on a field with green grass. Two men are playing as one throws a ball towards another player who is running to catch it. Both players have baseball gloves on their hands, ready to make a play. One man appears to be wearing a white shirt while the other has a green top. They both seem focused on the incoming ball.\n\nThe field also features some trees surrounding the area, adding to the natural ambiance of the scene. There's a bench located near the edge of the field, possibly serving as seating or resting spot for spectators.",
+    "share_tail": 0.24997460750508912,
+    "residual_ratio": 0.973293929646837,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 156,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002685",
+  "image_path": "data/processed/mscoco_baseline/images/000000002685.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene is set at a wine tasting event where several people are gathered around a bar with various bottles of wine on display. There are multiple individuals engaged in conversation while enjoying their time together. Some guests can be seen holding glasses filled with wine as they socialize and taste different varieties.",
+    "free_caption": "The scene is set at a wine tasting event where several people are gathered around a bar with various bottles of wine on display. There are multiple individuals engaged in conversation while enjoying their time together. Some guests can be seen holding glasses filled with wine as they socialize and taste different varieties.",
+    "share_tail": 0.15142113155536735,
+    "residual_ratio": 0.7681610268597825,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene is set at a wine tasting event where several people are gathered around a bar with various bottles of wine on display. There are multiple individuals engaged in conversation while enjoying their time together. Some guests can be seen holding glasses filled with wine as they socialize and taste different varieties.",
+    "free_caption": "The scene is set at a wine tasting event where several people are gathered around a bar with various bottles of wine on display. There are multiple wine glasses placed throughout the area, indicating that guests have been sampling different wines. Some individuals can be seen holding their own wine glasses while others engage in conversation with one another.",
+    "share_tail": 0.2104003882638744,
+    "residual_ratio": 0.7949765832972945,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 63,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

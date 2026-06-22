@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001584",
+  "image_path": "data/processed/mscoco_baseline/images/000000001584.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a red double-decker bus driving down a city street with several people around it. There are at least nine individuals scattered throughout the scene, some closer to the bus while others stand further away from it. One person is carrying a handbag as they walk alongside the busy road.\n\nThe street appears to be bustling with activity, as there are two other vehicles present - one car located near the right edge of the frame and another smaller vehicle on the left side. Additionally, there's a traffic light situated towards the top left corner of the image, indicating that this area might have controlled intersections or pedestrian crossings.",
+    "free_caption": "The image features a red double-decker bus driving down a city street with several people around it. There are at least nine individuals scattered throughout the scene, some closer to the bus while others stand further away from it. One person is carrying a handbag as they walk alongside the busy road.\n\nThe street appears to be bustling with activity, as there are two other vehicles present - one car located near the right edge of the frame and another smaller vehicle on the left side. Additionally, there's a traffic light situated towards the top left corner of the image, indicating that this area might have controlled intersections or pedestrian crossings.",
+    "share_tail": 0.28994971686080323,
+    "residual_ratio": 0.7654695413182947,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 134,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a red double-decker bus driving down a city street with several people around it. There are at least nine individuals scattered throughout the scene, some closer to the bus while others stand further away from it. One person is carrying a handbag as they walk alongside the busy road.\n\nThe street appears to be bustling with activity, as there are two other vehicles present - one car located near the right edge of the frame and another smaller vehicle on the left side. Additionally, there's a traffic light situated towards the top left corner of the image, indicating that this area might have controlled intersections or pedestrian crossings.",
+    "free_caption": "The image features a red double-decker bus driving down a city street with tall buildings lining both sides. There are several people walking along the sidewalk, some closer to the front of the bus while others can be seen further back on the right side of the street. In addition to pedestrians, there is also a bicycle parked near the left edge of the image.\n\nApart from the bus, another vehicle is present at the far right end of the street. This second bus appears smaller compared to the large red double-decker bus dominating the scene.",
+    "share_tail": 0.5536228353967207,
+    "residual_ratio": 0.8780051046233432,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 134,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

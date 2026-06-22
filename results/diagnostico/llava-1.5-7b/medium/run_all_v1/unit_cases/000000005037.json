@@ -1,0 +1,30 @@
+{
+  "image_id": "000000005037",
+  "image_path": "data/processed/mscoco_baseline/images/000000005037.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The scene features a large white bus driving down a street with buildings on either side of it. There are two people standing near the front of the bus, possibly waiting for their ride or just observing the surroundings. Additionally, there is another person further back along the street, likely going about their daily activities.",
+    "free_caption": "The scene features a large white bus driving down a street with buildings on either side of it. There are two people standing near the front of the bus, possibly waiting for their ride or just observing the surroundings. Additionally, there is another person further back along the street, likely going about their daily activities.",
+    "share_tail": 0.058485817291156914,
+    "residual_ratio": 0.7204734529548282,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 64,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The scene features a large white bus driving down a street with buildings on either side of it. There are two people standing near the front of the bus, possibly waiting for their ride or just observing the surroundings. Additionally, there is another person further back along the street, likely going about their daily activities.",
+    "free_caption": "The scene features a large white bus driving down a street with buildings on both sides of it. There are two people standing near the front of the bus, possibly waiting for their ride or just observing the vehicle as it passes by.",
+    "share_tail": 0.09145756524428442,
+    "residual_ratio": 0.7459247426864243,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 64,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

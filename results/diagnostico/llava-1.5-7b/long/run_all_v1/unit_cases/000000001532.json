@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001532",
+  "image_path": "data/processed/mscoco_baseline/images/000000001532.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts a busy highway with multiple cars driving underneath an overpass. There are at least nine vehicles on the road, including one truck located near the center-left side of the frame. Some cars can be seen further back, while others are closer to the front of the scene.\n\nThe highway is surrounded by trees that provide a natural background to the urban environment. Two traffic lights are present in the scene; one is situated towards the left side of the image, and another is found more centrally. Additionally, there's a person standing close to the right edge of the picture, possibly observing the traffic or waiting to cross the street.",
+    "free_caption": "The image depicts a busy highway with multiple cars driving underneath an overpass. There are at least nine vehicles on the road, including one truck located near the center-left side of the frame. Some cars can be seen further back, while others are closer to the front of the scene.\n\nThe highway is surrounded by trees that provide a natural background to the urban environment. Two traffic lights are present in the scene; one is situated towards the left side of the image, and another is found more centrally. Additionally, there's a person standing close to the right edge of the picture, possibly observing the traffic or waiting to cross the street.",
+    "share_tail": 0.23738644179365231,
+    "residual_ratio": 0.9713632152090417,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 139,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts a busy highway with multiple cars driving underneath an overpass. There are at least nine vehicles on the road, including one truck located near the center-left side of the frame. Some cars can be seen further back, while others are closer to the front of the scene.\n\nThe highway is surrounded by trees that provide a natural background to the urban environment. Two traffic lights are present in the scene; one is situated towards the left side of the image, and another is found more centrally. Additionally, there's a person standing close to the right edge of the picture, possibly observing the traffic or waiting to cross the street.",
+    "free_caption": "The image depicts a busy highway with multiple cars driving underneath an overpass bridge. There are at least nine vehicles on the road, including two trucks – one located near the left side of the frame and another further back towards the right edge. Additionally, there is a van situated closer to the left side of the image.\n\nThe traffic appears to be moving smoothly despite the presence of several signs above the lanes. These green street signs provide guidance for drivers navigating through the area. Some of these signs include directions pointing toward Hollywood Sunset North 10 Hollywood Sunset North Hollywood Sunset North 101 North 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "share_tail": 0.37489791257886657,
+    "residual_ratio": 0.9819511833893627,
+    "degenerated": true,
+    "degeneration_reason": "'north' x4 in last 20 tokens",
+    "caption_len": 139,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

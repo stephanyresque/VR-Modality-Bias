@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002592",
+  "image_path": "data/processed/mscoco_baseline/images/000000002592.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a dining table with various items on it. On one side of the table, there is an open black knife placed next to a white coffee mug that has a skull design on it. This pirate-themed cup sits atop the table, adding a touch of whimsy to the scene. Additionally, another smaller cup can be seen near the edge of the table.",
+    "free_caption": "The image features a dining table with various items on it. On one side of the table, there is an open black knife placed next to a white coffee mug that has a skull design on it. This pirate-themed cup sits atop the table, adding a touch of whimsy to the scene. Additionally, another smaller cup can be seen near the edge of the table.",
+    "share_tail": 0.0856865351207909,
+    "residual_ratio": 0.9029021768633726,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 84,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a dining table with various items on it. On one side of the table, there is an open black knife placed next to a white coffee mug that has a skull design on it. This pirate-themed cup sits atop the table, adding a touch of whimsy to the scene. Additionally, another smaller cup can be seen near the edge of the table.",
+    "free_caption": "The image features a white coffee mug with a pirate skull on it sitting next to a black knife on a table. The cup is placed towards the left side of the table while the knife occupies most of the right side. There are also two spoons present in the scene; one is located near the center-left area of the table, and another spoon can be seen closer to the top-right corner. Additionally, there's an object at the bottom-left part of the table that appears to be a piece of wood or a similar material.",
+    "share_tail": 0.18467425432332454,
+    "residual_ratio": 0.9248879101938497,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 84,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

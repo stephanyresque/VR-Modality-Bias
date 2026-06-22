@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000632",
+  "image_path": "data/processed/mscoco_baseline/images/000000000632.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The room features a large bed with blue sheets and blankets, situated next to a window. There is also a chair placed near the bed. In addition to these furnishings, there are numerous books scattered throughout the space, indicating an interest in reading. Furthermore, several potted plants can be found around the room, adding a touch of greenery to the environment.",
+    "free_caption": "The room features a large bed with blue sheets and blankets, situated next to a window. There is also a chair placed near the bed. In addition to these furnishings, there are numerous books scattered throughout the space, indicating an interest in reading. Furthermore, several potted plants can be found around the room, adding a touch of greenery to the environment.",
+    "share_tail": 0.3603034879678676,
+    "residual_ratio": 0.787606268103327,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 75,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The room features a large bed with blue sheets and blankets, situated next to a window. There is also a chair placed near the bed. In addition to these furnishings, there are numerous books scattered throughout the space, indicating an interest in reading. Furthermore, several potted plants can be found around the room, adding a touch of greenery to the environment.",
+    "free_caption": "The room features a large bed with blue sheets and blankets, positioned underneath a window. There is a dresser nearby, along with several potted plants scattered throughout the space. Additionally, there are numerous books arranged on shelves, creating an atmosphere of relaxation and leisurely reading.",
+    "share_tail": 0.40565756532995273,
+    "residual_ratio": 0.8222522101011549,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 75,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

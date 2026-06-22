@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000776",
+  "image_path": "data/processed/mscoco_baseline/images/000000000776.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features an assortment of teddy bears gathered together on top of a bed or couch. There are at least five different teddy bears present in various positions within the scene. Some of them appear to be sitting close to each other while others are spread out across the surface. One teddy bear is situated towards the left side of the frame, another one can be found near the center, and two more are positioned closer to the right edge of the image. Overall, it's a cozy and inviting scene with these stuffed animals arranged comfortably.",
+    "free_caption": "The image features an assortment of teddy bears gathered together on top of a bed or couch. There are at least five different teddy bears present in various positions within the scene. Some of them appear to be sitting close to each other while others are spread out across the surface. One teddy bear is situated towards the left side of the frame, another one can be found near the center, and two more are positioned closer to the right edge of the image. Overall, it's a cozy and inviting scene with these stuffed animals arranged comfortably.",
+    "share_tail": 0.0717807947822949,
+    "residual_ratio": 0.8182892990424675,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 121,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features an assortment of teddy bears gathered together on top of a bed or couch. There are at least five different teddy bears present in various positions within the scene. Some of them appear to be sitting close to each other while others are spread out across the surface. One teddy bear is situated towards the left side of the frame, another one can be found near the center, and two more are positioned closer to the right edge of the image. Overall, it's a cozy and inviting scene with these stuffed animals arranged comfortably.",
+    "free_caption": "The image features an assortment of teddy bears piled on top of each other, creating a cozy and playful atmosphere. There are at least five different teddy bears in various sizes and positions within the group. Some bear heads can be seen peeking out from underneath their stuffed companions, adding to the sense of warmth and comfort.\n\nThe teddy bears are arranged around a blue blanket that covers most of the lower part of the image. This creates a visually appealing contrast between the soft brown bears and the vibrant blue color of the blanket. Overall, it is a heartwarming and adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable adorable ador or adorable adorable ador adorable ador ador or ador or adorable ad ador ador adorable ad ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador ador adorororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororororor",
+    "share_tail": 0.40941541846604956,
+    "residual_ratio": 0.9110595982749694,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'ador' x29",
+    "caption_len": 121,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

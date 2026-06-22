@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001993",
+  "image_path": "data/processed/mscoco_baseline/images/000000001993.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a cozy bedroom with a large window that allows natural light to fill the space. In front of this window is a neatly made bed adorned by a colorful comforter. There are two chairs placed within the room; one chair is located near the left side of the bed while another chair can be found closer to the right edge of the frame. Additionally, there's a dining table situated towards the bottom-left corner of the room.\n\nA few other items are present in the room as well. An umbrella rests on the floor close to the center of the room, and a remote control lies nearby. Furthermore, a clock hangs on the wall above the bed, providing a sense of time during relaxation or sleep.",
+    "free_caption": "The image features a cozy bedroom with a large window that allows natural light to fill the space. In front of this window is a neatly made bed adorned by a colorful comforter. There are two chairs placed within the room; one chair is located near the left side of the bed while another chair can be found closer to the right edge of the frame. Additionally, there's a dining table situated towards the bottom-left corner of the room.\n\nA few other items are present in the room as well. An umbrella rests on the floor close to the center of the room, and a remote control lies nearby. Furthermore, a clock hangs on the wall above the bed, providing a sense of time during relaxation or sleep.",
+    "share_tail": 0.3185489646440503,
+    "residual_ratio": 0.8535929445059766,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 161,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a cozy bedroom with a large window that allows natural light to fill the space. In front of this window is a neatly made bed adorned by a colorful comforter. There are two chairs placed within the room; one chair is located near the left side of the bed while another chair can be found closer to the right edge of the frame. Additionally, there's a dining table situated towards the bottom-left corner of the room.\n\nA few other items are present in the room as well. An umbrella rests on the floor close to the center of the room, and a remote control lies nearby. Furthermore, a clock hangs on the wall above the bed, providing a sense of time during relaxation or sleep.",
+    "free_caption": "The image features a cozy bedroom with a large purple wall that adds to its unique ambiance. In this room, there is a colorful bed with an orange, green, blue, and pink comforter on it, creating a vibrant focal point within the space. Next to the bed, there's a black chair positioned near a window, which allows natural light into the room during daytime hours. Additionally, another chair can be seen close to the window as well. There are also two windows in the room, one located above the other. A decorative touches a brick wall, 1 a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a",
+    "share_tail": 0.8711955383682637,
+    "residual_ratio": 0.9794939421032188,
+    "degenerated": true,
+    "degeneration_reason": "consecutive 'a' x30",
+    "caption_len": 161,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

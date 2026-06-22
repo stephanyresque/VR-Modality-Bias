@@ -1,0 +1,30 @@
+{
+  "image_id": "000000000139",
+  "image_path": "data/processed/mscoco_baseline/images/000000000139.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image depicts an open concept living room with hardwood floors that leads to a dining area. In this space, there is a woman standing near the kitchen counter, possibly preparing food or engaging in conversation. Another person can be seen sitting at one end of the dining table, which has chairs placed around it. There are two potted plants in the room, adding some greenery to the environment.\n\nThe living room features a TV mounted on the wall, while the dining area includes a refrigerator situated close by. Additionally, there's a clock hanging above the dining table, allowing people to keep track of time during meals or gatherings.",
+    "free_caption": "The image depicts an open concept living room with hardwood floors that leads to a dining area. In this space, there is a woman standing near the kitchen counter, possibly preparing food or engaging in conversation. Another person can be seen sitting at one end of the dining table, which has chairs placed around it. There are two potted plants in the room, adding some greenery to the environment.\n\nThe living room features a TV mounted on the wall, while the dining area includes a refrigerator situated close by. Additionally, there's a clock hanging above the dining table, allowing people to keep track of time during meals or gatherings.",
+    "share_tail": 0.32368581519815437,
+    "residual_ratio": 0.9779783135397987,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 145,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image depicts an open concept living room with hardwood floors that leads to a dining area. In this space, there is a woman standing near the kitchen counter, possibly preparing food or engaging in conversation. Another person can be seen sitting at one end of the dining table, which has chairs placed around it. There are two potted plants in the room, adding some greenery to the environment.\n\nThe living room features a TV mounted on the wall, while the dining area includes a refrigerator situated close by. Additionally, there's a clock hanging above the dining table, allowing people to keep track of time during meals or gatherings.",
+    "free_caption": "The image depicts an open concept living room with hardwood floors that leads to a dining area. In this space, there is a woman standing near the kitchen counter while another person sits at the table nearby. There are two chairs positioned around the dining table, one on each side. Additionally, three potted plants can be seen throughout the room, adding some greenery to the environment.\n\nThe living room features a large television mounted on the wall, which serves as a focal point in the space. Two vases are placed within the room, one closer to the left corner and the other towards the right side. Three remotes are also present in the room, one close to the window, another by the clock, and the third one further away from the window.",
+    "share_tail": 0.6707493156041158,
+    "residual_ratio": 0.9909301851230453,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 145,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

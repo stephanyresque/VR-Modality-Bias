@@ -1,0 +1,30 @@
+{
+  "image_id": "000000001425",
+  "image_path": "data/processed/mscoco_baseline/images/000000001425.jpg",
+  "prompt": "Describe the image in a long, detailed paragraph. Be thorough and cover the main subject, the setting, all visible objects, actions, spatial relationships, colors, and contextual details. Aim for a rich, complete description of the scene.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/long/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a dining table with an open-faced sandwich sitting on top of it. This delicious treat is made up of two slices of bread, one placed above the other, filled with various ingredients such as meat, jelly, and sauce. The sandwich appears to be half eaten, indicating that someone has already started enjoying their meal.\n\nIn addition to the sandwich, there are several bowls scattered around the table. One large bowl can be seen towards the right side of the table, while another smaller bowl is located closer to the center. There's also a cup situated near the left edge of the table. Furthermore, a person is partially visible at the upper part of the image, likely preparing or serving food during this mealtime gathering.",
+    "free_caption": "The image features a dining table with an open-faced sandwich sitting on top of it. This delicious treat is made up of two slices of bread, one placed above the other, filled with various ingredients such as meat, jelly, and sauce. The sandwich appears to be half eaten, indicating that someone has already started enjoying their meal.\n\nIn addition to the sandwich, there are several bowls scattered around the table. One large bowl can be seen towards the right side of the table, while another smaller bowl is located closer to the center. There's also a cup situated near the left edge of the table. Furthermore, a person is partially visible at the upper part of the image, likely preparing or serving food during this mealtime gathering.",
+    "share_tail": 0.18231950313779915,
+    "residual_ratio": 0.8671811693583868,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a dining table with an open-faced sandwich sitting on top of it. This delicious treat is made up of two slices of bread, one placed above the other, filled with various ingredients such as meat, jelly, and sauce. The sandwich appears to be half eaten, indicating that someone has already started enjoying their meal.\n\nIn addition to the sandwich, there are several bowls scattered around the table. One large bowl can be seen towards the right side of the table, while another smaller bowl is located closer to the center. There's also a cup situated near the left edge of the table. Furthermore, a person is partially visible at the upper part of the image, likely preparing or serving food during this mealtime gathering.",
+    "free_caption": "The image features a dining table with an open-faced sandwich sitting on top of it. This delicious treat is made up of two slices of bread filled with chocolate spread or frosting. There are also some jelly beans placed around the sandwich, adding to its visual appeal. In addition to the sandwich, there's a bowl containing jelly beans nearby, which can be used as a side dish. Furthermore, another cup is present at one end of the table, possibly holding a drink to accompany the meal.",
+    "share_tail": 0.45684893766551576,
+    "residual_ratio": 0.9244922770008773,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 170,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

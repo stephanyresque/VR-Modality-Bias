@@ -1,0 +1,30 @@
+{
+  "image_id": "000000003661",
+  "image_path": "data/processed/mscoco_baseline/images/000000003661.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a bunch of bananas on top of each other, with some ripe ones at the bottom and others higher up. There are several banana bunches stacked together, creating an interesting visual effect.",
+    "free_caption": "The image features a bunch of bananas on top of each other, with some ripe ones at the bottom and others higher up. There are several banana bunches stacked together, creating an interesting visual effect.",
+    "share_tail": 0.10906482746623405,
+    "residual_ratio": 0.6508915768860329,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 44,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a bunch of bananas on top of each other, with some ripe ones at the bottom and others higher up. There are several banana bunches stacked together, creating an interesting visual effect.",
+    "free_caption": "The image features a bunch of bananas on top of each other, with some ripe ones at the bottom and others higher up. There are several yellow bananas in various positions within the stack, creating an interesting visual effect.",
+    "share_tail": 0.16281327968605658,
+    "residual_ratio": 0.6783155064170813,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 44,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

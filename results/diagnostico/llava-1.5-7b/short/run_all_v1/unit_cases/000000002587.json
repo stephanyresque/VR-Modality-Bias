@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002587",
+  "image_path": "data/processed/mscoco_baseline/images/000000002587.jpg",
+  "prompt": "Describe the image in one single sentence. Be objective and concise. Mention only the main subject and the most important context. Do not add extra details, opinions, or multiple sentences. Output exactly one sentence.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/short/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "Two doughnuts are sitting on top of a banana.",
+    "free_caption": "Two doughnuts are sitting on top of a banana.",
+    "share_tail": 0.5557054159539169,
+    "residual_ratio": 0.6745421948932645,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 14,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "Two doughnuts are sitting on top of a banana.",
+    "free_caption": "Two doughnuts are sitting next to a banana on top of plastic wrap.",
+    "share_tail": 0.5707631769926339,
+    "residual_ratio": 0.6866969116936384,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 14,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002149",
+  "image_path": "data/processed/mscoco_baseline/images/000000002149.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a white bowl filled with green apples. There are several apples of varying sizes placed within the bowl, creating an appealing display.",
+    "free_caption": "The image features a white bowl filled with green apples. There are several apples of varying sizes placed within the bowl, creating an appealing display.",
+    "share_tail": 0.04490504339559323,
+    "residual_ratio": 0.7317470660201647,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 33,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a white bowl filled with green apples. There are several apples of varying sizes placed within the bowl, creating an appealing display.",
+    "free_caption": "The image features a white bowl filled with green apples. There are several apples of varying sizes placed inside the bowl. Some of these apples have stems attached to them, indicating they may still be growing on trees.",
+    "share_tail": 0.052594690959470565,
+    "residual_ratio": 0.7439016679426166,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 33,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}

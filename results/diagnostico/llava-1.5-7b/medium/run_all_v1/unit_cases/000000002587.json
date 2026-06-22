@@ -1,0 +1,30 @@
+{
+  "image_id": "000000002587",
+  "image_path": "data/processed/mscoco_baseline/images/000000002587.jpg",
+  "prompt": "Describe the image in three to five sentences. Be objective and specific. Mention the main subject, relevant objects, setting, and visible actions or relationships. Do not add opinions or information that cannot be inferred from the image.",
+  "metrics_parquet_off": "results/diagnostico/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "metrics_parquet_on": "results/avaliacao/llava-1.5-7b/medium/run_all_v1/metrics.parquet",
+  "baseline": {
+    "caption_ref": "The image features a doughnut sitting next to a banana on a table. Both items are placed inside plastic bags, which are likely for convenience when eating them.",
+    "free_caption": "The image features a doughnut sitting next to a banana on a table. Both items are placed inside plastic bags, which are likely for convenience when eating them.",
+    "share_tail": 0.1829606106018214,
+    "residual_ratio": 0.8253129633332804,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 37,
+    "n_layers": 32
+  },
+  "sparc": {
+    "caption_ref": "The image features a doughnut sitting next to a banana on a table. Both items are placed inside plastic bags, which are likely for convenience when eating them.",
+    "free_caption": "The image features a brown doughnut sitting next to a banana on a table. Both items are placed inside plastic bags for convenience.",
+    "share_tail": 0.20721780454519173,
+    "residual_ratio": 0.8261972298895037,
+    "degenerated": false,
+    "degeneration_reason": null,
+    "caption_len": 37,
+    "n_layers": 32
+  },
+  "hallucinated_objects_baseline": [],
+  "hallucinated_objects_sparc": [],
+  "notes": "kl / cos_dist matrices live in metrics.parquet (one row per condition)."
+}
