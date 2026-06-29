@@ -151,10 +151,15 @@ def _section(title: str) -> None:
 
 
 def _condition_label(entry: dict) -> str:
-    """Human-readable condition string for tables."""
+    """Human-readable condition string for tables.
+
+    Uses ``:g`` for the alpha so 1.05 shows as ``"1.05"`` (not the
+    truncated ``"1.1"`` that ``:.1f`` would produce) while 1.1 stays
+    ``"1.1"`` (no trailing zero).
+    """
     if entry["condition"] == "off":
         return "off"
-    return f"on α={float(entry.get('alpha', 0)):.1f}"
+    return f"on α={float(entry.get('alpha', 0)):g}"
 
 
 def _condition_sort_key(label: str) -> tuple[int, float]:

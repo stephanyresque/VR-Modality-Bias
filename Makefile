@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report phase4-smolvlm-smoke clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report phase4-smolvlm-smoke run-all run-all-smoke clean
 
 help:
 	@echo "Targets:"
@@ -115,6 +115,29 @@ phase4-smolvlm-smoke:
 		--coherence-smoke \
 		--length-config-pattern configs/run_smolvlm22_{length}.yaml \
 		--selected-layer 15
+
+# Bloco-2: single resumable orchestrator
+#   * Stage A — diagnostic (SmolVLM only) via scripts 03→06
+#   * Stage B — CHAIR evaluation (3 families: smolvlm / llava / qwen) via
+#               scripts/18_phase3_generate.py + scripts/17_chair_report.py
+# Resume by relaunching the same RUN_ALL_NAME — done cells skipped.
+# Override RUN_ALL_NAME, set OVERWRITE=1 to force, or RUN_ALL_FLAGS=...
+# for ad-hoc flags (e.g. --skip-diagnostico).
+RUN_ALL_NAME ?= run_all_v1
+RUN_ALL_FLAGS ?=
+ifeq ($(OVERWRITE),1)
+    RUN_ALL_FLAGS += --overwrite
+endif
+
+run-all:
+	$(PYTHON) scripts/24_run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
+
+# Smoke per the Bloco-2 spec: 1 image, only Qwen evaluation, no diagnostic.
+# Confirms the generation → CHAIR plumbing without burning a full run.
+run-all-smoke:
+	$(PYTHON) scripts/24_run_all.py \
+		--smoke --skip-diagnostico --families qwen2.5-vl-7b \
+		--run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
