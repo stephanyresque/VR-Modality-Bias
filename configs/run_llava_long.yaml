@@ -1,0 +1,46 @@
+run:
+  name: "sweep_llava_mscoco_long"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "mscoco_baseline"
+  manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
+  images_dir: "data/processed/mscoco_baseline/images"
+  n_images: 50
+
+model:
+  key: "llava-1.5-7b"
+  model_id: "llava-hf/llava-1.5-7b-hf"
+  dtype: "float16"
+
+task:
+  name: "caption_long"
+  prompt_key: "caption_long"
+
+generation:
+  max_new_tokens: 512
+  do_sample: false
+  num_beams: 1
+  temperature: 1.0
+  top_p: 1.0
+  # 1.1 prevents the greedy tail-loop on long descriptions in LLaVA-1.5.
+  repetition_penalty: 1.1
+
+teacher_forcing:
+  output_hidden_states: true
+  use_cache: false
+
+metrics:
+  logits_top_k: 50
+  deep_block_rule: "last_third"
+
+residual:
+  t0: 5
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4
+  discard_hidden_states_after_metrics: true

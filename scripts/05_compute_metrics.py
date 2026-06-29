@@ -10,7 +10,7 @@ from vr_modality_bias.io.results import write_metrics_table
 from vr_modality_bias.io.storage import load_hidden_states
 from vr_modality_bias.metrics.cosine import compute_cosine_distance_matrix
 from vr_modality_bias.metrics.kl import compute_kl_matrix
-from vr_modality_bias.metrics.residual import residual_drift_ratio
+from vr_modality_bias.metrics.residual import deep_block, residual_drift_ratio, share_tail
 from vr_modality_bias.models.registry import build_model
 from vr_modality_bias.utils.config import load_config
 from vr_modality_bias.utils.device import resolve_dtype, select_device
@@ -116,6 +116,11 @@ def main() -> int:
             caption_len=int(result_A.caption_len),
         )
         rr = residual_drift_ratio(kl, t0=t0)
+        st = share_tail(kl)  # post-port headline metric (bounded [0,1], SPARC-proof)
+        # Fig-2 per-token deep-block-mean KL — persisted explicitly.
+        import numpy as _np
+        l0, l1 = deep_block(int(kl.shape[0]))
+        deep_curve_arr = _np.asarray(kl, dtype=_np.float32)[l0:l1, :].mean(axis=0)
 
         meta = result_A.metadata
         rows.append({
@@ -126,14 +131,16 @@ def main() -> int:
             "caption_ref": str(meta.get("caption_ref", "")),
             "kl": kl,
             "cos_dist": cos,
+            "deep_curve": deep_curve_arr,
             "residual_ratio": float(rr),
+            "share_tail": float(st),
             "model_id": str(meta.get("model_id", model.model_id)),
             "prompt_key": str(meta.get("prompt_key", "")),
             "seed_global": int(meta.get("seed_global", 0)),
             "noise_seed": int(meta.get("noise_seed", 0)),
             "timestamp_iso": str(meta.get("timestamp_iso", "")),
         })
-        log.info("[%s] residual_ratio=%.4f", image_id, rr)
+        log.info("[%s] residual_ratio=%.4f  share_tail=%.4f", image_id, rr, st)
 
     n = write_metrics_table(rows, metrics_path)
     log.info("Wrote %d row(s) to %s.", n, metrics_path)

@@ -312,6 +312,166 @@ def report_pair_samples(
             print()
 
 
+# ---------------------------------------------------------------- persistence
+# Same numbers the report_* functions PRINT, but collected into structured
+# rows and written to ``chair_results.{json,csv}`` so the paper table can
+# be assembled from the file without re-running the report. One row per
+# (model_id, length, condition_label).
+
+
+def _derive_model_id(entries: list[dict]) -> str:
+    """Take ``model_id`` from the first entry that carries it.
+
+    Bloco 1 spec: one captions.jsonl == one model family. If entries
+    disagree, we still return the first — but log a warning to stderr so
+    a stitched multi-family file gets noticed.
+    """
+    ids = {str(e.get("model_id")) for e in entries if e.get("model_id")}
+    if not ids:
+        return "unknown"
+    ids_list = sorted(ids)
+    if len(ids_list) > 1:
+        print(
+            f"  WARN: captions.jsonl carries multiple model_ids: {ids_list}; "
+            f"using {ids_list[0]!r}.",
+            file=sys.stderr,
+        )
+    return ids_list[0]
+
+
+def collect_chair_rows(
+    entries: list[dict], gt: dict[str, set[str]], *, model_id: str,
+) -> list[dict]:
+    """One row per (model_id, length, condition_label) with CHAIR + degen.
+
+    Matches the data ``report_chair_by_length`` and ``report_degeneration``
+    print — same groupings, same aggregates — but returned as a list of
+    plain dicts ready for JSON or pandas / pyarrow.
+    """
+    # CHAIR groups (skips images with no GT annotations).
+    chair_groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for e in entries:
+        if e["image_id"] not in gt:
+            continue
+        chair_groups[(e["length"], _condition_label(e))].append(e)
+
+    # Degeneration groups (uses all captions — no GT filter).
+    degen_groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for e in entries:
+        degen_groups[(e["length"], _condition_label(e))].append(e)
+
+    rows: list[dict] = []
+    seen_keys: set[tuple[str, str]] = set()
+    for length in LENGTHS_ORDER:
+        labels = sorted(
+            {key[1] for key in (set(chair_groups) | set(degen_groups))
+             if key[0] == length},
+            key=_condition_sort_key,
+        )
+        for label in labels:
+            key = (length, label)
+            seen_keys.add(key)
+
+            # --- CHAIR aggregate (may be missing if no GT-grounded captions) ---
+            chair_cells = chair_groups.get(key, [])
+            if chair_cells:
+                per_caption = [
+                    chair_per_caption(c["caption"], gt[c["image_id"]])
+                    for c in chair_cells
+                ]
+                agg = compute_chair_aggregate(per_caption)
+                chair_s = agg["chair_s"]
+                chair_i = agg["chair_i"]
+                n_chair = agg["n_captions"]
+                total_m = agg["total_mentioned"]
+                total_h = agg["total_hallucinated"]
+            else:
+                chair_s = chair_i = None
+                n_chair = total_m = total_h = 0
+
+            # --- degeneration aggregate ---
+            d_cells = degen_groups.get(key, [])
+            n_total = len(d_cells)
+            counts = {"empty": 0, "too_short": 0,
+                      "word_repetition": 0, "bigram_repetition": 0}
+            n_degen = 0
+            for c in d_cells:
+                is_d, reason = classify_degeneration(c["caption"])
+                if is_d:
+                    n_degen += 1
+                    counts[reason] = counts.get(reason, 0) + 1
+            pct_degen = (100.0 * n_degen / n_total) if n_total else None
+
+            # --- pick alpha for ON rows (None for OFF) ---
+            alpha = None
+            if label.startswith("on"):
+                try:
+                    alpha = float(label.split("=")[1])
+                except (IndexError, ValueError):
+                    alpha = None
+            condition = "off" if label == "off" else "on"
+
+            rows.append({
+                "model_id": model_id,
+                "length": length,
+                "condition": condition,
+                "condition_label": label,    # "off" or "on α=1.1" — disambig
+                "alpha": alpha,
+                "n_captions": n_chair,
+                "chair_s": chair_s,
+                "chair_i": chair_i,
+                "total_mentioned": total_m,
+                "total_hallucinated": total_h,
+                "n_total_for_degen": n_total,
+                "n_degen": n_degen,
+                "pct_degen": pct_degen,
+                "n_empty": counts["empty"],
+                "n_too_short": counts["too_short"],
+                "n_word_repetition": counts["word_repetition"],
+                "n_bigram_repetition": counts["bigram_repetition"],
+            })
+    return rows
+
+
+def write_chair_results(rows: list[dict], run_dir: Path) -> tuple[Path, Path]:
+    """Write ``chair_results.{json,csv}`` under ``run_dir``. Returns both paths.
+
+    JSON: structured (one record per row, NaN as null).
+    CSV : flat table for paper / pandas / spreadsheet.
+    """
+    run_dir.mkdir(parents=True, exist_ok=True)
+    json_path = run_dir / "chair_results.json"
+    csv_path = run_dir / "chair_results.csv"
+
+    # JSON — convert float NaN/None uniformly to null via json.dumps defaults.
+    payload = {
+        "generated_iso": datetime.now(tz=timezone.utc).isoformat(timespec="seconds"),
+        "n_rows": len(rows),
+        "rows": rows,
+    }
+    json_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+
+    # CSV — fixed column order so the paper table downstream is stable.
+    import csv as _csv
+    columns = (
+        "model_id", "length", "condition", "condition_label", "alpha",
+        "n_captions", "chair_s", "chair_i",
+        "total_mentioned", "total_hallucinated",
+        "n_total_for_degen", "n_degen", "pct_degen",
+        "n_empty", "n_too_short", "n_word_repetition", "n_bigram_repetition",
+    )
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = _csv.DictWriter(fh, fieldnames=list(columns))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({k: ("" if row.get(k) is None else row[k]) for k in columns})
+
+    return json_path, csv_path
+
+
 # ---------------------------------------------------------------- main
 
 
@@ -375,6 +535,18 @@ def main() -> int:
         n_samples=args.pair_samples,
         image_ids=args.pair_image_ids,
     )
+
+    # Persist the same numbers in structured form. Same per-(length,
+    # condition) aggregation the print sections use, plus model_id so a
+    # multi-family stitching can identify rows.
+    model_id = _derive_model_id(entries)
+    chair_rows = collect_chair_rows(entries, gt, model_id=model_id)
+    json_path, csv_path = write_chair_results(chair_rows, args.run_dir)
+    print()
+    print(f"  persisted JSON : {json_path}")
+    print(f"  persisted CSV  : {csv_path}")
+    print(f"  model_id       : {model_id}")
+    print(f"  rows           : {len(chair_rows)}")
 
     print()
     print("=" * 78)

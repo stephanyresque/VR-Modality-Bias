@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import pytest
 
 from vr_modality_bias.metrics.residual import (
     deep_block,
@@ -207,3 +208,118 @@ def test_head_tail_ratio_qwen_long_pathology_now_visible():
     assert 0.93 < rr < 0.95
     # head_tail_ratio cuts through the length saturation:
     assert math.isclose(htr, 0.2, rel_tol=1e-6)
+
+
+# ================================================================
+# share_tail — ported from main branch (Bloco 1 prep).
+#
+# Four property tests, in the order the share_tail spec lists them:
+#   1. invariance under positive multiplicative scaling  (SPARC-proof)
+#   2. bounded in [0, 1]
+#   3. length-robust (same shape → same value)
+#   4. sanity references (flat ≈ 0.5; head-heavy decay < 0.5)
+# Plus degenerate-input + non-2D guards.
+# ================================================================
+
+
+def _build_kl_for_share(deep_curve, n_layers: int = 12) -> np.ndarray:
+    """Synthesize a kl_matrix whose deep_block-mean equals deep_curve.
+
+    Non-deep rows are zero so they don't contribute to the deep-block
+    mean; the deep rows all carry the same per-token value.
+    """
+    deep_curve = np.asarray(deep_curve, dtype=np.float64)
+    caption_len = int(deep_curve.shape[0])
+    l0, l1 = deep_block(n_layers)
+    kl = np.zeros((n_layers, caption_len), dtype=np.float64)
+    kl[l0:l1, :] = deep_curve  # broadcast across deep rows
+    return kl
+
+
+def test_share_tail_invariant_under_positive_scaling():
+    """SPARC multiplies the deep-KL curve by some k>0; share_tail must not move."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    rng = np.random.default_rng(seed=0)
+    curve = rng.uniform(0.01, 5.0, size=40)
+    kl = _build_kl_for_share(curve)
+    base = share_tail(kl)
+
+    for k in (1e-3, 0.5, 1.0, 7.42, 1e3):
+        scaled = share_tail(_build_kl_for_share(curve * k))
+        assert abs(scaled - base) < 1e-12, (
+            f"share_tail must be scale-invariant; k={k} drifted by "
+            f"{abs(scaled - base):.3e} (base={base})"
+        )
+
+
+def test_share_tail_bounded_in_unit_interval():
+    """Random non-negative curves never produce a value outside [0, 1]."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    rng = np.random.default_rng(seed=1)
+    for trial in range(20):
+        caption_len = int(rng.integers(2, 200))
+        curve = rng.uniform(0.0, 10.0, size=caption_len)
+        value = share_tail(_build_kl_for_share(curve))
+        assert 0.0 <= value <= 1.0, (
+            f"trial {trial} (len={caption_len}): value={value} outside [0,1]"
+        )
+
+    # All mass at one end → metric pegs to its bounds.
+    head_only = np.concatenate([np.ones(10), np.zeros(10)])
+    tail_only = np.concatenate([np.zeros(10), np.ones(10)])
+    assert share_tail(_build_kl_for_share(head_only)) == 0.0
+    assert share_tail(_build_kl_for_share(tail_only)) == 1.0
+
+
+def test_share_tail_length_robust_for_fixed_shape():
+    """Same shape (linear ramp) across lengths gives the same share_tail."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    values = []
+    for n in (40, 80, 160, 320):
+        curve = np.linspace(1.0, 0.1, n)  # head-heavy ramp
+        values.append(share_tail(_build_kl_for_share(curve)))
+
+    spread = max(values) - min(values)
+    assert spread < 0.01, (
+        f"share_tail drifted by {spread:.4f} across lengths on a fixed "
+        f"linear-decay shape (values={values}); should be length-invariant."
+    )
+
+
+def test_share_tail_sanity_flat_is_half_and_decay_below_half():
+    """Flat (even-length) → 0.5. Decay → <0.5. Rise → >0.5. Sum to 1 (mirror)."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    flat = np.ones(100)
+    assert share_tail(_build_kl_for_share(flat)) == pytest.approx(0.5, abs=1e-12)
+
+    decay = np.linspace(1.0, 0.0, 100)
+    val_decay = share_tail(_build_kl_for_share(decay))
+    assert val_decay < 0.5
+
+    rise = decay[::-1]
+    val_rise = share_tail(_build_kl_for_share(rise))
+    assert val_rise > 0.5
+    # Mirror images on even length sum to 1 by construction.
+    assert val_decay + val_rise == pytest.approx(1.0, abs=1e-12)
+
+
+def test_share_tail_returns_nan_on_degenerate_inputs():
+    """NaN only when caption_len < 2 or total mass <= 0."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    assert math.isnan(share_tail(_build_kl_for_share(np.array([3.14]))))
+    assert math.isnan(share_tail(_build_kl_for_share(np.zeros(50))))
+
+
+def test_share_tail_rejects_non_2d_input():
+    """Same shape contract as the legacy metrics."""
+    from vr_modality_bias.metrics.residual import share_tail
+
+    with pytest.raises(ValueError):
+        share_tail(np.zeros(50))   # 1-D
+    with pytest.raises(ValueError):
+        share_tail(np.zeros((2, 3, 4)))  # 3-D
