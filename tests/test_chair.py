@@ -185,3 +185,157 @@ def test_load_ground_truth_objects_keys_are_zero_padded(tmp_path: Path):
     assert gt["000000000285"] == {"person"}
     # Image with no annotations still appears with an empty set.
     assert gt["000000009999"] == set()
+
+
+# ================================================================
+# Precision / Recall / F1 — added on top of CHAIR (recall-GT block).
+#
+# The new compute_chair_aggregate exposes three classifier-style
+# scores derived from the same per-caption decomposition. Test them
+# against a hand-worked example AND check the identity precision =
+# 1 - chair_i (the orchestrator relies on it).
+# ================================================================
+
+
+def test_chair_per_caption_carries_correct_and_gt_sizes():
+    """Per-caption result must expose ``correct`` and ``n_ground_truth``."""
+    out = chair_per_caption(
+        "a cat and a dog on the bed",
+        ground_truth_objects={"cat", "bed", "person"},  # GT
+    )
+    assert out["mentioned"] == {"cat", "dog", "bed"}
+    assert out["correct"] == {"cat", "bed"}
+    assert out["hallucinated"] == {"dog"}
+    assert out["n_correct"] == 2
+    assert out["n_ground_truth"] == 3
+
+
+def test_aggregate_precision_recall_f1_known_case():
+    """mentioned={a,b,c}, GT={a,b,d} -> correct=2, precision=2/3, recall=2/3, f1=2/3.
+
+    Built as a single per-caption result so the aggregate math is the same
+    as the per-caption math.
+    """
+    per_caption = [{
+        "mentioned": {"a", "b", "c"},
+        "hallucinated": {"c"},
+        "correct": {"a", "b"},
+        "n_mentioned": 3,
+        "n_hallucinated": 1,
+        "n_correct": 2,
+        "n_ground_truth": 3,
+        "has_hallucination": True,
+    }]
+    agg = compute_chair_aggregate(per_caption)
+    assert agg["total_mentioned"] == 3
+    assert agg["total_hallucinated"] == 1
+    assert agg["total_correct"] == 2
+    assert agg["total_ground_truth"] == 3
+    assert math.isclose(agg["precision"], 2 / 3, rel_tol=1e-9)
+    assert math.isclose(agg["recall"], 2 / 3, rel_tol=1e-9)
+    assert math.isclose(agg["f1"], 2 / 3, rel_tol=1e-9)
+
+
+def test_precision_equals_one_minus_chair_i():
+    """The orchestrator uses this identity. Check it on a real-shaped sample."""
+    per_caption = [
+        chair_per_caption("a cat and a dog", {"cat", "person"}),       # m=2 h=1 c=1
+        chair_per_caption("two birds on a fence", {"bird"}),           # m=1 h=0 c=1
+        chair_per_caption("a sandwich and a pizza", {"chair"}),        # m=2 h=2 c=0
+    ]
+    agg = compute_chair_aggregate(per_caption)
+    # precision must match 1 - chair_i to floating-point precision
+    assert math.isclose(agg["precision"], 1.0 - agg["chair_i"], rel_tol=1e-9)
+    # spot-check the numbers: total_mentioned=5, total_correct=2, total_hallucinated=3
+    assert agg["total_mentioned"] == 5
+    assert agg["total_correct"] == 2
+    assert agg["total_hallucinated"] == 3
+    assert math.isclose(agg["precision"], 2 / 5, rel_tol=1e-9)
+    assert math.isclose(agg["chair_i"], 3 / 5, rel_tol=1e-9)
+
+
+def test_aggregate_zero_mentions_gives_zero_precision_zero_chair_i():
+    per_caption = [{
+        "mentioned": set(), "hallucinated": set(), "correct": set(),
+        "n_mentioned": 0, "n_hallucinated": 0, "n_correct": 0,
+        "n_ground_truth": 5, "has_hallucination": False,
+    }]
+    agg = compute_chair_aggregate(per_caption)
+    assert agg["precision"] == 0.0
+    assert agg["chair_i"] == 0.0
+    # recall = 0/5 = 0; F1 of (0, 0) -> 0.0 by our guard
+    assert agg["recall"] == 0.0
+    assert agg["f1"] == 0.0
+
+
+def test_aggregate_zero_ground_truth_gives_zero_recall():
+    """No GT objects -> nothing to recall. recall = 0.0, F1 = 0.0."""
+    per_caption = [{
+        "mentioned": {"a", "b"}, "hallucinated": {"a", "b"}, "correct": set(),
+        "n_mentioned": 2, "n_hallucinated": 2, "n_correct": 0,
+        "n_ground_truth": 0, "has_hallucination": True,
+    }]
+    agg = compute_chair_aggregate(per_caption)
+    assert agg["recall"] == 0.0
+    assert agg["f1"] == 0.0
+    assert agg["precision"] == 0.0  # 0 correct / 2 mentioned
+    assert agg["chair_i"] == 1.0
+
+
+def test_aggregate_empty_input_returns_nan_for_metrics():
+    agg = compute_chair_aggregate([])
+    for k in ("chair_i", "chair_s", "precision", "recall", "f1"):
+        assert math.isnan(agg[k])
+
+
+# ================================================================
+# GT-B loader (load_reference_caption_objects)
+# Mini synthetic captions_val2017.json: 1 image with 3 ref captions,
+# one image with 0 captions but listed in images.
+# ================================================================
+
+
+def test_load_reference_caption_objects_unions_per_image(tmp_path):
+    from vr_modality_bias.metrics.chair import load_reference_caption_objects
+
+    fake = {
+        "images": [
+            {"id": 139, "file_name": "139.jpg"},
+            {"id": 285, "file_name": "285.jpg"},   # 0 captions -> empty set
+            {"id": 632, "file_name": "632.jpg"},
+        ],
+        "annotations": [
+            # image 139: 3 ref captions, mention {cat, bed, dog}
+            {"image_id": 139, "id": 1, "caption": "a cat sleeps on the bed"},
+            {"image_id": 139, "id": 2, "caption": "a dog and a cat together"},
+            {"image_id": 139, "id": 3, "caption": "the cat is on the pillow"},
+            # image 632: 2 ref captions, mention {bicycle, person}
+            {"image_id": 632, "id": 4, "caption": "a man riding a bicycle"},
+            {"image_id": 632, "id": 5, "caption": "two cyclists on the road"},  # bike + person via synonyms
+        ],
+    }
+    p = tmp_path / "captions_val2017.json"
+    p.write_text(json.dumps(fake), encoding="utf-8")
+
+    out = load_reference_caption_objects(p)
+    assert out["000000000139"] == {"cat", "bed", "dog"}
+    assert out["000000000632"] == {"bicycle", "person"}
+    # image 285 listed but no captions -> empty set, NOT KeyError on lookup
+    assert out["000000000285"] == set()
+
+
+def test_load_reference_caption_objects_uses_zero_padded_image_id(tmp_path):
+    """ID keys must be 12-digit zero-padded strings, matching the file-stem convention."""
+    from vr_modality_bias.metrics.chair import load_reference_caption_objects
+
+    fake = {
+        "images": [{"id": 7, "file_name": "7.jpg"}],
+        "annotations": [{"image_id": 7, "id": 1, "caption": "a dog"}],
+    }
+    p = tmp_path / "captions_val2017.json"
+    p.write_text(json.dumps(fake), encoding="utf-8")
+    out = load_reference_caption_objects(p)
+    # zero-padded to 12 digits
+    assert "000000000007" in out
+    assert "7" not in out
+    assert out["000000000007"] == {"dog"}
