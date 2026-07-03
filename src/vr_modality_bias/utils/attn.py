@@ -29,19 +29,28 @@ from transformers.cache_utils import Cache
 
 _QWEN_MARKERS = ("Qwen2_5_VL", "Qwen2VL", "QwenVL")
 _LLAMA_MARKERS = ("Idefics3", "SmolVLM", "Llava", "Mllama")
+# InternVL2-8B uses the InternLM2 backbone (llama-style RMSNorm + SwiGLU +
+# 1D RoPE) but with a FUSED wqkv projection instead of separate q/k/v_proj.
+# That requires its own forward (see ``forward_internlm2``).
+# The exact class name comes from ``scripts/25_internvl_inspect.py`` Step 0
+# (likely ``"InternVLChatModel"``). Keeping "InternVL" as a prefix marker so
+# variants match too.
+_INTERNLM2_MARKERS = ("InternVL", "InternLM2")
 
 
 def detect_model_family(model) -> str:
-    """Return ``"qwen"`` or ``"llama"`` for the SPARC forward dispatch.
+    """Return the SPARC family string for a model.
+
+    Currently: ``"qwen"`` (mRoPE), ``"llama"`` (1D RoPE, separate q/k/v),
+    or ``"internlm2"`` (1D RoPE, fused wqkv -- InternVL2 backbone).
 
     Primary signal is the top-level model class name. As a fallback
     (covers test mocks and any future wrapper that doesn't match the
-    markers), we look at which inner attribute holds the decoder:
-
-        model.model.language_model → qwen (Qwen2.5-VL convention)
-        model.model.text_model     → llama (Idefics3 / SmolVLM convention)
+    markers), we look at which inner attribute holds the decoder.
     """
     cls = type(model).__name__
+    if any(cls.startswith(m) for m in _INTERNLM2_MARKERS):
+        return "internlm2"
     if any(cls.startswith(m) for m in _QWEN_MARKERS):
         return "qwen"
     if any(cls.startswith(m) for m in _LLAMA_MARKERS):
@@ -53,8 +62,9 @@ def detect_model_family(model) -> str:
     if getattr(inner, "text_model", None) is not None:
         return "llama"
     raise ValueError(
-        f"Unknown model family for {cls}. Add a marker in _QWEN_MARKERS / "
-        f"_LLAMA_MARKERS in utils/attn.py or pass family= explicitly to "
+        f"Unknown model family for {cls}. Add a marker in one of "
+        f"_INTERNLM2_MARKERS / _QWEN_MARKERS / _LLAMA_MARKERS in "
+        f"utils/attn.py, or pass family= explicitly to "
         f"add_custom_attention_layers."
     )
 
@@ -62,20 +72,56 @@ def detect_model_family(model) -> str:
 def decoder_of(model) -> object:
     """Return the decoder module (the one with ``.layers``) for SPARC patching.
 
-    Qwen : model.model.language_model
-    Llama: model.model.text_model
-    Fallback: model.model (some checkpoints flatten the hierarchy)
+    Layouts covered:
+
+    * Qwen 2.5-VL : ``model.model.language_model.layers``
+    * Idefics3 / SmolVLM (llama family): ``model.model.text_model.layers``
+      -- via the ``text_model`` branch below.
+    * InternVL2 : ``model.language_model.model.layers`` -- the extra
+      nesting (``.language_model.model``) comes from InternLM2 being
+      wrapped as an ``InternLM2ForCausalLM`` (with ``.lm_head`` and an
+      inner ``.model``) inside ``InternVLChatModel``. We probe one
+      additional level deep for this case.
+    * Flattened checkpoints: ``model.model.layers`` (fallback).
     """
     inner = getattr(model, "model", model)
     for attr in ("language_model", "text_model"):
         candidate = getattr(inner, attr, None)
-        if candidate is not None and hasattr(candidate, "layers"):
+        if candidate is None:
+            continue
+        if hasattr(candidate, "layers"):
             return candidate
+        # One extra level of nesting -- InternLM2ForCausalLM has .model,
+        # LlavaForCausalLM (legacy) also has .model.
+        nested = getattr(candidate, "model", None)
+        if nested is not None and hasattr(nested, "layers"):
+            return nested
     if hasattr(inner, "layers"):
         return inner
     raise AttributeError(
         f"Could not find decoder.layers on {type(model).__name__}. "
-        "Looked at model.model.language_model and model.model.text_model."
+        "Looked at model.{language_model,text_model}[.model] and model.model."
+    )
+
+
+def _attention_module_of(layer) -> object:
+    """Return the layer's attention submodule.
+
+    Different families put it under different attribute names:
+
+        Qwen, LLaVA, SmolVLM, Idefics3 : ``layer.self_attn``
+        InternLM2 (InternVL backbone)  : ``layer.attention``
+
+    The dispatch here checks the well-known names in order; the SPARC
+    ``add_custom_attention_layers`` uses this to patch the right thing
+    without every wrapper hard-coding the attribute.
+    """
+    for cand in ("self_attn", "attention"):
+        if hasattr(layer, cand):
+            return getattr(layer, cand)
+    raise AttributeError(
+        f"decoder layer {type(layer).__name__} has neither `.self_attn` "
+        f"nor `.attention` -- Step-0 inspection needed."
     )
 
 logger = logging.getLogger(__name__)
@@ -283,6 +329,156 @@ def forward_llama(
     return attn_output, attn_weights
 
 
+# InternLM2 attention (InternVL2 backbone). Structurally identical to
+# forward_llama EXCEPT:
+#
+#   * Fused Q/K/V:  InternLM2 has a single `self.wqkv` linear that emits
+#                   (num_heads + 2 * num_kv_heads) * head_dim features per
+#                   token. We split them by reshaping into
+#                   (b, q, num_kv_heads, num_kv_groups + 2, head_dim) and
+#                   slicing: the first `num_kv_groups` head-slots per group
+#                   are Q heads, the second-to-last is K, the last is V.
+#                   (Replicated from the official OpenGVLab InternLM2
+#                   ``modeling_internlm2.py``.)
+#
+#   * Output projection: `self.wo` instead of `self.o_proj`.
+#
+#   * No `self.scaling` attribute assumed; we compute `1/sqrt(head_dim)`
+#     inline. If the actual module DOES carry `self.scaling` (checked via
+#     Step 0), we prefer it -- avoids fp-drift vs the unpatched forward.
+#
+#   * No `self.attention_dropout`; SPARC always runs in eval mode so we
+#     just skip the dropout call.
+#
+# CRITICAL: the QKV split MUST reproduce the unpatched forward bit-for-bit
+# when `alpha=1.0`. That's the whole point of ``scripts/26_internvl_
+# exactness_gate.py`` -- run it before trusting this forward on real data.
+# If the reshape is off (e.g. num_kv_groups swapped with num_kv_heads), the
+# gate fails and this forward must NOT be used.
+def forward_internlm2(
+    self,
+    hidden_states: torch.Tensor,
+    attention_mask: Optional[torch.Tensor] = None,
+    position_ids: Optional[torch.LongTensor] = None,
+    past_key_values: Optional[Cache] = None,
+    output_attentions: bool = False,
+    use_cache: bool = False,
+    position_embeddings: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    image_token_index: Optional[int] = None,
+    alpha: Optional[float] = 1.0,
+    beta: Optional[float] = 0.0,
+    tau: Optional[float] = 2,
+    selected: Optional[bool] = False,
+    se_layers: Optional[Tuple[int, int]] = None,
+    indices_buffer: Optional[SelectedIndexBuffer] = None,
+    **kwargs,
+) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    bsz, q_len, _ = hidden_states.size()
+
+    # ---- fused QKV projection + split -------------------------------------
+    # Layout convention (from OpenGVLab InternLM2 modeling code):
+    #   wqkv(x): (B, T, num_kv_heads * (num_kv_groups + 2) * head_dim)
+    # Reshape to (B, T, num_kv_heads, num_kv_groups + 2, head_dim), then:
+    #   Q = qkv[..., :num_kv_groups, :]  reshape -> (B, T, num_heads, D)
+    #   K = qkv[..., -2, :]              -> (B, T, num_kv_heads, D)
+    #   V = qkv[..., -1, :]              -> (B, T, num_kv_heads, D)
+    num_kv_heads = getattr(self, "num_key_value_heads")
+    num_kv_groups = getattr(self, "num_key_value_groups")
+    head_dim = getattr(self, "head_dim")
+
+    qkv_states = self.wqkv(hidden_states)
+    qkv_states = qkv_states.view(
+        bsz, q_len, num_kv_heads, num_kv_groups + 2, head_dim,
+    )
+    query_states = qkv_states[..., :num_kv_groups, :]  # (B, T, num_kv_heads, num_kv_groups, D)
+    query_states = query_states.reshape(bsz, q_len, num_kv_heads * num_kv_groups, head_dim)
+    key_states = qkv_states[..., -2, :]   # (B, T, num_kv_heads, D)
+    value_states = qkv_states[..., -1, :]
+
+    # Transpose to (B, H, T, D) for the attention math.
+    query_states = query_states.transpose(1, 2)
+    key_states = key_states.transpose(1, 2)
+    value_states = value_states.transpose(1, 2)
+
+    # ---- rotary position embedding ---------------------------------------
+    # Assumes the decoder layer forwards `position_embeddings=(cos, sin)`,
+    # matching the transformers 5.x convention that Idefics3/Llama/Qwen2.5
+    # already use. If Step 0 shows InternLM2 remote code passes something
+    # different (e.g. bare position_ids), this call needs a variant.
+    cos, sin = position_embeddings
+    query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+
+    # ---- SPARC bookkeeping (identical to forward_llama) ------------------
+    if self.layer_idx == 0:
+        indices_buffer.update_indices2()
+
+    gen_new_token = (
+        past_key_values is not None and past_key_values.get_seq_length(self.layer_idx) > 0
+    )
+
+    if self.layer_idx >= se_layers[0] and self.layer_idx <= se_layers[1]:
+        if len(indices_buffer.indices2) > 0:
+            indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
+
+    if past_key_values is not None:
+        key_states, value_states = past_key_values.update(
+            key_states, value_states, self.layer_idx
+        )
+
+    key_states = repeat_kv(key_states, num_kv_groups)
+    value_states = repeat_kv(value_states, num_kv_groups)
+
+    # ---- scaled dot-product attention ------------------------------------
+    scaling = getattr(self, "scaling", 1.0 / math.sqrt(head_dim))
+    attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) * scaling
+    if attention_mask is not None:
+        attn_weights = attn_weights + attention_mask
+    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
+        query_states.dtype
+    )
+    # Note: no dropout -- SPARC always runs eval-mode.
+
+    if gen_new_token == False and self.layer_idx == 0:
+        indices_buffer.update_patch_num(
+            attn_weights.shape[-1] - indices_buffer.input_len
+        )
+
+    # ---- image_attention + selection + smoothing (identical to llama) ----
+    if indices_buffer.image_positions is not None:
+        ip = indices_buffer.image_positions.to(attn_weights.device)
+        image_attention = attn_weights[:, :, -1, :].index_select(-1, ip).mean(dim=1)
+    else:
+        image_attention = attn_weights[
+            :,
+            :,
+            -1,
+            image_token_index : image_token_index + indices_buffer.num_image_patches,
+        ].mean(dim=1)
+
+    if gen_new_token:
+        if selected:
+            ratio = (image_attention - self.image_attention) / self.image_attention
+            ratio = ratio.squeeze(dim=0)
+            indices = (ratio >= tau).nonzero()
+            indices_buffer.update_indices1(indices, image_token_index=image_token_index)
+
+    if not gen_new_token:
+        self.image_attention = image_attention
+    else:
+        self.image_attention = (1 - beta) * image_attention + beta * self.image_attention
+
+    # ---- output ----------------------------------------------------------
+    attn_output = torch.matmul(attn_weights, value_states)
+    attn_output = attn_output.transpose(1, 2).contiguous()
+    attn_output = attn_output.reshape(bsz, q_len, -1)
+    attn_output = self.wo(attn_output)   # <-- wo, not o_proj
+
+    if not output_attentions:
+        attn_weights = None
+
+    return attn_output, attn_weights
+
+
 # qwen2.5-vl attention (current transformers Cache/rotary API)
 def forward_qwen25vl(
     self,
@@ -399,8 +595,9 @@ def forward_qwen25vl(
 
 
 _FORWARD_BY_FAMILY = {
-    "qwen":  forward_qwen25vl,
-    "llama": forward_llama,
+    "qwen":     forward_qwen25vl,
+    "llama":    forward_llama,
+    "internlm2": forward_internlm2,
 }
 
 
@@ -443,4 +640,8 @@ def add_custom_attention_layers(
             image_token_index=image_token_index,
             indices_buffer=indices_buffer,
         )
-        layer.self_attn.forward = MethodType(forward_, layer.self_attn)
+        # Family-agnostic attribute lookup: `.self_attn` for qwen / llava /
+        # smolvlm / idefics3; `.attention` for InternLM2 (InternVL). See
+        # `_attention_module_of` above.
+        attn_module = _attention_module_of(layer)
+        attn_module.forward = MethodType(forward_, attn_module)

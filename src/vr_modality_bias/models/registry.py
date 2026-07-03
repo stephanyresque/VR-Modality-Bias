@@ -90,11 +90,27 @@ def _register_builtin() -> None:
 
         return LlavaWrapper(model_id="llava-hf/llava-1.5-7b-hf")
 
+    def _internvl2_8b() -> ModelWrapper:
+        # Fourth family added for the SPARC + CHAIR evaluation ONLY.
+        # Diagnostic stage (hidden states / share_tail) stays on SmolVLM.
+        # Wrapper at models/internvl.py; SPARC forward at
+        # utils/attn.py::forward_internlm2. Both need Step 0
+        # (scripts/25_internvl_inspect.py) + Step 6.3
+        # (scripts/26_internvl_exactness_gate.py) to have passed before
+        # the results can be trusted.
+        try:
+            from vr_modality_bias.models.internvl import InternVLWrapper
+        except ModuleNotFoundError:
+            from src.vr_modality_bias.models.internvl import InternVLWrapper
+
+        return InternVLWrapper(model_id="OpenGVLab/InternVL2-8B")
+
     register_model("smolvlm-256m", _smolvlm_256m)
     register_model("smolvlm-2.2b", _smolvlm_2_2b)
     register_model("qwen2.5-vl-3b", _qwen2_5_vl_3b)
     register_model("qwen2.5-vl-7b", _qwen2_5_vl_7b)
     register_model("llava-1.5-7b", _llava_1_5_7b)
+    register_model("internvl2-8b", _internvl2_8b)
 
 
 _register_builtin()
