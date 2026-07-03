@@ -90,27 +90,30 @@ def _register_builtin() -> None:
 
         return LlavaWrapper(model_id="llava-hf/llava-1.5-7b-hf")
 
-    def _internvl2_8b() -> ModelWrapper:
+    def _internvl3_8b_hf() -> ModelWrapper:
         # Fourth family added for the SPARC + CHAIR evaluation ONLY.
         # Diagnostic stage (hidden states / share_tail) stays on SmolVLM.
-        # Wrapper at models/internvl.py; SPARC forward at
-        # utils/attn.py::forward_internlm2. Both need Step 0
-        # (scripts/25_internvl_inspect.py) + Step 6.3
-        # (scripts/26_internvl_exactness_gate.py) to have passed before
-        # the results can be trusted.
+        # NATIVE HF checkpoint (``-hf`` suffix): ``InternVLForConditionalGeneration``
+        # with a Qwen2.5 text backbone -- SEPARATE q_proj/k_proj/v_proj + o_proj,
+        # so the SPARC forward is ``forward_llama`` / ``forward_qwen25vl`` (chosen
+        # by ``detect_model_family`` from ``config.text_config.model_type``), NOT
+        # ``forward_internlm2``. The legacy remote-code checkpoint
+        # ``OpenGVLab/InternVL2-8B`` breaks on transformers v5.
+        # Both Step 0 (scripts/25_internvl_inspect.py) + Step 6.3
+        # (scripts/26_internvl_exactness_gate.py) still gate CHAIR runs.
         try:
             from vr_modality_bias.models.internvl import InternVLWrapper
         except ModuleNotFoundError:
             from src.vr_modality_bias.models.internvl import InternVLWrapper
 
-        return InternVLWrapper(model_id="OpenGVLab/InternVL2-8B")
+        return InternVLWrapper(model_id="OpenGVLab/InternVL3-8B-hf")
 
     register_model("smolvlm-256m", _smolvlm_256m)
     register_model("smolvlm-2.2b", _smolvlm_2_2b)
     register_model("qwen2.5-vl-3b", _qwen2_5_vl_3b)
     register_model("qwen2.5-vl-7b", _qwen2_5_vl_7b)
     register_model("llava-1.5-7b", _llava_1_5_7b)
-    register_model("internvl2-8b", _internvl2_8b)
+    register_model("internvl3-8b-hf", _internvl3_8b_hf)
 
 
 _register_builtin()

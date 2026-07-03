@@ -29,20 +29,30 @@ from transformers.cache_utils import Cache
 
 _QWEN_MARKERS = ("Qwen2_5_VL", "Qwen2VL", "QwenVL")
 _LLAMA_MARKERS = ("Idefics3", "SmolVLM", "Llava", "Mllama")
-# InternVL2-8B uses the InternLM2 backbone (llama-style RMSNorm + SwiGLU +
-# 1D RoPE) but with a FUSED wqkv projection instead of separate q/k/v_proj.
-# That requires its own forward (see ``forward_internlm2``).
-# The exact class name comes from ``scripts/25_internvl_inspect.py`` Step 0
-# (likely ``"InternVLChatModel"``). Keeping "InternVL" as a prefix marker so
-# variants match too.
-_INTERNLM2_MARKERS = ("InternVL", "InternLM2")
+# ``forward_internlm2`` (fused wqkv + wo) is only needed for the LEGACY
+# remote-code path (``OpenGVLab/InternVL2-8B`` via trust_remote_code, class
+# ``InternVLChatModel`` wrapping ``InternLM2ForCausalLM``). We are now on the
+# NATIVE HF checkpoint ``OpenGVLab/InternVL3-8B-hf``
+# (``InternVLForConditionalGeneration``), whose backbone is Qwen2.5 with
+# SEPARATE ``q_proj``/``k_proj``/``v_proj`` -- so ``forward_llama`` /
+# ``forward_qwen25vl`` are the right choices there, NOT
+# ``forward_internlm2``. The InternLM2 forward is kept in-file for the case
+# where someone re-visits the remote-code path in a compatible env.
+_INTERNLM2_MARKERS = ("InternLM2",)  # narrow: exclude InternVL native class
 
 
 def detect_model_family(model) -> str:
     """Return the SPARC family string for a model.
 
     Currently: ``"qwen"`` (mRoPE), ``"llama"`` (1D RoPE, separate q/k/v),
-    or ``"internlm2"`` (1D RoPE, fused wqkv -- InternVL2 backbone).
+    or ``"internlm2"`` (1D RoPE, fused wqkv -- legacy InternVL2 remote path).
+
+    For the NATIVE InternVL HF checkpoint
+    (``InternVLForConditionalGeneration``), the backbone determines the
+    forward: Qwen2.5-VL text-video backbone (``qwen2_5_vl`` model_type)
+    => ``"qwen"``; plain Qwen2/Qwen2.5 text backbone (1D RoPE)
+    => ``"llama"``; legacy InternLM2 backbone (fused wqkv, if ever)
+    => ``"internlm2"``.
 
     Primary signal is the top-level model class name. As a fallback
     (covers test mocks and any future wrapper that doesn't match the
@@ -51,6 +61,16 @@ def detect_model_family(model) -> str:
     cls = type(model).__name__
     if any(cls.startswith(m) for m in _INTERNLM2_MARKERS):
         return "internlm2"
+    if cls.startswith("InternVL"):
+        # Native InternVL HF: inspect the text backbone's model_type.
+        text_cfg = getattr(getattr(model, "config", None), "text_config", None)
+        inner_type = getattr(text_cfg, "model_type", None)
+        if inner_type == "qwen2_5_vl":
+            return "qwen"
+        if inner_type == "internlm2":
+            return "internlm2"
+        # Default: plain Qwen2/Qwen2.5 text or Llama-style -- all 1D RoPE.
+        return "llama"
     if any(cls.startswith(m) for m in _QWEN_MARKERS):
         return "qwen"
     if any(cls.startswith(m) for m in _LLAMA_MARKERS):
@@ -77,11 +97,13 @@ def decoder_of(model) -> object:
     * Qwen 2.5-VL : ``model.model.language_model.layers``
     * Idefics3 / SmolVLM (llama family): ``model.model.text_model.layers``
       -- via the ``text_model`` branch below.
-    * InternVL2 : ``model.language_model.model.layers`` -- the extra
-      nesting (``.language_model.model``) comes from InternLM2 being
-      wrapped as an ``InternLM2ForCausalLM`` (with ``.lm_head`` and an
-      inner ``.model``) inside ``InternVLChatModel``. We probe one
-      additional level deep for this case.
+    * InternVL3-8B-hf (native, ``InternVLForConditionalGeneration``):
+      ``model.model.language_model.layers`` -- the Qwen2/Qwen2.5 backbone
+      IS the module with ``.layers``, so no extra nesting is needed.
+    * InternVL2 (legacy remote code, kept as fallback):
+      ``model.language_model.model.layers`` -- the extra nesting
+      (``.language_model.model``) comes from ``InternLM2ForCausalLM``
+      wrapping an inner ``.model``.
     * Flattened checkpoints: ``model.model.layers`` (fallback).
     """
     inner = getattr(model, "model", model)
@@ -329,7 +351,11 @@ def forward_llama(
     return attn_output, attn_weights
 
 
-# InternLM2 attention (InternVL2 backbone). Structurally identical to
+# InternLM2 attention (LEGACY InternVL2 remote-code backbone; the native
+# InternVL3-8B-hf checkpoint uses a Qwen2.5 backbone with SEPARATE q/k/v_proj
+# and therefore routes through forward_llama / forward_qwen25vl instead).
+# Kept in-file for the case where someone re-visits the remote-code path
+# in a compatible transformers version. Structurally identical to
 # forward_llama EXCEPT:
 #
 #   * Fused Q/K/V:  InternLM2 has a single `self.wqkv` linear that emits

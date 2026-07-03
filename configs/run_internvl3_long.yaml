@@ -1,5 +1,5 @@
 run:
-  name: "sweep_internvl2_mscoco_medium"
+  name: "sweep_internvl3_mscoco_long"
   seed_global: 42
   output_root: "results/runs"
 
@@ -7,19 +7,19 @@ dataset:
   name: "mscoco_baseline"
   manifest_path: "data/processed/mscoco_baseline/manifest.jsonl"
   images_dir: "data/processed/mscoco_baseline/images"
-  n_images: 100
+  n_images: 50
 
 model:
-  key: "internvl2-8b"
-  model_id: "OpenGVLab/InternVL2-8B"
+  key: "internvl3-8b-hf"
+  model_id: "OpenGVLab/InternVL3-8B-hf"
   dtype: "bfloat16"
 
 task:
-  name: "caption_medium"
-  prompt_key: "caption_medium"
+  name: "caption_long"
+  prompt_key: "caption_long"
 
 generation:
-  max_new_tokens: 200
+  max_new_tokens: 512
   do_sample: false
   num_beams: 1
   temperature: 1.0

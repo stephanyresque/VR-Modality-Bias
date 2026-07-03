@@ -1,37 +1,35 @@
-"""Concrete wrapper for ``OpenGVLab/InternVL2-8B`` (evaluation only).
+"""Concrete wrapper for ``OpenGVLab/InternVL3-8B-hf`` (evaluation only).
 
-Only Passos 1-2 of the InternVL bloco are wired here (load + free
-generation). ``run_teacher_forcing`` intentionally raises: the InternVL
-family is used exclusively in the intervention-evaluation stage
-(SPARC + CHAIR); the diagnostic (Section IV: hidden states, share_tail,
-heatmaps) stays on SmolVLM-2.2B and is NOT ported here.
+We use the NATIVE HF checkpoint (``-hf`` suffix), NOT the legacy remote
+code checkpoint ``OpenGVLab/InternVL2-8B`` -- the latter breaks on
+transformers v5 with
+``'InternVLChatModel' object has no attribute 'all_tied_weights_keys'``.
+The ``-hf`` variant is a first-class transformers implementation
+(``InternVLForConditionalGeneration``): loads with plain
+``AutoModelForImageTextToText``, exposes a standard ``AutoProcessor``
+with ``apply_chat_template``, and doesn't need ``trust_remote_code``.
 
-Architecture notes (see Passo 0 -- ``scripts/25_internvl_inspect.py``):
+Only free generation is wired here (Passos 1-2 of the InternVL bloco).
+``run_teacher_forcing`` intentionally raises: the InternVL family is
+used exclusively in the intervention-evaluation stage (SPARC + CHAIR);
+the diagnostic (Section IV: hidden states, share_tail, heatmaps) stays
+on SmolVLM-2.2B and is NOT ported here.
 
-* Top class      : ``InternVLChatModel``  (matched by _INTERNLM2_MARKERS
-                   in utils/attn.py). Verify with the Step-0 dump.
-* LM backbone    : ``model.language_model`` -> ``InternLM2ForCausalLM``.
-* Decoder layers : ``model.language_model.model.layers``. decoder_of
-                   already covers this via the extra-nesting branch.
-* Attention attr : ``layer.attention`` (NOT ``layer.self_attn``). The
-                   ``_attention_module_of`` helper in utils/attn.py
-                   dispatches transparently.
-* Visual token   : ``<IMG_CONTEXT>`` -- id comes from the tokenizer,
-                   NOT ``config.image_token_id`` (which InternVL doesn't
-                   populate). Consumers should use ``tokenizer.
-                   convert_tokens_to_ids('<IMG_CONTEXT>')`` -- exposed
-                   here as :attr:`image_token_id`.
-* dtype          : bf16 (InternVL was trained in bf16; do NOT use fp16).
-* Attention impl : eager (SPARC patches the forward -- flash/sdpa
-                   attention paths hide attn_weights).
+Architecture facts (confirm with Passo 0 -- ``scripts/25_internvl_inspect.py``):
 
-Preprocessing:
-    InternVL uses a dynamic 448x448 tiling (multi-crop) that the
-    ``AutoProcessor`` doesn't currently expose in a stable way. If the
-    generation API of choice is ``model.chat(tokenizer, pixel_values,
-    question, generation_config)`` (which the official model card uses),
-    we lean on it: it embeds the tiling / prompt-format / image-token
-    injection internally and hands us clean text back.
+* Top class      : ``InternVLForConditionalGeneration`` (native v5).
+* LM backbone    : Qwen2.5 -- separate ``q_proj``/``k_proj``/``v_proj``,
+                   ``o_proj``, attribute ``layer.self_attn``. So the SPARC
+                   forward is NOT ``forward_internlm2``; it's either
+                   ``forward_qwen25vl`` (if mRoPE) or ``forward_llama``
+                   (if plain 1D RoPE). Step 0 prints which one applies.
+* Image token    : populated on ``config.image_token_id`` (unlike the
+                   legacy remote checkpoint, which required a manual
+                   ``<IMG_CONTEXT>`` lookup). ``probe_image_token_index``
+                   in experiment/sparc.py picks it up from the config.
+* dtype          : bf16 (InternVL was trained in bf16).
+* Attention impl : eager (SPARC patches the forward -- flash/sdpa hide
+                   attn_weights).
 """
 
 from __future__ import annotations
@@ -53,24 +51,18 @@ except ModuleNotFoundError:
 __all__ = ["InternVLWrapper"]
 
 
-# Candidate paths for the LM head. Reused from qwen_vl / smolvlm patterns,
-# with the InternVL-specific ``language_model.output`` added first
-# (some InternLM2 remote code names its head ``output`` instead of ``lm_head``).
 _LM_HEAD_CANDIDATES: tuple[str, ...] = (
-    "language_model.output",              # InternLM2 remote-code convention
-    "language_model.lm_head",             # standard HF convention
-    "language_model.model.output",
-    "language_model.model.lm_head",
     "lm_head",
-    "output",
+    "language_model.lm_head",
+    "model.lm_head",
     "model.language_model.lm_head",
-    "model.language_model.model.lm_head",
+    "language_model.model.lm_head",
 )
 
-# Depth candidates. The InternVL config nests LM config under llm_config.
+
 _N_LAYERS_CANDIDATES: tuple[str, ...] = (
-    "config.llm_config.num_hidden_layers",
     "config.text_config.num_hidden_layers",
+    "config.llm_config.num_hidden_layers",
     "config.num_hidden_layers",
 )
 
@@ -83,11 +75,11 @@ def _resolve_attr(root: Any, dotted: str) -> Any:
 
 
 class InternVLWrapper(ModelWrapper):
-    """InternVL2-8B wrapper (evaluation / SPARC-CHAIR only)."""
+    """InternVL3-8B-hf wrapper (evaluation / SPARC-CHAIR only)."""
 
     def __init__(
         self,
-        model_id: str = "OpenGVLab/InternVL2-8B",
+        model_id: str = "OpenGVLab/InternVL3-8B-hf",
         *,
         dtype: torch.dtype = torch.bfloat16,     # bf16, NOT fp16
         attn_implementation: str = "eager",      # required by SPARC
@@ -97,53 +89,62 @@ class InternVLWrapper(ModelWrapper):
         self._attn_implementation = attn_implementation
         self._device: torch.device | None = None
         self._model = None
-        self._tokenizer = None       # InternVL uses a tokenizer directly (chat API)
-        self._image_token_id: int | None = None
+        self._processor = None
         self._lm_head: torch.nn.Module | None = None
         self._n_layers: int | None = None
 
     # ------------------------------------------------------------ load
 
     def load(self, device: torch.device) -> None:
-        """Load model + tokenizer with ``trust_remote_code=True``.
+        """Load the model + processor via the native HF interface.
 
-        InternVL2 requires trust_remote_code because its modeling code
-        (image tiling, chat template, cache convention) lives on the
-        Hub, not in ``transformers``.
+        No ``trust_remote_code`` -- the ``-hf`` checkpoint ships its
+        modeling code inside ``transformers``.
         """
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoProcessor
 
         self._device = device
-        self._tokenizer = AutoTokenizer.from_pretrained(
-            self.model_id, trust_remote_code=True,
-        )
+        self._processor = AutoProcessor.from_pretrained(self.model_id)
 
-        # eager attention is required so SPARC can see attn_weights.
         effective_dtype = self._dtype if device.type == "cuda" else torch.float32
+
         model_kwargs: dict[str, Any] = {
-            "torch_dtype": effective_dtype,
-            "trust_remote_code": True,
+            "dtype": effective_dtype,
             "low_cpu_mem_usage": True,
         }
         if device.type == "cuda":
             model_kwargs["attn_implementation"] = self._attn_implementation
 
-        self._model = AutoModel.from_pretrained(self.model_id, **model_kwargs).to(device)
+        self._model = self._load_model(self.model_id, model_kwargs).to(device)
         self._model.eval()
-
-        # Resolve <IMG_CONTEXT> id -- InternVL's visual token marker.
-        # ``probe_image_token_index`` and the SPARC per-id mask will use
-        # this instead of ``config.image_token_id`` (which InternVL
-        # doesn't populate reliably).
-        try:
-            self._image_token_id = int(
-                self._tokenizer.convert_tokens_to_ids("<IMG_CONTEXT>")
-            )
-        except Exception:  # pragma: no cover -- Step 0 should catch this
-            self._image_token_id = None
 
         self._lm_head = self._discover_lm_head()
         self._n_layers = self._discover_n_layers()
+
+    @staticmethod
+    def _load_model(model_id: str, model_kwargs: dict[str, Any]):
+        """Try the explicit class first, then the generic auto class."""
+
+        import transformers
+
+        candidate_classes = (
+            "InternVLForConditionalGeneration",
+            "AutoModelForImageTextToText",
+        )
+        last_exc: Exception | None = None
+        for name in candidate_classes:
+            cls = getattr(transformers, name, None)
+            if cls is None:
+                continue
+            try:
+                return cls.from_pretrained(model_id, **model_kwargs)
+            except Exception as exc:
+                last_exc = exc
+                continue
+        raise RuntimeError(
+            f"Could not load {model_id} via any of "
+            f"{candidate_classes}. Last error: {last_exc!r}"
+        )
 
     # ------------------------------------------------------------ introspection
 
@@ -158,8 +159,8 @@ class InternVLWrapper(ModelWrapper):
         raise RuntimeError(
             f"Could not locate lm_head on {type(self._model).__name__}. "
             f"Tried: {list(_LM_HEAD_CANDIDATES)}. "
-            "Re-run Step 0 (scripts/25_internvl_inspect.py) and extend the "
-            "candidate list here."
+            "Re-run Step 0 (scripts/25_internvl_inspect.py) and extend "
+            "_LM_HEAD_CANDIDATES here if needed."
         )
 
     def _discover_n_layers(self) -> int:
@@ -186,16 +187,6 @@ class InternVLWrapper(ModelWrapper):
             raise RuntimeError("Model not loaded -- call .load() first.")
         return self._lm_head
 
-    @property
-    def image_token_id(self) -> int:
-        """<IMG_CONTEXT> token id. Used by SPARC's per-id mask."""
-        if self._image_token_id is None:
-            raise RuntimeError(
-                "<IMG_CONTEXT> token not resolved -- was the tokenizer "
-                "loaded with trust_remote_code=True? Check Step 0 output."
-            )
-        return self._image_token_id
-
     # ------------------------------------------------------------ generation
 
     def generate_caption(
@@ -206,23 +197,27 @@ class InternVLWrapper(ModelWrapper):
         seed: int,
         generation_kwargs: dict[str, Any] | None = None,
     ) -> str:
-        """Free generation via the InternVL ``model.chat`` API.
+        """Free generation via ``processor.apply_chat_template`` + ``model.generate``.
 
-        The chat method internally handles the dynamic tiling, prompt
-        formatting, and image-token injection. SPARC patches
-        ``layer.attention.forward`` -- ``model.chat`` funnels through
-        the same forward path via ``.generate`` internally, so the
-        patch takes effect. If ``chat`` bypasses that path in the
-        version we get, the fallback is to build ``pixel_values`` +
-        input_ids by hand and call ``model.generate`` -- Passo 6.1
-        confirms which flow the deployed remote code uses.
+        Identical shape to ``QwenVLWrapper.generate_caption`` -- the
+        native InternVL processor exposes the same interface. Any SPARC
+        monkey-patch on ``self_attn.forward`` runs inside ``model.generate``
+        as usual.
         """
-        if self._model is None or self._tokenizer is None:
+        if self._model is None or self._processor is None:
             raise RuntimeError("Model not loaded -- call .load() first.")
 
-        # InternVL's official image transform: dynamic tiling to 448x448 tiles.
-        # Exposed by the remote code as ``load_image`` in the model card.
-        pixel_values = self._preprocess_image(image)
+        image_rgb = image.convert("RGB")
+        messages = self._build_messages(prompt, image_rgb)
+        prompt_text = self._processor.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False
+        )
+
+        inputs = self._processor(
+            text=[prompt_text],
+            images=[image_rgb],
+            return_tensors="pt",
+        ).to(self._device)
 
         gen_kwargs: dict[str, Any] = {
             "max_new_tokens": int(max_new_tokens),
@@ -234,58 +229,20 @@ class InternVLWrapper(ModelWrapper):
         if generation_kwargs:
             gen_kwargs.update(generation_kwargs)
 
-        # Per-call seed so generations are reproducible per image_id.
         torch.manual_seed(int(seed))
         if self._device is not None and self._device.type == "cuda":
             torch.cuda.manual_seed_all(int(seed))
 
         with torch.no_grad():
-            response = self._model.chat(
-                self._tokenizer,
-                pixel_values,
-                prompt,
-                gen_kwargs,
-                history=None,
-                return_history=False,
-            )
-        return str(response).strip()
+            generated = self._model.generate(**inputs, **gen_kwargs)
 
-    def _preprocess_image(self, image: Image.Image) -> torch.Tensor:
-        """InternVL dynamic-tile transform (448x448, up to N tiles).
+        prefix_len = inputs["input_ids"].shape[-1]
+        new_tokens = generated[0, prefix_len:]
 
-        This mirrors ``load_image`` from the InternVL2 model card. Passo
-        6.1's smoke (1 image, base generation) confirms it produces
-        coherent captions -- if the transform is wrong, captions come
-        out garbled even in the baseline.
-        """
-        import torchvision.transforms as T
-        from torchvision.transforms.functional import InterpolationMode
-
-        IMAGENET_MEAN = (0.485, 0.456, 0.406)
-        IMAGENET_STD = (0.229, 0.224, 0.225)
-
-        def _build_transform(input_size: int) -> T.Compose:
-            return T.Compose([
-                T.Lambda(lambda img: img.convert("RGB") if img.mode != "RGB" else img),
-                T.Resize(
-                    (input_size, input_size),
-                    interpolation=InterpolationMode.BICUBIC,
-                ),
-                T.ToTensor(),
-                T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-            ])
-
-        # Single tile at 448 -- the simplest transform matching the InternVL
-        # official ``load_image(image, max_num=1)`` case. Multi-crop (max_num=6
-        # or 12) is the paper default; enabling it here requires porting the
-        # ``dynamic_preprocess`` logic from the model card. Passo 6.1 will
-        # tell us whether single-tile captions are already coherent; if not,
-        # port the full dynamic preprocess.
-        transform = _build_transform(input_size=448)
-        pixel_values = transform(image).unsqueeze(0).to(dtype=self._dtype)
-        if self._device is not None:
-            pixel_values = pixel_values.to(self._device)
-        return pixel_values
+        text = self._processor.tokenizer.decode(
+            new_tokens, skip_special_tokens=True
+        )
+        return text.strip()
 
     # ------------------------------------------------------------ TF (unused)
 
@@ -311,15 +268,14 @@ class InternVLWrapper(ModelWrapper):
     # ------------------------------------------------------------ chat template
 
     @staticmethod
-    def _build_messages(prompt: str, image: Image.Image | None = None) -> list[dict[str, Any]]:
-        """Signature-polymorphic with the other wrappers.
-
-        InternVL's ``model.chat`` doesn't take the list-of-dicts format;
-        the raw prompt string is enough. Kept for cross-family call
-        sites so they don't have to branch on family type.
-        """
-        del image
-        return [{"role": "user", "content": [
-            {"type": "image"},
-            {"type": "text", "text": prompt},
-        ]}]
+    def _build_messages(prompt: str, image: Image.Image) -> list[dict[str, Any]]:
+        """Standard v5 VLM messages format (same as Qwen2.5-VL)."""
+        return [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": image},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
