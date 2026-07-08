@@ -69,8 +69,8 @@ def _register_builtin() -> None:
 
     def _qwen2_5_vl_3b() -> ModelWrapper:
         # Smallest variant in the Qwen2.5-VL family — same forward / mRoPE /
-        # mm_token_type_ids code path as 7B. Used by scripts/13 for the fp32
-        # architectural-exactness gate (Phase 1, item 1).
+        # mm_token_type_ids code path as 7B. Used by scripts/equivalence_check.py
+        # for the fp32 architectural-exactness gate (Phase 1, item 1).
         try:
             from vr_modality_bias.models.qwen_vl import QwenVLWrapper
         except ModuleNotFoundError:

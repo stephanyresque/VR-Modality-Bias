@@ -1,35 +1,7 @@
-"""Concrete wrapper for ``OpenGVLab/InternVL3-8B-hf`` (evaluation only).
-
-We use the NATIVE HF checkpoint (``-hf`` suffix), NOT the legacy remote
-code checkpoint ``OpenGVLab/InternVL2-8B`` -- the latter breaks on
-transformers v5 with
-``'InternVLChatModel' object has no attribute 'all_tied_weights_keys'``.
-The ``-hf`` variant is a first-class transformers implementation
-(``InternVLForConditionalGeneration``): loads with plain
-``AutoModelForImageTextToText``, exposes a standard ``AutoProcessor``
-with ``apply_chat_template``, and doesn't need ``trust_remote_code``.
-
-Only free generation is wired here (Passos 1-2 of the InternVL bloco).
-``run_teacher_forcing`` intentionally raises: the InternVL family is
-used exclusively in the intervention-evaluation stage (SPARC + CHAIR);
-the diagnostic (Section IV: hidden states, share_tail, heatmaps) stays
-on SmolVLM-2.2B and is NOT ported here.
-
-Architecture facts (confirm with Passo 0 -- ``scripts/internvl_inspect.py``):
-
-* Top class      : ``InternVLForConditionalGeneration`` (native v5).
-* LM backbone    : Qwen2.5 -- separate ``q_proj``/``k_proj``/``v_proj``,
-                   ``o_proj``, attribute ``layer.self_attn``. So the SPARC
-                   forward is NOT ``forward_internlm2``; it's either
-                   ``forward_qwen25vl`` (if mRoPE) or ``forward_llama``
-                   (if plain 1D RoPE). Step 0 prints which one applies.
-* Image token    : populated on ``config.image_token_id`` (unlike the
-                   legacy remote checkpoint, which required a manual
-                   ``<IMG_CONTEXT>`` lookup). ``probe_image_token_index``
-                   in experiment/sparc.py picks it up from the config.
-* dtype          : bf16 (InternVL was trained in bf16).
-* Attention impl : eager (SPARC patches the forward -- flash/sdpa hide
-                   attn_weights).
+"""Wrapper for ``OpenGVLab/InternVL3-8B-hf`` — the NATIVE HF checkpoint (the
+legacy remote-code ``InternVL2-8B`` breaks on transformers v5). Used only in
+the SPARC + CHAIR evaluation stage: ``run_teacher_forcing`` intentionally
+raises. Loads in bf16 with eager attention (SPARC patches the forward).
 """
 
 from __future__ import annotations
@@ -93,8 +65,6 @@ class InternVLWrapper(ModelWrapper):
         self._lm_head: torch.nn.Module | None = None
         self._n_layers: int | None = None
 
-    # ------------------------------------------------------------ load
-
     def load(self, device: torch.device) -> None:
         """Load the model + processor via the native HF interface.
 
@@ -146,8 +116,6 @@ class InternVLWrapper(ModelWrapper):
             f"{candidate_classes}. Last error: {last_exc!r}"
         )
 
-    # ------------------------------------------------------------ introspection
-
     def _discover_lm_head(self) -> torch.nn.Module:
         for path in _LM_HEAD_CANDIDATES:
             try:
@@ -186,8 +154,6 @@ class InternVLWrapper(ModelWrapper):
         if self._lm_head is None:
             raise RuntimeError("Model not loaded -- call .load() first.")
         return self._lm_head
-
-    # ------------------------------------------------------------ generation
 
     def generate_caption(
         self,
@@ -244,8 +210,6 @@ class InternVLWrapper(ModelWrapper):
         )
         return text.strip()
 
-    # ------------------------------------------------------------ TF (unused)
-
     def run_teacher_forcing(
         self,
         image: Image.Image,
@@ -264,8 +228,6 @@ class InternVLWrapper(ModelWrapper):
             "+ CHAIR evaluation, not the hidden-state diagnostic. See the "
             "wrapper docstring."
         )
-
-    # ------------------------------------------------------------ chat template
 
     @staticmethod
     def _build_messages(prompt: str, image: Image.Image) -> list[dict[str, Any]]:

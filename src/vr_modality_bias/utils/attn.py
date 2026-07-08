@@ -1,3 +1,8 @@
+"""SPARC's custom attention layers: per-family forward variants (Qwen mRoPE,
+Llama 1D RoPE, legacy InternLM2 fused-QKV), the shared ``SelectedIndexBuffer``
+state, and the ``add_custom_attention_layers`` monkey-patch installer.
+"""
+
 import torch
 from types import MethodType
 from functools import partial
@@ -293,7 +298,6 @@ def forward_llama(
     if attention_mask is not None:
         attn_weights = attn_weights + attention_mask
 
-    # upcast attention to fp32
     attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
         query_states.dtype
     )
@@ -324,7 +328,6 @@ def forward_llama(
 
     if gen_new_token:
         if selected:
-            # mean by head dim
             ratio = (image_attention - self.image_attention) / self.image_attention
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()
@@ -563,7 +566,6 @@ def forward_qwen25vl(
     if attention_mask is not None:
         attn_weights = attn_weights + attention_mask
 
-    # upcast attention to fp32
     attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
         query_states.dtype
     )
@@ -593,7 +595,6 @@ def forward_qwen25vl(
 
     if gen_new_token:
         if selected:
-            # mean by head dim
             ratio = (image_attention - self.image_attention) / self.image_attention
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()

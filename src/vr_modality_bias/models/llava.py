@@ -1,25 +1,6 @@
-"""Concrete wrapper for ``llava-hf/llava-1.5-7b-hf``.
-
-LLaVA-1.5 is the canonical baseline of the SPARC paper (their reference
-results are on the same backbone family). This wrapper exists so the
-study can pivot to LLaVA-1.5-7B without rewriting any of the experiment
-orchestration — same :class:`ModelWrapper` contract as
-:class:`SmolVLMWrapper` and :class:`QwenVLWrapper`.
-
-Family-specific notes
----------------------
-* Prompt format: LLaVA-1.5 uses ``"USER: <image>\\n{prompt} ASSISTANT:"``.
-  Modern (5.x) transformers ships a chat template on the processor that
-  renders the canonical list-of-content-dicts format into that exact
-  string, so we prefer ``processor.apply_chat_template`` when it's
-  registered. The manual fallback below produces the same string for
-  environments where the template isn't installed.
-* Image token: the processor inserts ``<image>`` (id depends on the
-  vocab) and the LLaVA model expands it internally to 576 visual feature
-  tokens. We never touch this manually — same convention as the other
-  wrappers.
-* Decoder: 32 transformer layers (LlamaModel, ``config.text_config.
-  num_hidden_layers``). ``lm_head`` resolves at the top level.
+"""Wrapper for ``llava-hf/llava-1.5-7b-hf`` — the SPARC paper's canonical
+baseline — under the same :class:`ModelWrapper` contract as the other
+families, so the experiment orchestration doesn't have to change.
 """
 
 from __future__ import annotations
@@ -87,8 +68,6 @@ class LlavaWrapper(ModelWrapper):
         self._processor = None  # transformers.LlavaProcessor
         self._lm_head: torch.nn.Module | None = None
         self._n_layers: int | None = None
-
-    # ------------------------------------------------------------ load
 
     def load(self, device: torch.device) -> None:
         """Load processor + model onto ``device`` and resolve ``lm_head``/``n_layers``."""
@@ -160,8 +139,6 @@ class LlavaWrapper(ModelWrapper):
             raise RuntimeError("Model not loaded — call .load() first.")
         return self._lm_head
 
-    # ------------------------------------------------------------ prompt
-
     def _format_prompt(self, prompt: str) -> str:
         """Render ``prompt`` into the LLaVA-1.5 chat string.
 
@@ -182,8 +159,6 @@ class LlavaWrapper(ModelWrapper):
                 messages, add_generation_prompt=True, tokenize=False,
             )
         return f"USER: <image>\n{prompt} ASSISTANT:"
-
-    # ------------------------------------------------------------ generation
 
     def generate_caption(
         self,
@@ -223,8 +198,6 @@ class LlavaWrapper(ModelWrapper):
         new_tokens = generated[0, prefix_len:]
         text = self._processor.tokenizer.decode(new_tokens, skip_special_tokens=True)
         return text.strip()
-
-    # ------------------------------------------------------------ TF
 
     def run_teacher_forcing(
         self,
@@ -315,7 +288,7 @@ class LlavaWrapper(ModelWrapper):
         ``image`` is unused (the LLaVA chat template only needs a
         ``{"type": "image"}`` placeholder; the pixel data rides through
         the processor's ``images=`` kwarg). Kept in the signature so
-        cross-family call sites in scripts/18 etc. don't have to branch.
+        cross-family call sites in scripts/phase3_generate.py etc. don't have to branch.
         """
         del image  # explicitly unused
         return [

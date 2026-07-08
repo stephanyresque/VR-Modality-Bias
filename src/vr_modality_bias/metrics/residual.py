@@ -1,15 +1,7 @@
-"""Deep-block KL summaries: ``share_tail`` (current) + legacy metrics.
-
-OFFICIAL post-port: :func:`share_tail` — the fraction of deep-block KL
-mass that sits in the tail half of the caption. Bounded in ``[0, 1]``
-and invariant under any positive multiplicative scaling of the curve,
-which is exactly the property that broke :func:`head_tail_ratio` under
-SPARC: SPARC amplifies the magnitude of the deep KL curve, the ratio
-inflated to 50+/NaN, and a single number stopped meaning what it used to.
-
-:func:`head_tail_ratio` and :func:`residual_drift_ratio` stay here for
-back-compat with the run-all / phase-3 scripts written before the port.
-They are NOT to be used as the headline metric for new analyses.
+"""Deep-block KL summaries. Headline metric: :func:`share_tail` — bounded
+[0, 1] and invariant to positive scaling (the property that broke
+:func:`head_tail_ratio` under SPARC's amplification). ``head_tail_ratio`` and
+``residual_drift_ratio`` remain for back-compat only, not for new analyses.
 """
 
 from __future__ import annotations

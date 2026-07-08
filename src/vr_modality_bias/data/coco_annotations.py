@@ -1,19 +1,7 @@
-"""Idempotent COCO val2017 annotation download.
-
-Phase 3 needs ``instances_val2017.json`` to know which COCO categories are
-ground-truth-present in each image (for hallucination detection), and
-``captions_val2017.json`` is kept around for any future reference-caption
-analysis. Both live in ``annotations_trainval2017.zip``.
-
-Same pattern as ``scripts/prepare_data.py``: stream-download the zip,
-extract only the two files we need, support ``overwrite``. Re-running with
-the files already present is a no-op.
-
-Importable as a library (``ensure_coco_annotations``) AND runnable as a
-script:
-
-    python -m vr_modality_bias.data.coco_annotations
-    python -m vr_modality_bias.data.coco_annotations --target-dir DIR --overwrite
+"""Idempotent COCO val2017 annotation download (``instances_val2017.json`` +
+``captions_val2017.json``) for the CHAIR ground truth. Importable as a library
+(``ensure_coco_annotations``) and runnable via
+``python -m vr_modality_bias.data.coco_annotations``.
 """
 
 from __future__ import annotations

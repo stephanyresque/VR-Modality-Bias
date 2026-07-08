@@ -1,31 +1,7 @@
-"""CHAIR — Caption Hallucination Assessment with Image Relevance.
-
-Reference: Rohrbach et al. 2018, "Object Hallucination in Image Captioning".
-
-We compute two scores:
-
-    CHAIR_i = (# hallucinated object mentions) / (# total object mentions)
-              — proportion of mentioned objects that are not in the ground
-              truth. Sensitive to "wrong things named", not to how many
-              objects the model talks about.
-
-    CHAIR_s = (# captions with ≥1 hallucination) / (# captions)
-              — proportion of captions polluted by any hallucination.
-
-For each caption:
-    1. Extract the set of COCO-80 categories mentioned (synonym match).
-    2. Compare to the ground-truth set of categories present in the image.
-    3. Hallucinated = mentioned − ground_truth.
-
-Synonym map
------------
-The COCO-80 synonym list below mirrors the one published with the original
-CHAIR paper (Rohrbach 2018, ``utils/synonyms.txt`` in the Hallucination
-repo), augmented with common plurals and a few colloquial variants. Whole-
-word matching is case-insensitive after punctuation is stripped; multi-word
-entries (``hot dog``, ``fire hydrant``) are matched as space-padded
-substrings so ``"hot dog"`` is found but ``"red"`` is not found inside
-``"reduced"``.
+"""CHAIR (Rohrbach et al. 2018) — caption-hallucination metrics against the
+COCO-80 categories: CHAIR_i (per-mention) and CHAIR_s (per-caption), plus the
+precision/recall/F1 ingredients. The synonym map mirrors the original CHAIR
+release, augmented with common plurals and colloquial variants.
 """
 
 from __future__ import annotations

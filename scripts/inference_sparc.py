@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import sys
 import glob 
-from loguru import logger
 
 import traceback
 import argparse
@@ -108,10 +107,6 @@ def main() -> int:
 
     work_dir = Path(cfg["run"]["output_root"], cfg["run"]["name"])
     os.makedirs(work_dir, exist_ok=True)
-
-    # run_dir = current_run_dir()
-    # log_file = run_dir / "logs" / "inference_sparc.log"
-    # configure_logging(log_file=log_file)
 
     model = build_model(cfg["model"]["key"])
     model.model_id = str(cfg["model"]["model_id"])

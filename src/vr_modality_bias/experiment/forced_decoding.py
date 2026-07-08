@@ -1,81 +1,7 @@
-"""Forced teacher-forced decoding done step by step.
-
-This module exists because the Etapa 2 instrument measures hidden states via
-a **single forward pass** (``run_teacher_forcing``) with ``use_cache=False``,
-while SPARC only takes effect **inside the autoregressive loop** (it compares
-attention between consecutive generation steps and mutates the KV cache). The
-two are therefore incompatible: plugging SPARC into ``run_teacher_forcing``
-would be a silent no-op.
-
-The function :func:`collect_forced_decoding` walks the reference caption
-**token by token**, with ``use_cache=True``, feeding each token of
-``caption_ref`` to the model in turn — exactly the conditions under which
-SPARC fires — and collects the predictive hidden states. Output layout is
-**deliberately identical** to ``ModelWrapper.run_teacher_forcing``:
-
-    hidden_states : (n_layers, seq_len, hidden_dim)   with seq_len = caption_start + caption_len
-
-So ``compute_kl_matrix`` reads ``hidden_states[layer, caption_start - 1 :
-caption_start + caption_len - 1, :]`` exactly as before — **no index
-arithmetic on the caller side**.
-
-Index placement (the critical bit; see EXPERIMENT.md §4.2 / Phase 1 spec)
-------------------------------------------------------------------------
-* The **prefill** forward feeds ``input_ids[:caption_start]`` and produces
-  hidden states at absolute positions ``0 .. caption_start - 1``.
-* Each generation step ``j ∈ [0, caption_len)`` feeds the token at absolute
-  position ``caption_start + j`` (i.e. ``caption_ref[j]``) and its output
-  goes to the absolute index ``caption_start + j``.
-* Therefore the **predictive state of caption token j** — the state used by
-  ``compute_kl_matrix`` to predict ``caption_ref[j]`` — lives at the
-  absolute index ``caption_start - 1 + j``:
-    - ``j == 0`` → ``caption_start - 1`` (last position of the prefill).
-    - ``j >= 1`` → ``caption_start - 1 + j`` (output of the step that fed
-      ``caption_ref[j - 1]``).
-
-We **intentionally feed all ``caption_len`` tokens** (including the last one,
-which produces an output stored at ``caption_start + caption_len - 1`` and
-is *not* read by ``compute_kl_matrix``). This is one extra forward but keeps
-the output tensor layout byte-identical to the single-pass path, which is
-what makes the §4.4 equivalence check a pure numerical comparison without
-any index arithmetic on either side.
-
-mRoPE / position bookkeeping
-----------------------------
-We do **not** assemble ``position_ids`` by hand. The model derives them
-internally from the KV cache length and the ``rope_deltas`` it cached on
-``self`` during prefill (see ``Qwen2_5_VLModel.compute_3d_position_ids``):
-
-    elif self.rope_deltas is not None and (past_key_values_length > 0 ...):
-        ...
-        if attention_mask is not None:
-            position_ids = attention_mask.long().cumsum(-1) - 1      # <-- BUG path
-            position_ids = ... .view(1, batch_size, -1).repeat(3, 1, 1)
-        else:
-            position_ids = torch.arange(
-                past_key_values_length, past_key_values_length + seq_length
-            )                                                         # <-- correct path
-        position_ids = position_ids + delta
-
-If we pass ``attention_mask`` at step time, the model sizes
-``position_ids`` from ``attention_mask.shape[1]`` (the cumulative length),
-not from ``inputs_embeds.shape[1]`` (= 1). The cos/sin pair then has the
-wrong rotary length, ``key_states`` come out with seq_len = cumulative
-length, and after ``past_key_values.update(...)`` the KV side ends up
-~2 × cumulative — which is exactly the ``827 vs 414`` shape mismatch we
-saw at ``attn_weights + attention_mask`` in eager attention.
-
-Our loop therefore:
-
-    1. PREFILL — feed the prefix with its attention_mask (length
-       caption_start). The model takes the ``past_key_values_length == 0``
-       branch, calls ``get_rope_index``, and caches ``self.rope_deltas``.
-    2. STEP j — feed **only the new token** (one column), **no
-       attention_mask**, no ``cache_position``, no ``rope_deltas`` kwarg
-       (Qwen-2.5-VL doesn't take those — they're consumed by
-       ``GenerationMixin`` infra, not by the model itself). The model takes
-       the ``else`` branch above and derives the correct mRoPE position
-       from the cache length plus the cached ``self.rope_deltas``.
+"""Step-by-step teacher-forced decoding: walks ``caption_ref`` token by token
+with ``use_cache=True`` — the only conditions under which SPARC fires — and
+returns hidden states in the exact layout of ``run_teacher_forcing``, so
+``compute_kl_matrix`` needs no index arithmetic on the caller side.
 """
 
 from __future__ import annotations
@@ -215,7 +141,6 @@ def collect_forced_decoding(
         # SPARC would calibrate / select the separator tokens too.
         sparc_buffer.update_image_positions(image_positions)
 
-    # Move tokenised inputs onto the model's device.
     prefix_input_ids = prefix_inputs["input_ids"].to(device)
     attention_mask_full = full_inputs["attention_mask"].to(device)
     pixel_values = (
@@ -334,9 +259,6 @@ def collect_forced_decoding(
             "timestamp_iso": _iso_now(),
         },
     )
-
-
-# ---------------------------------------------------------------- helpers
 
 
 def _infer_hidden_dim(model: torch.nn.Module) -> int:
