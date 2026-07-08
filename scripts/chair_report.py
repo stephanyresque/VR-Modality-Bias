@@ -1,24 +1,8 @@
 #!/usr/bin/env python
-"""Phase 3 — CHAIR report, stdout only.
+"""CHAIR report over a phase3_generate run: CHAIR / precision-recall tables,
+degeneration rate and OFF-vs-ON pair samples (stdout + chair_results.{json,csv}).
 
-Reads ``results/runs/<run>/captions.jsonl`` (produced by phase3_generate.py)
-and ``instances_val2017.json`` (downloaded by data.coco_annotations), then
-prints three sections in ASCII:
-
-    1. CHAIR BY LENGTH      — CHAIR_s and CHAIR_i per (length, condition),
-                              baseline vs SPARC α, with n_captions
-    2. DEGENERATION RATE    — % of unusable captions (empty / too short /
-                              heavily repetitive) per (length, condition)
-    3. PAIR SAMPLES         — for ~3 images, OFF and ON captions side by side
-                              so the user can eyeball quality for the panel
-
-No conclusions. The reader does the interpretation.
-
-CLI
----
-    python scripts/chair_report.py --run-dir results/runs/phase3
-    python scripts/chair_report.py --run-dir results/runs/phase3 --auto-download
-    python scripts/chair_report.py --run-dir results/runs/phase3 --pair-samples 5
+Run: make chair-report  (or: python scripts/chair_report.py --run-dir results/runs/phase3 --auto-download)
 """
 
 from __future__ import annotations
@@ -60,9 +44,6 @@ except ModuleNotFoundError:
 LENGTHS_ORDER = ("short", "medium", "long")
 
 
-# ---------------------------------------------------------------- IO
-
-
 def _load_captions(jsonl_path: Path) -> list[dict]:
     entries: list[dict] = []
     if not jsonl_path.exists():
@@ -77,9 +58,6 @@ def _load_captions(jsonl_path: Path) -> list[dict]:
             except json.JSONDecodeError:
                 continue
     return entries
-
-
-# ---------------------------------------------------------------- degeneracy
 
 
 def classify_degeneration(caption: str) -> tuple[bool, str]:
@@ -122,9 +100,6 @@ def classify_degeneration(caption: str) -> tuple[bool, str]:
         if most >= max(3, int(len(bigrams) * 0.30)):
             return (True, "bigram_repetition")
     return (False, "")
-
-
-# ---------------------------------------------------------------- print
 
 
 def _print_table(headers: list[str], rows: list[list], aligns: list[str] | None = None) -> None:
@@ -174,9 +149,6 @@ def _condition_sort_key(label: str) -> tuple[int, float]:
         return (1, 0.0)
 
 
-# ---------------------------------------------------------------- sections
-
-
 def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None:
     _section("1. CHAIR BY LENGTH — baseline vs SPARC")
     print("  CHAIR_s = fraction of captions with ≥1 hallucinated object (lower is better).")
@@ -185,7 +157,6 @@ def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None
     headers = ["length", "condition", "n", "CHAIR_s", "CHAIR_i", "total_mentioned", "total_hallucinated"]
     aligns =  ["<",      "<",         ">", ">",       ">",       ">",               ">"]
 
-    # Group entries by (length, condition_label).
     groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for e in entries:
         # Skip captions for images with no GT annotations — they can't
@@ -333,7 +304,6 @@ def report_pair_samples(
     print("  ground-truth objects and the model's mentioned/hallucinated sets.")
     print()
 
-    # Index entries by (image_id, length, condition).
     by_key: dict[tuple[str, str, str], dict] = {}
     for e in entries:
         by_key[(e["image_id"], e["length"], e["condition"])] = e
@@ -383,7 +353,6 @@ def report_pair_samples(
             print()
 
 
-# ---------------------------------------------------------------- persistence
 # Same numbers the report_* functions PRINT, but collected into structured
 # rows and written to ``chair_results.{json,csv}`` so the paper table can
 # be assembled from the file without re-running the report. One row per
@@ -588,9 +557,6 @@ def write_chair_results(rows: list[dict], run_dir: Path) -> tuple[Path, Path]:
             writer.writerow({k: ("" if row.get(k) is None else row[k]) for k in columns})
 
     return json_path, csv_path
-
-
-# ---------------------------------------------------------------- main
 
 
 def main() -> int:

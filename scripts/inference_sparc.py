@@ -1,3 +1,8 @@
+"""Prototype: caption one image with and without SPARC (monkey-patched
+attention) and log both captions for side-by-side comparison.
+
+Run: python scripts/inference_sparc.py --config configs/baseline.yaml [--limit N]
+"""
 
 from __future__ import annotations
 
@@ -108,7 +113,6 @@ def main() -> int:
     # log_file = run_dir / "logs" / "inference_sparc.log"
     # configure_logging(log_file=log_file)
 
-    ## -------------- load model
     model = build_model(cfg["model"]["key"])
     model.model_id = str(cfg["model"]["model_id"])
 
@@ -123,13 +127,11 @@ def main() -> int:
 
     logger.info(f"Run dir: {work_dir}",)
 
-    ## -------------- dataset
     images_dir = cfg["dataset"]["images_dir"]
     images_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))
     if args.limit:
         images_files = images_files[: args.limit]
 
-    ## -------------- inference
     prompt_key = str(cfg["task"]["prompt_key"])
     prompt = get_prompt(prompt_key)
 
@@ -144,7 +146,6 @@ def main() -> int:
 
     image_token_id = int(model._model.config.image_token_id)
 
-    ## -------------- run on the first image, with and without SPARC
     image_path = images_files[0]
     image_id = Path(image_path).stem
     with Image.open(image_path) as raw:

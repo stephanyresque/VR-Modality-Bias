@@ -1,57 +1,9 @@
 #!/usr/bin/env python
-"""Decode-sweep tuner: pick repetition_penalty × max_new_tokens for SPARC.
+"""Decode-sweep tuner for SmolVLM-2.2B (Phase 4): SPARC frozen at the official
+COCO config, sweeping repetition_penalty × max_new_tokens (same decoding on OFF
+and ON) to find the lightest setup that keeps SPARC ON loop-free.
 
-Phase 4 (SmolVLM) tuning. After the per-id-mask indexing fix
-(``utils/attn.py``'s ``SelectedIndexBuffer.image_positions``), SPARC ON
-generates coherently on most images but a few still degenerate at the
-tail of long descriptions (e.g. ``"allowed, allowed, allowed..."``).
-That's an amplification-meets-greedy stability issue, not an indexing or
-state-leak bug. This script sweeps repetition_penalty × max_new_tokens
-to find the lightest decoding adjustment that keeps SPARC ON loop-free
-across ≥3 images without truncating SPARC OFF too short.
-
-Design choices (frozen)
------------------------
-* SPARC config is FIXED to the official COCO setup: alpha=1.1, beta=0.1,
-  tau=1.5, selected_layer=15, se_layers=(0, 31). Do NOT vary these here.
-* The same decoding kwargs are applied to BOTH conditions in each cell —
-  the OFF vs ON comparison only stays meaningful when the decoding setup
-  is identical on the two sides.
-* Greedy: ``do_sample=False, num_beams=1``. Sampling is what destabilised
-  SPARC's amplification in the original Phase 2 sweep (cf. EXPERIMENT.md
-  §13 — α≥1.2 + temperature 0.8 → 'its its'-style super-amplification).
-  This script only varies the penalties that bound greedy repetition.
-* Model is loaded ONCE; the sweep iterates inside that loaded model
-  instance. SPARC is enabled/disabled per cell via ``enable_sparc(...)``.
-
-Loop heuristic (recorded in the table)
---------------------------------------
-``detect_loop(text)`` flags a caption as "looping" iff EITHER:
-
-    (a) some non-stopword unigram occupies ≥4 of the last 20 tokens, OR
-    (b) some token repeats ≥3 times consecutively in the last 30 tokens
-        (catches the canonical 'allowed, allowed, allowed' / 'in. in. in.'
-        failure mode).
-
-Stopwords (the/a/of/and/...) are excluded from (a) so we don't false-fire
-on normal English prose. (b) ignores trailing punctuation when comparing
-('allowed' == 'allowed,'). The threshold is intentionally permissive —
-the script flags suspicion; the human reads the actual caption.
-
-Output
-------
-* Per cell, the OFF and ON captions are printed between clear delimiters.
-* At the end, an ASCII table with one row per (image_id, rp, max_tok):
-    image_id  | rp    | max_tok | off_words | off_loop | on_words | on_loop
-
-The script does NOT pick a recommendation — that's the user's call. The
-goal is just to lay out the grid for inspection.
-
-CLI
----
-    python scripts/decode_sweep_smolvlm.py            # SmolVLM defaults
-    python scripts/decode_sweep_smolvlm.py --image-ids 000000000139 000000000285 000000000632
-    python scripts/decode_sweep_smolvlm.py --rps 1.0 1.1 --max-toks 512
+Run: python scripts/decode_sweep_smolvlm.py [--image-ids ...] [--rps ...] [--max-toks ...]
 """
 
 from __future__ import annotations
@@ -84,9 +36,6 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.utils.config import load_config
     from src.vr_modality_bias.utils.device import resolve_dtype, select_device
     from src.vr_modality_bias.utils.seeds import derive_image_seed
-
-
-# ---------------------------------------------------------------- helpers
 
 
 _STOPWORDS = {
@@ -164,9 +113,6 @@ def _print_caption(label: str, image_id: str, rp: float, max_tok: int, text: str
     print()
 
 
-# ---------------------------------------------------------------- main
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -204,7 +150,6 @@ def main() -> int:
     parser.add_argument("--se-layers", type=int, nargs=2, default=(0, 31))
     args = parser.parse_args()
 
-    # ---- 1. resolve config ---------------------------------------
     cfg_path = Path(args.length_config_pattern.format(length=args.length))
     cfg = load_config(cfg_path)
     model_key = str(cfg["model"]["key"])
@@ -228,7 +173,6 @@ def main() -> int:
     print("decoding: GREEDY (do_sample=False, num_beams=1)")
     print("=" * 78)
 
-    # ---- 2. load model once --------------------------------------
     device = select_device("cuda")
     dtype = resolve_dtype(dtype_str)
     model_wrapper = build_model(model_key)
@@ -247,7 +191,6 @@ def main() -> int:
         se_layers=tuple(args.se_layers),
     )
 
-    # ---- 3. sweep -------------------------------------------------
     # Per-image SPARC bookkeeping helper (mirrors what phase3_generate.py does;
     # the per-id mask is set per image after the buffer is constructed).
     def _probe_layout(image):
@@ -274,7 +217,7 @@ def main() -> int:
             logger.error(f"missing {image_path}; skipping")
             continue
         image = Image.open(image_path).convert("RGB")
-        # Deterministic seed (same definition as scripts/18); greedy
+        # Deterministic seed (same definition as phase3_generate.py); greedy
         # doesn't actually consume the seed, but we keep it for trace.
         seed = int(derive_image_seed(seed_global, image_id))
 
@@ -338,7 +281,6 @@ def main() -> int:
                     _word_count(on),  "Y" if on_loop  else ".",
                 ))
 
-    # ---- 4. summary table ---------------------------------------
     print()
     print("=" * 78)
     print("SUMMARY")

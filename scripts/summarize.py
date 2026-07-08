@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Aggregate ``metrics.parquet`` into ``summary.csv`` and ``summary.json``."""
+"""Aggregate ``metrics.parquet`` into ``summary.csv`` and ``summary.json``.
+
+Run: make baseline  (or: python scripts/summarize.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

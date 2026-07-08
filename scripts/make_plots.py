@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Render the four inspection plots specified in EXPERIMENT.md §7 Phase 5."""
+"""Render the four inspection plots (KL/cosine heatmaps and token curves) for the active run.
+
+Run: make baseline  (or: python scripts/make_plots.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

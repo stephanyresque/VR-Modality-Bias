@@ -1,40 +1,8 @@
 #!/usr/bin/env python
-"""Phase-1 sanity (item 3): FD repeatability vs SPARC effect, paired per image.
+"""Phase-1 sanity: measure the FD-vs-FD repeatability noise floor against the
+SPARC effect, paired per image (SPARC is sound if |Δsparc| ≫ |Δrepeat|).
 
-The Phase-1 equivalence check (``scripts/equivalence_check.py``) compares
-the **single-pass teacher-forcing** path against the **step-by-step forced
-decoding** path. That gap (~5-10% on 7B-bf16) is the bf16 numerical floor
-between two DIFFERENT collection methods.
-
-But the actual Phase-2 SPARC measurement compares **FD-OFF vs FD-ON on the
-same path, paired per image**. So the TF-vs-FD gap is *not* the noise
-floor of the SPARC measurement — the relevant noise floor is FD-vs-FD
-repeatability on the same condition.
-
-What this script does
----------------------
-For each of ``--limit`` images (default: 3 — this is a quick sanity, not a
-full eval):
-
-    1. Generate ``caption_ref`` once (free generation, deterministic seed).
-    2. FD-OFF run #1  : (A, B) → htr_off_1
-    3. FD-OFF run #2  : (A, B) → htr_off_2   ← same code path, run twice
-    4. FD-ON (SPARC)  : (A, B) → htr_on
-    5. Compute and log:
-       * Δ_repeat = htr_off_2 − htr_off_1   (signed; noise floor of FD path)
-       * Δ_sparc  = htr_on    − htr_off_1   (signed; SPARC effect)
-       * ratio    = |Δ_sparc| / max(|Δ_repeat|, 1e-6)
-         If ratio ≫ 1 (say ≥ 5), the SPARC effect is comfortably above the
-         FD repeatability noise floor and the Phase-2 pairing is sound.
-
-Two FD-OFF passes are cheaper than they look: ``model.eval()`` makes
-each forward deterministic *up to* GPU-atomic non-determinism in matmul
-order, which sets the real noise floor we want to measure.
-
-CLI
----
-    python scripts/repeatability_check.py --config configs/baseline.yaml --limit 3
-    python scripts/repeatability_check.py --config configs/baseline.yaml --limit 3 --alpha 1.3
+Run: python scripts/repeatability_check.py --config configs/baseline.yaml --limit 3 [--alpha A]
 """
 
 from __future__ import annotations
@@ -124,7 +92,6 @@ def main() -> int:
     model_id = args.model_id or str(cfg["model"]["model_id"])
     dtype_str = args.dtype or str(cfg["model"]["dtype"])
 
-    # --- model load ---
     model_wrapper = build_model(model_key)
     model_wrapper.model_id = model_id
     dtype = resolve_dtype(dtype_str)
@@ -136,7 +103,6 @@ def main() -> int:
     lm_head = model_wrapper.get_lm_head()
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
 
-    # --- images + generation params ---
     images_dir = cfg["dataset"]["images_dir"]
     image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
     if not image_files:
@@ -247,7 +213,6 @@ def main() -> int:
         logger.error("No usable rows.")
         return 1
 
-    # --- aggregate ---
     abs_repeats = [abs(r["delta_repeat"]) for r in rows]
     abs_sparcs = [abs(r["delta_sparc"]) for r in rows]
     ratios = [r["ratio_sparc_over_repeat"] for r in rows]

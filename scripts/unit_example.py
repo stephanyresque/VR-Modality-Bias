@@ -1,26 +1,8 @@
 #!/usr/bin/env python
-"""Per-image unit examples — one folder per image with separate artefacts.
+"""Per-image unit examples — one folder per image with image.jpg, meta.txt,
+kl_heatmap.png and kl_token_curve.png, read straight from ``metrics.parquet``.
 
-For every image in ``<run_dir>/metrics.parquet`` (or just ``--image-id``),
-writes the following files inside
-``<run_dir>/plots/unit_examples/<image_id>/``::
-
-    image.jpg              copy of the source image (skipped if not on disk)
-    meta.txt               prompt, caption_ref, residual_ratio, metadata
-    kl_heatmap.png         per-(layer, token) KL for this image
-    kl_token_curve.png     deep-block-averaged KL over tokens
-
-This way the paper-side organisation (image / prompt / KL / curve in
-distinct artefacts) is mechanically separated, not jammed into a single
-composite figure.
-
-CPU-only, no model required — reuses ``plot_heatmap``/``plot_token_curve``
-and reads data already in ``metrics.parquet``.
-
-CLI:
-    python scripts/unit_example.py --config configs/baseline.yaml
-    python scripts/unit_example.py --config configs/baseline.yaml --image-id 000000001584
-    python scripts/unit_example.py --config configs/baseline.yaml --overwrite
+Run: make baseline  (or: python scripts/unit_example.py --config configs/baseline.yaml [--image-id ID])
 """
 
 from __future__ import annotations
@@ -114,12 +96,10 @@ def emit_for_row(
     target_dir = out_dir / image_id
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. meta.txt
     meta_path = target_dir / "meta.txt"
     if overwrite or not meta_path.is_file():
         meta_path.write_text(_format_meta(row, prompt), encoding="utf-8")
 
-    # 2. Source image (optional — copy only if available)
     src_image = images_dir / f"{image_id}.jpg"
     dst_image = target_dir / "image.jpg"
     if src_image.is_file():
@@ -128,7 +108,6 @@ def emit_for_row(
     else:
         log.warning("[%s] source image not found at %s", image_id, src_image)
 
-    # 3. KL heatmap (reuses the same style as the run-level plots)
     kl_matrix = _kl_matrix_from_row(row)
     heatmap_path = target_dir / "kl_heatmap.png"
     if overwrite or not heatmap_path.is_file():
@@ -139,7 +118,6 @@ def emit_for_row(
             cbar_label="KL divergence (nats)",
         )
 
-    # 4. Deep-block KL curve
     curve_path = target_dir / "kl_token_curve.png"
     if overwrite or not curve_path.is_file():
         curve = average_token_curve(kl_matrix)

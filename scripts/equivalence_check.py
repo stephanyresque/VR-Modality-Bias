@@ -1,59 +1,9 @@
 #!/usr/bin/env python
-"""Phase-1 gate: equivalence between single-pass TF and forced decoding (SPARC OFF).
+"""Phase-1 gate: forced decoding (SPARC OFF) must reproduce the legacy
+teacher-forcing diagnostic (Regime A: fp32 exactness; Regime B: bf16 floor).
 
-EXPERIMENT.md §4.4 — before we trust *any* SPARC ON / OFF comparison, we
-have to show that the new collection path
-(:func:`vr_modality_bias.experiment.forced_decoding.collect_forced_decoding`)
-reproduces the diagnostic when SPARC is **off**. If it doesn't, every later
-result is unattributable.
-
-What this script does
----------------------
-For each of ``--limit`` images:
-    1. Generate ``caption_ref`` once (free generation, seed deterministic).
-    2. **Path A (legacy):** ``model.run_teacher_forcing(...)`` for the real
-       image and the noise image → KL matrix → ``head_tail_ratio``.
-    3. **Path B (new, SPARC OFF):** ``collect_forced_decoding(...)`` for
-       both conditions → KL matrix → ``head_tail_ratio``.
-    4. Compute per-image deltas:
-       * tensor-level: per-layer max + median **relative** diff between TF
-         and FD hidden states (on the A condition, over the predictive-state
-         range only). This is the architectural-exactness probe.
-       * metric-level: ``|Δhtr|`` and the median relative difference of the
-         deep-block KL curve.
-
-Two acceptance regimes (decided in §12.5 + Phase-1 closure feedback)
---------------------------------------------------------------------
-**Regime A — architectural exactness (small model, fp32).** When run on a
-small Qwen2.5-VL (3B) in fp32, the math is identical to TF up to fp32
-precision. Pass iff ``max per-image per-layer relative hidden-state
-diff ≤ 1e-4``. If this fails, there's a real bug in forced_decoding —
-investigate before any bf16 result is trusted.
-
-**Regime B — bf16 floor (7B, bf16, aggregate).** With exactness proven in
-Regime A, the residual TF-vs-FD gap on 7B-bf16 is numerical drift from
-28 layers × ~64 step forwards in bf16. We accept that floor and judge
-the aggregate over the 50-image batch (NOT per image):
-
-    * no systematic bias: ``|mean(htr_new - htr_old)| / mean(|htr_old|)``
-      small (~few %); average of *signed* Δhtr should hover around zero.
-    * median ``|Δhtr|`` is small relative to typical SPARC effects.
-    * mean curve diff stays inside the measured bf16 floor.
-
-The aggregate report quantifies the bf16 floor; don't force the tight
-``0.02 / 1%`` tolerance from §12.5 on 7B-bf16.
-
-CLI
----
-    # Regime A — architectural exactness on 3B fp32:
-    python scripts/equivalence_check.py --config configs/baseline.yaml \\
-        --model-key qwen2.5-vl-3b \\
-        --model-id Qwen/Qwen2.5-VL-3B-Instruct \\
-        --dtype float32 --limit 5
-
-    # Regime B — aggregate bf16 floor on 7B (smoke / official):
-    python scripts/equivalence_check.py --config configs/baseline.yaml --limit 5
-    python scripts/equivalence_check.py --config configs/baseline.yaml --limit 50
+Run: python scripts/equivalence_check.py --config configs/baseline.yaml [--limit N]
+     [--model-key KEY --model-id ID --dtype DT]  (fp32 small-model overrides for Regime A)
 """
 
 from __future__ import annotations
@@ -249,12 +199,10 @@ def main() -> int:
 
     cfg = load_config(args.config)
 
-    # Apply CLI overrides.
     model_key = args.model_key or str(cfg["model"]["key"])
     model_id = args.model_id or str(cfg["model"]["model_id"])
     dtype_str = args.dtype or str(cfg["model"]["dtype"])
 
-    # --- model load ---
     model_wrapper = build_model(model_key)
     model_wrapper.model_id = model_id
     dtype = resolve_dtype(dtype_str)
@@ -266,7 +214,6 @@ def main() -> int:
     lm_head = model_wrapper.get_lm_head()
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
 
-    # --- images ---
     images_dir = cfg["dataset"]["images_dir"]
     image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
     if not image_files:
@@ -274,7 +221,6 @@ def main() -> int:
         return 1
     logger.info(f"Comparing on {len(image_files)} image(s).")
 
-    # --- generation params ---
     prompt = get_prompt(str(cfg["task"]["prompt_key"]))
     seed_global = int(cfg["run"]["seed_global"])
     max_new_tokens = int(cfg["generation"]["max_new_tokens"])
@@ -286,7 +232,6 @@ def main() -> int:
     }
     top_k = int(cfg["metrics"]["logits_top_k"])
 
-    # --- iterate ---
     rows: list[dict] = []
     for image_path in image_files:
         image_id = Path(image_path).stem
@@ -391,7 +336,6 @@ def main() -> int:
         logger.error("No usable rows — equivalence check inconclusive.")
         return 1
 
-    # --- aggregate ---
     finite_signed_deltas = [
         r["signed_delta_htr"] for r in rows if r["signed_delta_htr"] is not None
     ]

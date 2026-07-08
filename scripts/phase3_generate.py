@@ -1,16 +1,9 @@
 #!/usr/bin/env python
-"""Phase 3 — free caption generation: baseline (SPARC OFF) vs SPARC α=1.1.
+"""Phase 3 — free caption generation, baseline (SPARC OFF) vs SPARC ON with the
+official COCO recipe (α=1.1, β=0.1, τ=1.5, layer 20, greedy — sampling is what
+destabilised SPARC on long captions, not the implementation).
 
-SPARC hyperparameters and decoding match the official paper's COCO recipe
-(captioning_coco.sh in the SPARC authors' repo): α=1.1, β=0.1, τ=1.5,
-selected_layer=20, se_layers=(0,31), greedy decoding (do_sample=False,
-num_beams=1, no repetition penalty).
-
-Greedy is mandatory: sampling from a SPARC-amplified distribution is what
-triggered the long-caption degeneration we saw before, NOT the
-implementation itself. The implementation was verified against the
-official repo (forward identical to the official Llama path, Qwen variant
-replicates the same mechanism).
+Run: make phase3  (smoke: make phase3-smoke; coherence check: make phase3-coherence)
 """
 
 from __future__ import annotations
@@ -247,7 +240,6 @@ def main() -> int:
     done = _read_done(jsonl_path)
     logger.info(f"Resume state: {len(done)} cells already in {jsonl_path}")
 
-    # Resolve which length-config dict to use (Qwen default or SmolVLM override).
     length_configs = _resolve_length_configs(args.length_config_pattern)
     logger.info(f"length_configs: {length_configs}")
 

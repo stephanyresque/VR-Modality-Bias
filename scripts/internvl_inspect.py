@@ -1,51 +1,9 @@
 #!/usr/bin/env python
-"""Step 0 -- pure inspection of InternVL3-8B (native HF checkpoint) before any
-wrapper / patching.
+"""Step 0 -- pure inspection of InternVL3-8B-hf (native HF checkpoint): prints
+the structure facts (decoder path, attention layout, RoPE flavour) that decide
+which SPARC forward to plug in. Nothing is patched, generated or written.
 
-We use the NATIVE HF checkpoint ``OpenGVLab/InternVL3-8B-hf`` (which loads
-via ``AutoModelForImageTextToText`` on transformers v5 without
-``trust_remote_code``) instead of the legacy remote-code checkpoint
-``OpenGVLab/InternVL2-8B`` -- the latter breaks on v5 with
-``'InternVLChatModel' object has no attribute 'all_tied_weights_keys'``.
-
-InternVL3-8B-hf uses the Qwen2.5 language backbone, so we expect:
-
-    * separate ``q_proj`` / ``k_proj`` / ``v_proj`` (NOT the fused ``wqkv``
-      that InternLM2 uses),
-    * ``o_proj`` (not ``wo``),
-    * attention attribute ``layer.self_attn`` (not ``layer.attention``).
-
-Which SPARC forward we plug in depends on ONE remaining question:
-
-    * mRoPE (multimodal rotary; per-dim rope_section) => ``forward_qwen25vl``
-    * plain 1D RoPE                                   => ``forward_llama``
-
-This script prints the facts that answer that question -- do NOT skip it.
-
-Prints
-------
-
-    1. top-level class name (feeds the family markers in utils/attn.py)
-    2. child tree (~3 levels)
-    3. decoder path (where the ``.layers`` list actually lives)
-    4. attention submodule structure (q_proj/k_proj/v_proj separate?
-       what attribute holds the attention module?)
-    5. num_hidden_layers of the language backbone
-    6. the id of the image token from config (native populates
-       ``image_token_id`` / ``image_token_index``)
-    7. lm_head candidates
-    8. **RoPE flavour** -- prints whether ``config.text_config``
-       (or the top-level config) carries ``rope_scaling`` /
-       ``rope_parameters`` with an ``mrope_section`` field. Presence of
-       ``mrope_section`` => forward_qwen25vl; absence => forward_llama.
-
-Nothing is patched. Nothing is generated. Nothing is written to disk.
-Runs in ~1-2 minutes on the DGX (weights load, one metadata scan, print).
-
-CLI
----
-    python scripts/internvl_inspect.py
-    python scripts/internvl_inspect.py --model-id OpenGVLab/InternVL3-8B-hf
+Run: python scripts/internvl_inspect.py [--model-id ID] [--device cuda|cpu]
 """
 
 from __future__ import annotations
@@ -118,7 +76,6 @@ def main() -> int:
     ).to(args.device)
     model.eval()
 
-    # ---- 1. top-level class name ----
     print()
     print("-" * 78)
     print("1. TOP-LEVEL MODEL CLASS")
@@ -128,7 +85,6 @@ def main() -> int:
     print(f"  -> add this string as a marker to utils/attn.py if not "
           f"already covered.")
 
-    # ---- 2. child tree (~3 levels) ----
     print()
     print("-" * 78)
     print("2. MODEL TREE (depth <= 3)")
@@ -136,7 +92,6 @@ def main() -> int:
     for line in _tree_of(model, depth=3):
         print(f"  {line}")
 
-    # ---- 3. decoder path (where .layers lives) ----
     print()
     print("-" * 78)
     print("3. DECODER PATH (needs to end at something with .layers)")
@@ -168,7 +123,6 @@ def main() -> int:
         print("  ERROR: could not locate a decoder with .layers on the model.")
         return 1
 
-    # ---- 4. attention submodule structure ----
     print()
     print("-" * 78)
     print("4. ATTENTION SUBMODULE (separate q/k/v_proj + o_proj expected on Qwen2.5)")
@@ -196,7 +150,6 @@ def main() -> int:
                 shape_note = f"  weight.shape={tuple(child.weight.shape)}"
             print(f"    {name}: {type(child).__name__}{shape_note}")
 
-        # Explicit projection presence check.
         has_wqkv = hasattr(attn, "wqkv")
         has_wo = hasattr(attn, "wo")
         has_q = hasattr(attn, "q_proj")
@@ -214,7 +167,6 @@ def main() -> int:
             v = getattr(attn, k, "<missing>")
             print(f"  attn.{k}: {v}")
 
-    # ---- 5. num_hidden_layers ----
     print()
     print("-" * 78)
     print("5. N_LAYERS")
@@ -228,7 +180,6 @@ def main() -> int:
         if node is not None:
             print(f"  {path} = {node}")
 
-    # ---- 6. image token id ----
     print()
     print("-" * 78)
     print("6. IMAGE TOKEN ID  (native populates config.image_token_id)")
@@ -247,7 +198,6 @@ def main() -> int:
                 tid = f"<error: {exc}>"
             print(f"  tokenizer.convert_tokens_to_ids({tok!r}) = {tid}")
 
-    # ---- 7. LM head candidates ----
     print()
     print("-" * 78)
     print("7. LM HEAD CANDIDATES")
@@ -265,7 +215,6 @@ def main() -> int:
             print(f"  {path}: {type(node).__name__}  "
                   f"out_features={getattr(node, 'out_features', '?')}")
 
-    # ---- 8. RoPE flavour  (mRoPE => forward_qwen25vl, else forward_llama) ----
     print()
     print("-" * 78)
     print("8. ROPE FLAVOUR  <-- decides forward_qwen25vl vs forward_llama")
@@ -298,7 +247,6 @@ def main() -> int:
         print("  => VERDICT: no mrope_section found.  SPARC forward = forward_llama")
         print("     (Qwen2.5 TEXT backbone -- 1D RoPE like Llama.)")
 
-    # ---- 9. tokenizer / processor sanity ----
     print()
     print("-" * 78)
     print("9. PROCESSOR / TOKENIZER SANITY (native chat template lives here)")

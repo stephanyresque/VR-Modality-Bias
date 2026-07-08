@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Collect paired hidden states (A: real image, B: uniform noise) for every manifest entry."""
+"""Collect paired hidden states (A: real image, B: uniform noise) for every manifest entry.
+
+Run: make baseline  (or: python scripts/collect_hidden_states.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 
@@ -138,7 +141,6 @@ def main() -> int:
             format_bytes(bytes_pair),
         )
 
-    # Rollup at the end of collect_hidden_states.py.
     stats = summarize_seconds(p["seconds"] for p in per_pair)
     peak_vram_run = max((p["vram_peak_bytes"] for p in per_pair), default=0)
     total_bytes_pairs = sum(p["bytes_pair"] for p in per_pair)

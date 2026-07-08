@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Download MSCOCO val2017 and stage the baseline image subset."""
+"""Download MSCOCO val2017 and stage the baseline image subset.
+
+Run: make baseline  (or: python scripts/prepare_data.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

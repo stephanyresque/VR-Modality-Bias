@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Generate ``ref_captions.jsonl`` for every manifest entry."""
+"""Generate ``ref_captions.jsonl`` for every manifest entry.
+
+Run: make baseline  (or: python scripts/generate_refs.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

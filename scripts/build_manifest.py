@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Build ``manifest.jsonl`` from the prepared image directory."""
+"""Build ``manifest.jsonl`` from the prepared image directory.
+
+Run: make baseline  (or: python scripts/build_manifest.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

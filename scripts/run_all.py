@@ -1,82 +1,9 @@
 #!/usr/bin/env python
-"""Single resumable orchestrator -- diagnostic (SmolVLM) + CHAIR eval (3 families).
+"""Single resumable orchestrator — Stage A: SmolVLM diagnostic (generate_refs ->
+summarize); Stage B: CHAIR evaluation per family (phase3_generate + chair_report).
+Same --run-name resumes via orchestrator_state_<run-name>.json.
 
-What this runs
-==============
-
-**Stage A -- Diagnostic (SmolVLM only).**
-Invokes the existing pipeline (scripts generate_refs.py -> summarize.py) for ``smolvlm-2.2b`` on
-all three lengths (short/medium/long). Per-image metrics include the
-post-Block-1 ``share_tail`` plus the full KL/cosine matrices and
-``deep_curve`` (the data that feeds the deep-block figures of the
-paper). Written under ``results/runs/diag_smolvlm_v1_<length>_<ts>/``.
-
-**Stage B -- CHAIR evaluation (3 families).**
-For each of ``smolvlm-2.2b``, ``llava-1.5-7b``, ``qwen2.5-vl-7b``,
-invokes ``scripts/phase3_generate.py`` (greedy, repetition_penalty=
-1.2, family-specific SPARC hparams below) and then
-``scripts/chair_report.py`` over the resulting captions. CHAIR scores
-land in ``results/runs/chair_<family>_v1/chair_results.{json,csv}``
-(persistencia adicionada no Bloco 1).
-
-SPARC hparams per family (Arthur's recipe scaled to each model's depth)
-======================================================================
-
-================ ====== ===== ===== =============== ============
-family           alpha  beta  tau   selected_layer  se_layers
-================ ====== ===== ===== =============== ============
-smolvlm-2.2b     1.05   0.1   3.0   15              (0, 24)
-llava-1.5-7b     1.05   0.1   3.0   20              (0, 32)
-qwen2.5-vl-7b    1.05   0.1   3.0   18              (0, 28)
-================ ====== ===== ===== =============== ============
-
-Decoding: greedy (``do_sample=False, num_beams=1``), rep_penalty=1.2,
-applied identically to baseline AND SPARC so the OFF<->ON comparison
-isn't biased by decoding setup.
-
-Resumability
-============
-
-Each (family, stage) cell is recorded in
-``<output-root>/orchestrator_state_<run-name>.json``. Relaunching the
-same ``--run-name`` skips cells already marked done. ``--overwrite``
-forces re-run from scratch.
-
-Per-stage idempotency leans on the underlying scripts:
-* 03 generates a NEW dir per call, so it's only re-invoked when stage A
-  hasn't been marked done in our state file.
-* 04/05/06 reuse the latest dir via the ``LATEST.txt`` pointer; they
-  skip per-image work that's already on disk.
-* 18 keeps its own ``captions.jsonl``-based resume (skipping cells
-  already generated). Safe to re-invoke.
-* 17 always re-reads the captions and re-writes ``chair_results.{json,csv}``;
-  fast (CPU only), so no per-call cache needed.
-
-CLI
-===
-
-    # Smoke -- 1 image, only Qwen evaluation, no diagnostic. Confirms the
-    # generation -> CHAIR plumbing without doing the full diagnostic.
-    python scripts/run_all.py --smoke --skip-diagnostico \\
-        --families qwen2.5-vl-7b
-
-    # Full overnight run (50 imgs x 3 lengths x 3 families x 2 conds for
-    # eval, plus diag SmolVLM x 3 lengths):
-    python scripts/run_all.py
-
-    # Resume after crash / network blip:
-    python scripts/run_all.py
-
-    # Force everything to recompute:
-    python scripts/run_all.py --overwrite
-
-    # Skip one half:
-    python scripts/run_all.py --skip-diagnostico
-    python scripts/run_all.py --skip-avaliacao
-
-    # Subset of families / lengths:
-    python scripts/run_all.py --families llava-1.5-7b qwen2.5-vl-7b
-    python scripts/run_all.py --lengths short long
+Run: make run-all  (smoke: make run-all-smoke)
 """
 
 from __future__ import annotations
@@ -95,8 +22,6 @@ import yaml
 from loguru import logger
 from pyprojroot import here
 
-
-# ----------------------------------------------------------------- constants
 
 # SPARC hparams per family -- Arthur's recipe scaled to each model's depth.
 SPARC_HPARAMS_BY_FAMILY: dict[str, dict] = {
@@ -128,9 +53,6 @@ REPETITION_PENALTY = 1.2  # spec -- applied to both baseline and SPARC
 # Diagnostic stage runs only on SmolVLM, per the Block-2 spec.
 DIAG_FAMILY = "smolvlm-2.2b"
 DIAG_RUN_NAME_PREFIX = "diag_smolvlm_v1"
-
-
-# ----------------------------------------------------------------- helpers
 
 
 def _iso_now() -> str:
@@ -203,9 +125,6 @@ def _eta(done: int, total: int, t_start: float) -> str:
     if secs < 3600:
         return f"{secs / 60:.1f}min"
     return f"{secs / 3600:.2f}h"
-
-
-# ----------------------------------------------------------------- stages
 
 
 def stage_diagnostic_smolvlm(
@@ -296,7 +215,7 @@ def stage_evaluation_chair(
         run_name = f"chair_{family}_v1"
         run_dir = output_root / run_name
 
-        # ---- 18: generate captions (baseline + SPARC ON) ----
+        # ---- phase3_generate.py: generate captions (baseline + SPARC ON) ----
         if fam_state.get("generated") and not overwrite:
             logger.info(f"[EVAL {family}] generation already done -- skipping (state).")
         else:
@@ -328,7 +247,7 @@ def stage_evaluation_chair(
             eval_state[family] = fam_state
             _save_state(state_path, state)
 
-        # ---- 17: CHAIR over the captions ----
+        # ---- chair_report.py: CHAIR over the captions ----
         captions = run_dir / "captions.jsonl"
         if not captions.is_file():
             logger.error(f"[EVAL {family}] expected {captions} but it doesn't exist; "
@@ -355,9 +274,6 @@ def stage_evaluation_chair(
         logger.info(f"[EVAL {family}] DONE -- chair_results.{{json,csv}} under {run_dir}")
 
     return fail_count
-
-
-# ----------------------------------------------------------------- summary
 
 
 def _summarize_diagnostic(output_root: Path, lengths: list[str]) -> dict:
@@ -443,9 +359,6 @@ def _print_final_summary(diag_summary: dict, eval_summary: dict) -> None:
     print()
 
 
-# ----------------------------------------------------------------- main
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -498,7 +411,6 @@ def main() -> int:
     output_root.mkdir(parents=True, exist_ok=True)
     temp_dir = output_root / ".tmp_configs"
 
-    # ---- log sink ----
     log_dir = output_root / f"{args.run_name}_orchestrator_logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_all.log"
@@ -550,7 +462,6 @@ def main() -> int:
     logger.info(f"log file  : {log_file}")
     logger.info("=" * 70)
 
-    # ---- final summary on stdout ----
     diag_summary = _summarize_diagnostic(output_root, args.lengths) if not args.skip_diagnostico else {}
     eval_summary = _summarize_evaluation(output_root, args.families) if not args.skip_avaliacao else {}
     _print_final_summary(diag_summary, eval_summary)

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-"""Per-image caption-sweep cell: TF + metrics + (optional) discard, one image at a time."""
+"""Per-image caption-sweep cell: TF + metrics + (optional) discard, one image at a time.
+
+Run: python scripts/run_caption_sweep.py --config configs/run_<family>_<length>.yaml
+(normally invoked per cell by scripts/run_sweep.py)
+"""
 
 from __future__ import annotations
 
@@ -70,7 +74,6 @@ def main() -> int:
     prompt = get_prompt(prompt_key)
     log.info("Prompt key: %s", prompt_key)
 
-    # ---- model load ----
     model = build_model(cfg["model"]["key"])
     model.model_id = str(cfg["model"]["model_id"])
     dtype = resolve_dtype(str(cfg["model"]["dtype"]))
@@ -82,13 +85,11 @@ def main() -> int:
     lm_head = model.get_lm_head()
     log.info("Loaded. n_layers=%d", model.n_layers)
 
-    # ---- io config ----
     discard_h5 = bool(cfg.get("io", {}).get("discard_hidden_states_after_metrics", False))
     compression = str(cfg["io"]["compression"])
     compression_level = int(cfg["io"]["compression_level"])
     log.info("discard_hidden_states_after_metrics = %s", discard_h5)
 
-    # ---- generation config ----
     gen_kwargs = {
         "do_sample": bool(cfg["generation"]["do_sample"]),
         "temperature": float(cfg["generation"]["temperature"]),
@@ -100,7 +101,6 @@ def main() -> int:
     top_k = int(cfg["metrics"]["logits_top_k"])
     t0 = int(cfg["residual"]["t0"])
 
-    # ---- manifest ----
     manifest_path = Path(cfg["dataset"]["manifest_path"])
     images_dir = Path(cfg["dataset"]["images_dir"])
     manifest = list(iter_manifest(manifest_path))
@@ -114,7 +114,6 @@ def main() -> int:
         manifest = manifest[: args.limit]
     log.info("Processing %d image(s) (cfg.n_images=%d).", len(manifest), n_images)
 
-    # ---- output paths ----
     hidden_states_dir = run_dir / "hidden_states"
     hidden_states_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "metrics.parquet"

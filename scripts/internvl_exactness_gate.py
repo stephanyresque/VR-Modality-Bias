@@ -1,62 +1,9 @@
 #!/usr/bin/env python
-"""Step 6.3 -- exactness gate for the InternVL3 SPARC patch.
+"""Step 6.3 -- exactness gate for the InternVL3 SPARC patch: at alpha=1.0 the
+patched forward must reproduce the unpatched attention output (bf16 tolerance);
+if this gate FAILs, do NOT run CHAIR on InternVL.
 
-Idea
-====
-
-With ``alpha=1.0`` the SPARC forward MUST be numerically identical to
-the unpatched attention:
-
-    * ``calibrate(value, alpha=1.0)`` is ``value *= 1.0`` -- a no-op.
-    * The other SPARC side-effects (``image_attention`` bookkeeping,
-      selection buffer) don't touch the OUTPUT tensor.
-
-So: patched forward at ``alpha=1.0`` returns exactly what the
-unpatched forward returns, bit-for-bit (fp16/bf16 tolerance).
-
-Why we still run this on the native InternVL3-8B-hf
----------------------------------------------------
-
-The native checkpoint (``InternVLForConditionalGeneration``) uses a
-Qwen2.5 backbone with SEPARATE ``q_proj``/``k_proj``/``v_proj`` and
-``o_proj``, so ``detect_model_family`` picks ``forward_qwen25vl`` or
-``forward_llama`` (both already validated by scripts/13). The QKV-split
-bug that motivated this gate for the legacy InternVL2 remote path is
-NOT a concern here. What we ARE still checking:
-
-    1. That ``detect_model_family`` picks the right forward for the
-       InternVL native class (routing via ``config.text_config.model_type``).
-    2. That the picked forward's rotary-embedding math matches how the
-       InternVL wrapper feeds ``position_embeddings`` into the decoder
-       layers.
-    3. That the ``se_layers`` / selection bookkeeping doesn't alter the
-       output tensor path at ``alpha=1.0, tau=1e9``.
-
-If the gate fails, do NOT run CHAIR. Inspect the wrapper / attn family
-routing first (Passo 0 dump).
-
-What it does
-============
-
-1. Loads InternVL3-8B-hf (bf16, eager) via the InternVLWrapper.
-2. Builds proper multimodal inputs via the processor (image + prompt),
-   captures per-layer attention output on an unpatched pass.
-3. Installs SPARC via ``add_custom_attention_layers`` with
-   ``alpha=1.0``, ``beta=0.0``, ``tau=1e9`` (so no selection fires),
-   and a ``SelectedIndexBuffer`` pre-populated with the same
-   ``image_positions`` a real run would have.
-4. Re-runs the same inputs, captures the same layers' outputs.
-5. Reports ``max |patched - reference|`` and ``|| patched - reference ||_2``
-   per layer, plus a global PASS/FAIL under a tight tolerance
-   (1e-3 abs in bf16).
-
-CLI
----
-
-    python scripts/internvl_exactness_gate.py
-    python scripts/internvl_exactness_gate.py --image PATH.jpg
-    python scripts/internvl_exactness_gate.py --n-layers 4    # smoke: only first 4 layers
-    python scripts/internvl_exactness_gate.py --family qwen   # override auto-detect
+Run: python scripts/internvl_exactness_gate.py [--image PATH] [--n-layers N] [--family qwen|llama]
 """
 
 from __future__ import annotations
@@ -151,7 +98,6 @@ def main() -> int:
     print(f"InternVL3 SPARC exactness gate  (alpha=1.0 == identity check)")
     print("=" * 78)
 
-    # ---- load model ----
     device = select_device("cuda")
     print(f"loading {args.model_key} on {device}...")
     wrapper = build_model(args.model_key)
@@ -164,7 +110,6 @@ def main() -> int:
     if args.family and args.family != detected:
         print(f"(overriding auto-detect via --family)")
 
-    # ---- build inputs via the processor (native chat template + image) ----
     from PIL import Image
     img = Image.open(args.image).convert("RGB")
     processor = wrapper._processor  # noqa: SLF001
@@ -270,7 +215,6 @@ def main() -> int:
 
     _restore_forwards(decoder, originals)
 
-    # ---- report ----
     print()
     print("-" * 78)
     print(f"{'layer':>5}  {'shape':<28}  {'max_abs':>12}  {'mean_abs':>12}  {'l2':>12}")

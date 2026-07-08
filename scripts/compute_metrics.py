@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Compute the three internal metrics for every paired (A, B) under the active run."""
+"""Compute the three internal metrics for every paired (A, B) under the active run.
+
+Run: make baseline  (or: python scripts/compute_metrics.py --config configs/baseline.yaml)
+"""
 
 from __future__ import annotations
 

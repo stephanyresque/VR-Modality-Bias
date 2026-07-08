@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Phase 2 sweep — analysis report, stdout only."""
+"""Phase 2 sweep — analysis report, stdout only.
+
+Run: python scripts/phase2_report.py --run-dir results/runs/phase2_alpha_sweep [--no-fluency]
+"""
 
 from __future__ import annotations
 
@@ -23,9 +26,6 @@ LENGTHS_ORDER = ("short", "medium", "long")
 DEFAULT_ALPHAS = (1.1, 1.2, 1.3, 1.4, 1.5)
 
 START_COLLAPSE_THRESHOLD = 1e-9
-
-
-# ---------------------------------------------------------------- data IO
 
 
 def _load_parquet(run_dir: Path, length: str) -> list[dict]:
@@ -62,9 +62,6 @@ def _augment_with_decomposition(row: dict, t0: int) -> None:
         return
     row["_start"] = float(deep_curve[:t0].mean())
     row["_end"] = float(deep_curve[t0:].mean())
-
-
-# ---------------------------------------------------------------- helpers
 
 
 def _is_finite(v) -> bool:
@@ -116,9 +113,6 @@ def _section(title: str) -> None:
     print("=" * 78)
     print(title)
     print("=" * 78)
-
-
-# ---------------------------------------------------------------- sections
 
 
 def report_cell_health(by_length: dict[str, list[dict]]) -> None:
@@ -269,9 +263,6 @@ def report_rr(by_length: dict[str, list[dict]]) -> None:
     _print_table(headers, rows_out, aligns)
 
 
-# ---------------------------------------------------------------- fluency
-
-
 def report_fluency(by_length: dict[str, list[dict]], args: argparse.Namespace) -> None:
     if args.no_fluency:
         _section("5. FLUENCY SAMPLE — SKIPPED (--no-fluency)")
@@ -366,9 +357,6 @@ def report_fluency(by_length: dict[str, list[dict]], args: argparse.Namespace) -
                 )
                 print(f"  [run {run + 1}] {cap}")
         print()
-
-
-# ---------------------------------------------------------------- main
 
 
 def main() -> int:

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Phase 2 sweep — 50 images × 3 lengths × {SPARC OFF + α-sweep ON}."""
+"""Phase 2 sweep — 50 images × 3 lengths × {SPARC OFF + α-sweep ON}. Resumable.
+
+Run: make phase2  (smoke: make phase2-smoke; override run dir: make phase2 PHASE2_RUN_NAME=my_run)
+"""
 
 from __future__ import annotations
 
@@ -219,9 +222,6 @@ def _build_row(
     return row
 
 
-# ----------------------------------------------------------------- main
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -260,13 +260,11 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Smoke mode override
     if args.smoke:
         args.limit = 1
         args.lengths = ["short"]
         args.alphas = [1.3]
 
-    # ---- run dir + file logging ----
     run_dir = Path(args.output_root) / args.run_name
     log_file = run_dir / "logs" / "phase2.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -298,7 +296,6 @@ def main() -> int:
         json.dumps(snapshot, indent=2) + "\n", encoding="utf-8"
     )
 
-    # ---- model load (once, reused across lengths/alphas) ----
     # Pull model spec from the first length config (they share the model
     # across short/medium/long — only prompt and gen-params change).
     first_cfg = load_config(args.config_dir / f"run_qwen7b_{args.lengths[0]}.yaml")
@@ -313,7 +310,6 @@ def main() -> int:
     lm_head = model.get_lm_head()
     logger.info(f"Loaded. n_layers={model.n_layers}")
 
-    # ---- image list (shared across lengths) ----
     images_dir = first_cfg["dataset"]["images_dir"]
     image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))
     if args.limit is not None:
@@ -329,7 +325,6 @@ def main() -> int:
     with Image.open(image_files[0]) as probe_raw:
         probe_image = probe_raw.convert("RGB")
 
-    # ---- count total cells for progress ----
     cells_per_image = 1 + len(args.alphas)  # 1 OFF + N ON
     total_cells = len(args.lengths) * n_images * cells_per_image
     logger.info(f"Total cells to evaluate: {total_cells} (per length: {n_images * cells_per_image})")
@@ -339,7 +334,6 @@ def main() -> int:
     cells_skipped = 0
     cells_failed = 0
 
-    # ---- outer loop: lengths ----
     for length_name in args.lengths:
         cfg = load_config(args.config_dir / f"run_qwen7b_{length_name}.yaml")
         prompt_key = str(cfg["task"]["prompt_key"])
@@ -367,7 +361,6 @@ def main() -> int:
             f"{len(cached_captions)} captions cached"
         )
 
-        # ---- inner loop: images ----
         for image_path in image_files:
             image_id = Path(image_path).stem
             with Image.open(image_path) as raw:
@@ -507,7 +500,6 @@ def main() -> int:
     logger.info(f"Output dir: {run_dir}")
     logger.info(f"Log file  : {log_file}")
     logger.info("=" * 70)
-    # Exit code: PASS iff no failures.
     return 0 if cells_failed == 0 else 1
 
 

@@ -1,31 +1,9 @@
 #!/usr/bin/env python
-"""Phase-2 orchestrator: forced-decoding A/B collection, SPARC OFF and SPARC ON.
+"""Forced-decoding A/B collection with SPARC OFF vs ON — writes
+``metrics_sparc_{off,on}.parquet`` and ``summary_compare.json`` (run after
+``scripts/equivalence_check.py`` passes).
 
-Designed to be run **after** the §4.4 equivalence check
-(``scripts/equivalence_check.py``) passes. Conceptually:
-
-    for each image:
-        caption_ref = model.generate_caption(image)                # deterministic per (seed, image_id)
-        # condition 1: SPARC OFF
-        result_A_off = collect_forced_decoding(image,        prompt, caption_ref)
-        result_B_off = collect_forced_decoding(noise_image,  prompt, caption_ref)
-        # condition 2: SPARC ON (in a context manager — restores originals on exit)
-        with enable_sparc(...) as buffer:
-            result_A_on  = collect_forced_decoding(image,       ..., sparc_buffer=buffer)
-            result_B_on  = collect_forced_decoding(noise_image, ..., sparc_buffer=buffer)
-        # KL + head_tail_ratio per condition; write rows to the parquets.
-
-Outputs (under ``<run_dir>``):
-    metrics_sparc_off.parquet   one row per image, baseline (SPARC OFF)
-    metrics_sparc_on.parquet    one row per image, SPARC ON
-    summary_compare.json        side-by-side aggregate statistics (htr per condition)
-    ref_captions.jsonl          the captions used as forced targets
-    logs/run_sparc_eval.log  per-image trace
-
-CLI
----
-    python scripts/run_sparc_eval.py --config configs/baseline.yaml --limit 5
-    python scripts/run_sparc_eval.py --config configs/baseline.yaml --alpha 1.3 --limit 50
+Run: python scripts/run_sparc_eval.py --config configs/baseline.yaml [--alpha A] [--limit N]
 """
 
 from __future__ import annotations
@@ -174,7 +152,6 @@ def main() -> int:
     )
     logger.info(f"SPARC hparams: {hparams.as_dict()}")
 
-    # ---- model load ----
     model = build_model(cfg["model"]["key"])
     model.model_id = str(cfg["model"]["model_id"])
     dtype = resolve_dtype(str(cfg["model"]["dtype"]))
@@ -186,7 +163,6 @@ def main() -> int:
     lm_head = model.get_lm_head()
     logger.info(f"Loaded. n_layers={model.n_layers}")
 
-    # ---- dataset ----
     images_dir = cfg["dataset"]["images_dir"]
     image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))
     if args.limit:
@@ -196,7 +172,6 @@ def main() -> int:
         return 1
     logger.info(f"Processing {len(image_files)} image(s).")
 
-    # ---- generation params ----
     prompt_key = str(cfg["task"]["prompt_key"])
     prompt = get_prompt(prompt_key)
     seed_global = int(cfg["run"]["seed_global"])
@@ -210,7 +185,6 @@ def main() -> int:
     top_k = int(cfg["metrics"]["logits_top_k"])
     t0 = int(cfg["residual"]["t0"])
 
-    # ---- iterate ----
     ref_path = run_dir / "ref_captions.jsonl"
     rows_off: list[dict] = []
     rows_on: list[dict] = []
@@ -226,7 +200,6 @@ def main() -> int:
         noise_seed = derive_image_seed(seed_global, image_id)
         noise_img = noise_image_uniform(image, seed=int(noise_seed))
 
-        # ---- caption_ref ----
         caption_ref = model.generate_caption(
             image=image, prompt=prompt,
             max_new_tokens=max_new_tokens,
@@ -293,7 +266,6 @@ def main() -> int:
         write_metrics_table(rows_off, run_dir / "metrics_sparc_off.parquet")
         write_metrics_table(rows_on, run_dir / "metrics_sparc_on.parquet")
 
-    # ---- side-by-side summary ----
     stats_off = compute_summary_stats(rows_off)
     stats_on = compute_summary_stats(rows_on)
     htr_old_med = stats_off["head_tail_ratio"].get("median")

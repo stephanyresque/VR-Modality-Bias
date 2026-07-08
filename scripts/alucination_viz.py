@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Generate the individual visualisation pieces for one (run, image_id)."""
+"""Generate the individual visualisation pieces for one (run, image_id).
+
+Run: python scripts/alucination_viz.py --config <config.yaml> [--run-dir DIR] [--image-id ID]
+"""
 
 from __future__ import annotations
 
@@ -254,10 +257,8 @@ def main() -> int:
             y_label="Mean KL (deep block, last third)",
         )
 
-    # Piece 2 — token_kl.csv + token_kl.json
     csv_path, json_path = _write_token_kl(out_dir, caption_tokens, deep_curve)
 
-    # Piece 3 — single-image heatmap
     heatmap_path = out_dir / "kl_heatmap.png"
     if args.overwrite or not heatmap_path.is_file():
         plot_heatmap(
@@ -267,7 +268,6 @@ def main() -> int:
             cbar_label="KL divergence (nats)",
         )
 
-    # Piece 4 — copy of the source image (optional)
     images_dir = Path(cfg["dataset"]["images_dir"])
     src_image = images_dir / f"{args.image_id}.jpg"
     dst_image = out_dir / "input_image.jpg"

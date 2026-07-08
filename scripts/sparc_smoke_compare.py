@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Phase-0 SPARC smoke: prove that ``alpha > 1`` actually changes the caption."""
+"""Phase-0 SPARC smoke: prove that ``alpha > 1`` actually changes the caption.
+
+Run: python scripts/sparc_smoke_compare.py --config configs/baseline.yaml [--alpha A] [--limit N]
+"""
 
 from __future__ import annotations
 
@@ -97,7 +100,6 @@ def main() -> int:
 
     cfg = load_config(args.config)
 
-    # ---- model load ----
     model = build_model(cfg["model"]["key"])
     model.model_id = str(cfg["model"]["model_id"])
     dtype = resolve_dtype(str(cfg["model"]["dtype"]))
@@ -108,7 +110,6 @@ def main() -> int:
     model.load(device)
     logger.info(f"Model loaded. n_layers={model.n_layers}")
 
-    # ---- dataset ----
     images_dir = cfg["dataset"]["images_dir"]
     images_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
     if not images_files:
@@ -196,7 +197,6 @@ def main() -> int:
         )
         logger.info(f"            {caption[:160]}{'…' if len(caption) > 160 else ''}")
 
-    # ---- comparison rollup ----
     logger.info("=" * 70)
     logger.info("COMPARISON")
     logger.info("=" * 70)

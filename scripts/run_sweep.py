@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Orchestrator over (model × caption length) cells."""
+"""Orchestrator over (model × caption length) cells — runs scripts/run_caption_sweep.py per cell.
+
+Run: python scripts/run_sweep.py [--models ...] [--lengths ...] [--limit N] [--overwrite]
+"""
 
 from __future__ import annotations
 
@@ -145,7 +148,6 @@ def main() -> int:
                 format_seconds(elapsed),
             )
 
-    # ---- final rollup ----
     n_ok = sum(1 for r in results if r["returncode"] == 0)
     n_fail = len(results) - n_ok
     log.info("=" * 70)
