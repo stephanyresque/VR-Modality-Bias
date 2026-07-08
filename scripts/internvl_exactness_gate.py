@@ -53,10 +53,10 @@ What it does
 CLI
 ---
 
-    python scripts/26_internvl_exactness_gate.py
-    python scripts/26_internvl_exactness_gate.py --image PATH.jpg
-    python scripts/26_internvl_exactness_gate.py --n-layers 4    # smoke: only first 4 layers
-    python scripts/26_internvl_exactness_gate.py --family qwen   # override auto-detect
+    python scripts/internvl_exactness_gate.py
+    python scripts/internvl_exactness_gate.py --image PATH.jpg
+    python scripts/internvl_exactness_gate.py --n-layers 4    # smoke: only first 4 layers
+    python scripts/internvl_exactness_gate.py --family qwen   # override auto-detect
 """
 
 from __future__ import annotations

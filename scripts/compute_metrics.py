@@ -42,7 +42,7 @@ def main() -> int:
 
     cfg = load_config(args.config)
     run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "05_compute_metrics.log"
+    log_file = run_dir / "logs" / "compute_metrics.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)
@@ -58,7 +58,7 @@ def main() -> int:
     hidden_states_dir = run_dir / "hidden_states"
     if not hidden_states_dir.is_dir():
         raise FileNotFoundError(
-            f"{hidden_states_dir} missing — run scripts/04_collect_hidden_states.py first."
+            f"{hidden_states_dir} missing — run scripts/collect_hidden_states.py first."
         )
 
     image_ids = _discover_image_ids(hidden_states_dir)

@@ -37,7 +37,7 @@ def main() -> int:
     if not images_dir.is_dir():
         raise FileNotFoundError(
             f"Images directory not found: {images_dir}. "
-            "Run scripts/01_prepare_data.py first."
+            "Run scripts/prepare_data.py first."
         )
 
     if manifest_path.exists() and not args.overwrite:
@@ -70,7 +70,7 @@ def main() -> int:
     if args.limit is None and n != expected_n:
         log.warning(
             "Wrote %d records but config.dataset.n_images=%d. "
-            "Re-run scripts/01_prepare_data.py?",
+            "Re-run scripts/prepare_data.py?",
             n,
             expected_n,
         )

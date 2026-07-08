@@ -48,19 +48,19 @@ docker-run:
 	docker compose -f docker/docker-compose.yml run --rm baseline
 
 smoke:
-	$(PYTHON) scripts/03_generate_refs.py        --config $(CONFIG) --limit 1
-	$(PYTHON) scripts/04_collect_hidden_states.py --config $(CONFIG) --limit 1
-	$(PYTHON) scripts/05_compute_metrics.py      --config $(CONFIG) --limit 1
+	$(PYTHON) scripts/generate_refs.py        --config $(CONFIG) --limit 1
+	$(PYTHON) scripts/collect_hidden_states.py --config $(CONFIG) --limit 1
+	$(PYTHON) scripts/compute_metrics.py      --config $(CONFIG) --limit 1
 
 baseline:
-	$(PYTHON) scripts/01_prepare_data.py          --config $(CONFIG)
-	$(PYTHON) scripts/02_build_manifest.py        --config $(CONFIG) --overwrite
-	$(PYTHON) scripts/03_generate_refs.py         --config $(CONFIG)
-	$(PYTHON) scripts/04_collect_hidden_states.py --config $(CONFIG)
-	$(PYTHON) scripts/05_compute_metrics.py       --config $(CONFIG)
-	$(PYTHON) scripts/06_summarize.py             --config $(CONFIG)
-	$(PYTHON) scripts/07_make_plots.py            --config $(CONFIG)
-	$(PYTHON) scripts/08_unit_example.py          --config $(CONFIG)
+	$(PYTHON) scripts/prepare_data.py          --config $(CONFIG)
+	$(PYTHON) scripts/build_manifest.py        --config $(CONFIG) --overwrite
+	$(PYTHON) scripts/generate_refs.py         --config $(CONFIG)
+	$(PYTHON) scripts/collect_hidden_states.py --config $(CONFIG)
+	$(PYTHON) scripts/compute_metrics.py       --config $(CONFIG)
+	$(PYTHON) scripts/summarize.py             --config $(CONFIG)
+	$(PYTHON) scripts/make_plots.py            --config $(CONFIG)
+	$(PYTHON) scripts/unit_example.py          --config $(CONFIG)
 
 # Phase 2 — resumable alpha sweep, safe under tmux.
 #   * Logs to results/runs/<run-name>/logs/phase2.log (no terminal dep)
@@ -74,10 +74,10 @@ ifeq ($(OVERWRITE),1)
 endif
 
 phase2-smoke:
-	$(PYTHON) scripts/15_phase2_sweep.py --run-name $(PHASE2_RUN_NAME)_smoke --smoke
+	$(PYTHON) scripts/phase2_sweep.py --run-name $(PHASE2_RUN_NAME)_smoke --smoke
 
 phase2:
-	$(PYTHON) scripts/15_phase2_sweep.py --run-name $(PHASE2_RUN_NAME) $(PHASE2_FLAGS)
+	$(PYTHON) scripts/phase2_sweep.py --run-name $(PHASE2_RUN_NAME) $(PHASE2_FLAGS)
 
 # Phase 3 — free caption generation for CHAIR evaluation (baseline vs SPARC α=1.1).
 #   * Logs to results/runs/<run-name>/logs/phase3.log
@@ -91,35 +91,35 @@ ifeq ($(OVERWRITE),1)
 endif
 
 phase3-smoke:
-	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke
 
 # Coherence smoke — 2 imgs on `long`, captions printed to stdout. Use this
 # to eyeball whether SPARC (with the official COCO hparams + greedy) stays
 # coherent on long captions BEFORE launching the full sweep.
 phase3-coherence:
-	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME)_coherence --coherence-smoke
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_coherence --coherence-smoke
 
 phase3:
-	$(PYTHON) scripts/18_phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)
 
 # CHAIR report — auto-downloads COCO val2017 annotations if missing.
 chair-report:
-	$(PYTHON) scripts/17_chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
+	$(PYTHON) scripts/chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
 
 # Phase 4 — SmolVLM-2.2B coherence smoke. Confirms the Llama variant of
 # add_custom_attention_layers (and the SmolVLM decoder-path lookup) work
 # before committing to a full Phase-1/2/3 run on SmolVLM.
 phase4-smolvlm-smoke:
-	$(PYTHON) scripts/18_phase3_generate.py \
+	$(PYTHON) scripts/phase3_generate.py \
 		--run-name phase4_smolvlm_coherence \
 		--coherence-smoke \
 		--length-config-pattern configs/run_smolvlm22_{length}.yaml \
 		--selected-layer 15
 
 # Bloco-2: single resumable orchestrator
-#   * Stage A — diagnostic (SmolVLM only) via scripts 03→06
+#   * Stage A — diagnostic (SmolVLM only) via scripts generate_refs.py→summarize.py
 #   * Stage B — CHAIR evaluation (3 families: smolvlm / llava / qwen) via
-#               scripts/18_phase3_generate.py + scripts/17_chair_report.py
+#               scripts/phase3_generate.py + scripts/chair_report.py
 # Resume by relaunching the same RUN_ALL_NAME — done cells skipped.
 # Override RUN_ALL_NAME, set OVERWRITE=1 to force, or RUN_ALL_FLAGS=...
 # for ad-hoc flags (e.g. --skip-diagnostico).
@@ -130,12 +130,12 @@ ifeq ($(OVERWRITE),1)
 endif
 
 run-all:
-	$(PYTHON) scripts/24_run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
+	$(PYTHON) scripts/run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
 
 # Smoke per the Bloco-2 spec: 1 image, only Qwen evaluation, no diagnostic.
 # Confirms the generation → CHAIR plumbing without burning a full run.
 run-all-smoke:
-	$(PYTHON) scripts/24_run_all.py \
+	$(PYTHON) scripts/run_all.py \
 		--smoke --skip-diagnostico --families qwen2.5-vl-7b \
 		--run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
 

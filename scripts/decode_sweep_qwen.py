@@ -17,7 +17,7 @@ penalty that (a) kills the ON loop AND (b) doesn't truncate the OFF.
 
 CLI
 ---
-    python scripts/19_decode_sweep.py \\
+    python scripts/decode_sweep_qwen.py \\
         --image-ids 000000000139 000000000285 000000000632 \\
         --rep-penalties 1.0 1.1 1.15 1.2 \\
         --no-repeat-ngrams 0 3

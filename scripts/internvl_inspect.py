@@ -44,8 +44,8 @@ Runs in ~1-2 minutes on the DGX (weights load, one metadata scan, print).
 
 CLI
 ---
-    python scripts/25_internvl_inspect.py
-    python scripts/25_internvl_inspect.py --model-id OpenGVLab/InternVL3-8B-hf
+    python scripts/internvl_inspect.py
+    python scripts/internvl_inspect.py --model-id OpenGVLab/InternVL3-8B-hf
 """
 
 from __future__ import annotations

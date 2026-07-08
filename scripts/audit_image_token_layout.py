@@ -36,13 +36,13 @@ conclusion / fix is proposed here — the user reads the numbers.
 CLI
 ---
     # Qwen2.5-VL-7B (long prompt, one COCO image)
-    python scripts/19_audit_image_token_layout.py --model qwen
+    python scripts/audit_image_token_layout.py --model qwen
 
     # SmolVLM-2.2B (same)
-    python scripts/19_audit_image_token_layout.py --model smol
+    python scripts/audit_image_token_layout.py --model smol
 
     # Override defaults
-    python scripts/19_audit_image_token_layout.py --model qwen \\
+    python scripts/audit_image_token_layout.py --model qwen \\
         --image-path data/processed/mscoco_baseline/images/000000000285.jpg \\
         --prompt-key caption_short
 """
@@ -278,7 +278,7 @@ def _audit_model(model_key: str, image_path: Path, prompt_key: str) -> None:
 
     # ---- 7. factual verdicts ---------------------------------------
     # Two verdicts side by side so the user can compare what SPARC USED to
-    # do (legacy contiguous slice — what 19_audit reported originally)
+    # do (legacy contiguous slice — what audit_image_token_layout.py reported originally)
     # against what SPARC NOW DOES after the per-id-mask fix.
     print()
     print("  VERDICT — legacy contiguous slice (pre-fix SPARC):")

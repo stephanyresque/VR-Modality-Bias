@@ -377,7 +377,7 @@ def forward_llama(
 #     just skip the dropout call.
 #
 # CRITICAL: the QKV split MUST reproduce the unpatched forward bit-for-bit
-# when `alpha=1.0`. That's the whole point of ``scripts/26_internvl_
+# when `alpha=1.0`. That's the whole point of ``scripts/internvl_
 # exactness_gate.py`` -- run it before trusting this forward on real data.
 # If the reshape is off (e.g. num_kv_groups swapped with num_kv_heads), the
 # gate fails and this forward must NOT be used.

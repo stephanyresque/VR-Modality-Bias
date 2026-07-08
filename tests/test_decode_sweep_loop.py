@@ -1,4 +1,4 @@
-"""Tests for the loop detector in scripts/20_decode_sweep.py.
+"""Tests for the loop detector in scripts/decode_sweep_smolvlm.py.
 
 The script is operator-facing and never imported as a module by the rest
 of the codebase, so we load it via importlib. The point of these tests
@@ -18,7 +18,7 @@ import pytest
 
 
 def _load_decode_sweep_module():
-    here = Path(__file__).parent.parent / "scripts" / "20_decode_sweep.py"
+    here = Path(__file__).parent.parent / "scripts" / "decode_sweep_smolvlm.py"
     spec = importlib.util.spec_from_file_location("decode_sweep", here)
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None

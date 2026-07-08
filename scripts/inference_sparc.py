@@ -105,7 +105,7 @@ def main() -> int:
     os.makedirs(work_dir, exist_ok=True)
 
     # run_dir = current_run_dir()
-    # log_file = run_dir / "logs" / "XX_inference.log"
+    # log_file = run_dir / "logs" / "inference_sparc.log"
     # configure_logging(log_file=log_file)
 
     ## -------------- load model

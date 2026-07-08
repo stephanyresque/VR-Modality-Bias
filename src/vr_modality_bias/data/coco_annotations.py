@@ -5,7 +5,7 @@ ground-truth-present in each image (for hallucination detection), and
 ``captions_val2017.json`` is kept around for any future reference-caption
 analysis. Both live in ``annotations_trainval2017.zip``.
 
-Same pattern as ``scripts/01_prepare_data.py``: stream-download the zip,
+Same pattern as ``scripts/prepare_data.py``: stream-download the zip,
 extract only the two files we need, support ``overwrite``. Re-running with
 the files already present is a no-op.
 

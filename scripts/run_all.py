@@ -5,7 +5,7 @@ What this runs
 ==============
 
 **Stage A -- Diagnostic (SmolVLM only).**
-Invokes the existing pipeline (scripts 03->06) for ``smolvlm-2.2b`` on
+Invokes the existing pipeline (scripts generate_refs.py -> summarize.py) for ``smolvlm-2.2b`` on
 all three lengths (short/medium/long). Per-image metrics include the
 post-Block-1 ``share_tail`` plus the full KL/cosine matrices and
 ``deep_curve`` (the data that feeds the deep-block figures of the
@@ -13,9 +13,9 @@ paper). Written under ``results/runs/diag_smolvlm_v1_<length>_<ts>/``.
 
 **Stage B -- CHAIR evaluation (3 families).**
 For each of ``smolvlm-2.2b``, ``llava-1.5-7b``, ``qwen2.5-vl-7b``,
-invokes ``scripts/18_phase3_generate.py`` (greedy, repetition_penalty=
+invokes ``scripts/phase3_generate.py`` (greedy, repetition_penalty=
 1.2, family-specific SPARC hparams below) and then
-``scripts/17_chair_report.py`` over the resulting captions. CHAIR scores
+``scripts/chair_report.py`` over the resulting captions. CHAIR scores
 land in ``results/runs/chair_<family>_v1/chair_results.{json,csv}``
 (persistencia adicionada no Bloco 1).
 
@@ -57,26 +57,26 @@ CLI
 
     # Smoke -- 1 image, only Qwen evaluation, no diagnostic. Confirms the
     # generation -> CHAIR plumbing without doing the full diagnostic.
-    python scripts/24_run_all.py --smoke --skip-diagnostico \\
+    python scripts/run_all.py --smoke --skip-diagnostico \\
         --families qwen2.5-vl-7b
 
     # Full overnight run (50 imgs x 3 lengths x 3 families x 2 conds for
     # eval, plus diag SmolVLM x 3 lengths):
-    python scripts/24_run_all.py
+    python scripts/run_all.py
 
     # Resume after crash / network blip:
-    python scripts/24_run_all.py
+    python scripts/run_all.py
 
     # Force everything to recompute:
-    python scripts/24_run_all.py --overwrite
+    python scripts/run_all.py --overwrite
 
     # Skip one half:
-    python scripts/24_run_all.py --skip-diagnostico
-    python scripts/24_run_all.py --skip-avaliacao
+    python scripts/run_all.py --skip-diagnostico
+    python scripts/run_all.py --skip-avaliacao
 
     # Subset of families / lengths:
-    python scripts/24_run_all.py --families llava-1.5-7b qwen2.5-vl-7b
-    python scripts/24_run_all.py --lengths short long
+    python scripts/run_all.py --families llava-1.5-7b qwen2.5-vl-7b
+    python scripts/run_all.py --lengths short long
 """
 
 from __future__ import annotations
@@ -164,7 +164,7 @@ def _write_temp_config(
 ) -> Path:
     """Clone ``src_config_path`` to a temp dir with ``run.name`` overridden.
 
-    Lets us invoke scripts/03->06 (which read run_name from the config)
+    Lets us invoke scripts generate_refs.py -> summarize.py (which read run_name from the config)
     without modifying the shared per-family configs.
     """
     cfg = yaml.safe_load(src_config_path.read_text(encoding="utf-8"))
@@ -218,7 +218,7 @@ def stage_diagnostic_smolvlm(
     limit: int,
     overwrite: bool,
 ) -> int:
-    """Stage A -- run scripts 03->06 for SmolVLM on each length.
+    """Stage A -- run scripts generate_refs.py -> summarize.py for SmolVLM on each length.
 
     Returns nonzero if any underlying step fails (orchestrator continues
     on a per-length basis; failures just don't mark that length done).
@@ -247,10 +247,10 @@ def stage_diagnostic_smolvlm(
 
         ok = True
         for stage_idx, script in enumerate((
-            "scripts/03_generate_refs.py",
-            "scripts/04_collect_hidden_states.py",
-            "scripts/05_compute_metrics.py",
-            "scripts/06_summarize.py",
+            "scripts/generate_refs.py",
+            "scripts/collect_hidden_states.py",
+            "scripts/compute_metrics.py",
+            "scripts/summarize.py",
         ), start=1):
             cmd = [sys.executable, script, "--config", str(temp_cfg), "--limit", str(limit)]
             if overwrite and stage_idx == 1:
@@ -282,7 +282,7 @@ def stage_evaluation_chair(
     limit: int,
     overwrite: bool,
 ) -> int:
-    """Stage B -- for each family: generate (script 18) then CHAIR (17)."""
+    """Stage B -- for each family: generate (phase3_generate.py) then CHAIR (chair_report.py)."""
     fail_count = 0
     eval_state = state.setdefault("evaluation", {})
 
@@ -302,7 +302,7 @@ def stage_evaluation_chair(
         else:
             sparc = SPARC_HPARAMS_BY_FAMILY[family]
             cmd = [
-                sys.executable, "scripts/18_phase3_generate.py",
+                sys.executable, "scripts/phase3_generate.py",
                 "--run-name", run_name,
                 "--output-root", str(output_root),
                 "--limit", str(limit),
@@ -340,7 +340,7 @@ def stage_evaluation_chair(
             continue
 
         cmd = [
-            sys.executable, "scripts/17_chair_report.py",
+            sys.executable, "scripts/chair_report.py",
             "--run-dir", str(run_dir),
             "--auto-download",
         ]

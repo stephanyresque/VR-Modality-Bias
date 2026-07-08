@@ -2,7 +2,7 @@
 """Phase-2 orchestrator: forced-decoding A/B collection, SPARC OFF and SPARC ON.
 
 Designed to be run **after** the §4.4 equivalence check
-(``scripts/13_equivalence_check.py``) passes. Conceptually:
+(``scripts/equivalence_check.py``) passes. Conceptually:
 
     for each image:
         caption_ref = model.generate_caption(image)                # deterministic per (seed, image_id)
@@ -20,12 +20,12 @@ Outputs (under ``<run_dir>``):
     metrics_sparc_on.parquet    one row per image, SPARC ON
     summary_compare.json        side-by-side aggregate statistics (htr per condition)
     ref_captions.jsonl          the captions used as forced targets
-    logs/12_run_sparc_eval.log  per-image trace
+    logs/run_sparc_eval.log  per-image trace
 
 CLI
 ---
-    python scripts/12_run_sparc_eval.py --config configs/baseline.yaml --limit 5
-    python scripts/12_run_sparc_eval.py --config configs/baseline.yaml --alpha 1.3 --limit 50
+    python scripts/run_sparc_eval.py --config configs/baseline.yaml --limit 5
+    python scripts/run_sparc_eval.py --config configs/baseline.yaml --alpha 1.3 --limit 50
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ def main() -> int:
 
     cfg = load_config(args.config)
     run_dir = make_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "12_run_sparc_eval.log"
+    log_file = run_dir / "logs" / "run_sparc_eval.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
     logger.add(str(log_file))
     logger.info(f"Run dir: {run_dir}")

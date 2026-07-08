@@ -45,7 +45,7 @@ for cfg in "${CONFIGS[@]}"; do
     fi
 
     echo ">>> [$CNAME/$FAM] gerando legendas (alpha=$ALPHA tau=$TAU sel=$SEL se=0-$SEHI)..."
-    python scripts/18_phase3_generate.py \
+    python scripts/phase3_generate.py \
       --run-name "$RUN_NAME" \
       --output-root "$OUTDIR" \
       --limit "$LIMIT" \
@@ -56,7 +56,7 @@ for cfg in "${CONFIGS[@]}"; do
       --repetition-penalty "$REP_PEN"
 
     echo ">>> [$CNAME/$FAM] rodando CHAIR..."
-    python scripts/17_chair_report.py \
+    python scripts/chair_report.py \
       --run-dir "$RUN_DIR" \
       --auto-download
 

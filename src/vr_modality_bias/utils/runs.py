@@ -40,12 +40,12 @@ def current_run_dir(output_root: Path | str, run_name: str) -> Path:
     if not pointer.is_file():
         raise FileNotFoundError(
             f"No active run for {run_name!r} under {output_root}. "
-            "Run scripts/03_generate_refs.py first."
+            "Run scripts/generate_refs.py first."
         )
     run_dir = Path(pointer.read_text(encoding="utf-8").strip())
     if not run_dir.is_dir():
         raise FileNotFoundError(
             f"Pointer for {run_name!r} references missing dir: {run_dir}. "
-            "Edit the LATEST file or rerun scripts/03_generate_refs.py."
+            "Edit the LATEST file or rerun scripts/generate_refs.py."
         )
     return run_dir

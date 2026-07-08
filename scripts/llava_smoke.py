@@ -19,9 +19,9 @@ orchestration). If it fails, we stop here and diagnose.
 
 CLI
 ---
-    python scripts/21_llava_smoke.py
-    python scripts/21_llava_smoke.py --image-id 000000000285
-    python scripts/21_llava_smoke.py --max-new-tokens 96
+    python scripts/llava_smoke.py
+    python scripts/llava_smoke.py --image-id 000000000285
+    python scripts/llava_smoke.py --max-new-tokens 96
 """
 
 from __future__ import annotations

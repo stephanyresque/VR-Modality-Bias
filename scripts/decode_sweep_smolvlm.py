@@ -49,9 +49,9 @@ goal is just to lay out the grid for inspection.
 
 CLI
 ---
-    python scripts/20_decode_sweep.py            # SmolVLM defaults
-    python scripts/20_decode_sweep.py --image-ids 000000000139 000000000285 000000000632
-    python scripts/20_decode_sweep.py --rps 1.0 1.1 --max-toks 512
+    python scripts/decode_sweep_smolvlm.py            # SmolVLM defaults
+    python scripts/decode_sweep_smolvlm.py --image-ids 000000000139 000000000285 000000000632
+    python scripts/decode_sweep_smolvlm.py --rps 1.0 1.1 --max-toks 512
 """
 
 from __future__ import annotations
@@ -248,7 +248,7 @@ def main() -> int:
     )
 
     # ---- 3. sweep -------------------------------------------------
-    # Per-image SPARC bookkeeping helper (mirrors what script 18 does;
+    # Per-image SPARC bookkeeping helper (mirrors what phase3_generate.py does;
     # the per-id mask is set per image after the buffer is constructed).
     def _probe_layout(image):
         proc = model_wrapper._processor  # noqa: SLF001

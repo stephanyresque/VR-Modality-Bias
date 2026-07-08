@@ -18,9 +18,9 @@ CPU-only, no model required — reuses ``plot_heatmap``/``plot_token_curve``
 and reads data already in ``metrics.parquet``.
 
 CLI:
-    python scripts/08_unit_example.py --config configs/baseline.yaml
-    python scripts/08_unit_example.py --config configs/baseline.yaml --image-id 000000001584
-    python scripts/08_unit_example.py --config configs/baseline.yaml --overwrite
+    python scripts/unit_example.py --config configs/baseline.yaml
+    python scripts/unit_example.py --config configs/baseline.yaml --image-id 000000001584
+    python scripts/unit_example.py --config configs/baseline.yaml --overwrite
 """
 
 from __future__ import annotations
@@ -167,7 +167,7 @@ def main() -> int:
 
     cfg = load_config(args.config)
     run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "08_unit_example.log"
+    log_file = run_dir / "logs" / "unit_example.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)
@@ -175,7 +175,7 @@ def main() -> int:
     metrics_path = run_dir / "metrics.parquet"
     if not metrics_path.is_file():
         raise FileNotFoundError(
-            f"{metrics_path} missing — run scripts/05_compute_metrics.py first."
+            f"{metrics_path} missing — run scripts/compute_metrics.py first."
         )
 
     rows = read_metrics_table(metrics_path)

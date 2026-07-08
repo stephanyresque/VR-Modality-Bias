@@ -15,7 +15,7 @@ used exclusively in the intervention-evaluation stage (SPARC + CHAIR);
 the diagnostic (Section IV: hidden states, share_tail, heatmaps) stays
 on SmolVLM-2.2B and is NOT ported here.
 
-Architecture facts (confirm with Passo 0 -- ``scripts/25_internvl_inspect.py``):
+Architecture facts (confirm with Passo 0 -- ``scripts/internvl_inspect.py``):
 
 * Top class      : ``InternVLForConditionalGeneration`` (native v5).
 * LM backbone    : Qwen2.5 -- separate ``q_proj``/``k_proj``/``v_proj``,
@@ -159,7 +159,7 @@ class InternVLWrapper(ModelWrapper):
         raise RuntimeError(
             f"Could not locate lm_head on {type(self._model).__name__}. "
             f"Tried: {list(_LM_HEAD_CANDIDATES)}. "
-            "Re-run Step 0 (scripts/25_internvl_inspect.py) and extend "
+            "Re-run Step 0 (scripts/internvl_inspect.py) and extend "
             "_LM_HEAD_CANDIDATES here if needed."
         )
 

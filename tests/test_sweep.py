@@ -1,4 +1,4 @@
-"""Tests for the caption-sweep extension (scripts 09 + 10).
+"""Tests for the caption-sweep extension (run_caption_sweep.py + run_sweep.py).
 
 Covers everything that can be validated CPU-only:
     - registry has the three model keys after the extension,
@@ -6,7 +6,7 @@ Covers everything that can be validated CPU-only:
     - decode_caption_tokens slices and decodes per-position,
     - METRICS_SCHEMA has the new nullable caption_tokens field,
     - write/read parquet survives both populated and absent caption_tokens,
-    - sweep orchestrator's combination expansion (script 10) is correct.
+    - sweep orchestrator's combination expansion (run_sweep.py) is correct.
 
 Model loading (SmolVLM-2.2B / Qwen2.5-VL-7B) is **not** exercised here —
 that's DGX territory.
@@ -23,7 +23,7 @@ import pytest
 import torch
 
 
-_SCRIPT_10 = Path(__file__).parent.parent / "scripts" / "10_run_sweep.py"
+_SCRIPT_10 = Path(__file__).parent.parent / "scripts" / "run_sweep.py"
 
 
 def _load_script_10():

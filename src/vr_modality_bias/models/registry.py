@@ -99,8 +99,8 @@ def _register_builtin() -> None:
         # by ``detect_model_family`` from ``config.text_config.model_type``), NOT
         # ``forward_internlm2``. The legacy remote-code checkpoint
         # ``OpenGVLab/InternVL2-8B`` breaks on transformers v5.
-        # Both Step 0 (scripts/25_internvl_inspect.py) + Step 6.3
-        # (scripts/26_internvl_exactness_gate.py) still gate CHAIR runs.
+        # Both Step 0 (scripts/internvl_inspect.py) + Step 6.3
+        # (scripts/internvl_exactness_gate.py) still gate CHAIR runs.
         try:
             from vr_modality_bias.models.internvl import InternVLWrapper
         except ModuleNotFoundError:

@@ -28,7 +28,7 @@ def main() -> int:
     cfg = load_config(args.config)
 
     run_dir = make_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "03_generate_refs.log"
+    log_file = run_dir / "logs" / "generate_refs.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Phase 3 — CHAIR report, stdout only.
 
-Reads ``results/runs/<run>/captions.jsonl`` (produced by 18_phase3_generate.py)
+Reads ``results/runs/<run>/captions.jsonl`` (produced by phase3_generate.py)
 and ``instances_val2017.json`` (downloaded by data.coco_annotations), then
 prints three sections in ASCII:
 
@@ -16,9 +16,9 @@ No conclusions. The reader does the interpretation.
 
 CLI
 ---
-    python scripts/17_chair_report.py --run-dir results/runs/phase3
-    python scripts/17_chair_report.py --run-dir results/runs/phase3 --auto-download
-    python scripts/17_chair_report.py --run-dir results/runs/phase3 --pair-samples 5
+    python scripts/chair_report.py --run-dir results/runs/phase3
+    python scripts/chair_report.py --run-dir results/runs/phase3 --auto-download
+    python scripts/chair_report.py --run-dir results/runs/phase3 --pair-samples 5
 """
 
 from __future__ import annotations

@@ -46,14 +46,14 @@ The aggregate report quantifies the bf16 floor; don't force the tight
 CLI
 ---
     # Regime A — architectural exactness on 3B fp32:
-    python scripts/13_equivalence_check.py --config configs/baseline.yaml \\
+    python scripts/equivalence_check.py --config configs/baseline.yaml \\
         --model-key qwen2.5-vl-3b \\
         --model-id Qwen/Qwen2.5-VL-3B-Instruct \\
         --dtype float32 --limit 5
 
     # Regime B — aggregate bf16 floor on 7B (smoke / official):
-    python scripts/13_equivalence_check.py --config configs/baseline.yaml --limit 5
-    python scripts/13_equivalence_check.py --config configs/baseline.yaml --limit 50
+    python scripts/equivalence_check.py --config configs/baseline.yaml --limit 5
+    python scripts/equivalence_check.py --config configs/baseline.yaml --limit 50
 """
 
 from __future__ import annotations

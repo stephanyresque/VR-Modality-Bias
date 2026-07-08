@@ -191,7 +191,7 @@ def main() -> int:
     else:
         run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
 
-    log_file = run_dir / "logs" / "11_alucination_viz.log"
+    log_file = run_dir / "logs" / "alucination_viz.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)

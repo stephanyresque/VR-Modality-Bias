@@ -133,7 +133,7 @@ def collect_paired_for_manifest(
         if record.image_id not in captions:
             raise KeyError(
                 f"No reference caption for image_id={record.image_id!r}. "
-                "Run scripts/03_generate_refs.py first."
+                "Run scripts/generate_refs.py first."
             )
         caption_ref = str(captions[record.image_id]["caption_ref"])
         noise_seed = derive_image_seed(seed_global, record.image_id)

@@ -202,7 +202,7 @@ def collect_forced_decoding(
         sparc_buffer.reset()
         # ``input_len`` is the prompt length excluding the image patch
         # tokens — the same definition the existing
-        # scripts/XX_inference_sparc.py uses via _probe_image_tokens.
+        # scripts/inference_sparc.py uses via _probe_image_tokens.
         image_token_id = int(model.config.image_token_id)
         image_positions = (prefix_ids == image_token_id).nonzero(as_tuple=True)[0]
         num_image_patches = int(image_positions.numel())

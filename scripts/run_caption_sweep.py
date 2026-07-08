@@ -56,7 +56,7 @@ def main() -> int:
     cfg = load_config(args.config)
 
     run_dir = make_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "09_run_caption_sweep.log"
+    log_file = run_dir / "logs" / "run_caption_sweep.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)

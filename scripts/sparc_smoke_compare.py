@@ -47,7 +47,7 @@ def _probe_image_tokens(
 ) -> tuple[int, int, int]:
     """Return ``(image_token_index, input_len, num_image_patches)``.
 
-    Mirrors the helper in ``scripts/XX_inference_sparc.py``. The input
+    Mirrors the helper in ``scripts/inference_sparc.py``. The input
     length here means *prompt length minus the image patch tokens* — that
     is what ``SelectedIndexBuffer.update_input_len`` expects so the
     ``num_image_patches`` can be derived at prefill time.

@@ -29,7 +29,7 @@ def main() -> int:
 
     cfg = load_config(args.config)
     run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "07_make_plots.log"
+    log_file = run_dir / "logs" / "make_plots.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)
@@ -37,7 +37,7 @@ def main() -> int:
     metrics_path = run_dir / "metrics.parquet"
     if not metrics_path.is_file():
         raise FileNotFoundError(
-            f"{metrics_path} missing — run scripts/05_compute_metrics.py first."
+            f"{metrics_path} missing — run scripts/compute_metrics.py first."
         )
 
     plots_dir = run_dir / "plots"

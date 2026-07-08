@@ -1,4 +1,4 @@
-"""Tests for scripts/11_alucination_viz.py."""
+"""Tests for scripts/alucination_viz.py."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 
-_SCRIPT_PATH = Path(__file__).parent.parent / "scripts" / "11_alucination_viz.py"
+_SCRIPT_PATH = Path(__file__).parent.parent / "scripts" / "alucination_viz.py"
 
 
 def _load_script_module():

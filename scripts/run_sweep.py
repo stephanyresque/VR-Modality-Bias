@@ -66,7 +66,7 @@ def _run_cell(
 
     cmd = [
         sys.executable,
-        "scripts/09_run_caption_sweep.py",
+        "scripts/run_caption_sweep.py",
         "--config",
         str(config_path),
     ]

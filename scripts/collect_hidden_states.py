@@ -40,7 +40,7 @@ def main() -> int:
 
     cfg = load_config(args.config)
     run_dir = current_run_dir(cfg["run"]["output_root"], cfg["run"]["name"])
-    log_file = run_dir / "logs" / "04_collect_hidden_states.log"
+    log_file = run_dir / "logs" / "collect_hidden_states.log"
     configure_logging(log_file=log_file)
     log = get_logger(__name__)
     log.info("Run dir: %s", run_dir)
@@ -93,7 +93,7 @@ def main() -> int:
         if record.image_id not in captions:
             raise KeyError(
                 f"No reference caption for image_id={record.image_id!r}. "
-                "Run scripts/03_generate_refs.py first."
+                "Run scripts/generate_refs.py first."
             )
         caption_ref = str(captions[record.image_id]["caption_ref"])
         noise_seed = derive_image_seed(seed_global, record.image_id)
@@ -138,7 +138,7 @@ def main() -> int:
             format_bytes(bytes_pair),
         )
 
-    # Rollup at the end of script 04.
+    # Rollup at the end of collect_hidden_states.py.
     stats = summarize_seconds(p["seconds"] for p in per_pair)
     peak_vram_run = max((p["vram_peak_bytes"] for p in per_pair), default=0)
     total_bytes_pairs = sum(p["bytes_pair"] for p in per_pair)

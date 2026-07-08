@@ -84,7 +84,7 @@ def probe_image_token_index(
 ) -> tuple[int, int, int]:
     """Return ``(image_token_index, input_len, num_image_patches)``.
 
-    Same helper that ``scripts/XX_inference_sparc.py`` uses, lifted here so
+    Same helper that ``scripts/inference_sparc.py`` uses, lifted here so
     callers don't have to import a script. ``input_len`` is the prompt
     length excluding image patches, which is what
     :meth:`SelectedIndexBuffer.update_input_len` expects.

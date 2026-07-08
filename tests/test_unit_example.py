@@ -1,4 +1,4 @@
-"""Tests for script 08 (per-image unit-example folders).
+"""Tests for unit_example.py (per-image unit-example folders).
 
 Covers:
     - KL matrix reconstruction from the nested-list row format,
@@ -23,7 +23,7 @@ import pytest
 from PIL import Image
 
 
-_SCRIPT_PATH = Path(__file__).parent.parent / "scripts" / "08_unit_example.py"
+_SCRIPT_PATH = Path(__file__).parent.parent / "scripts" / "unit_example.py"
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 

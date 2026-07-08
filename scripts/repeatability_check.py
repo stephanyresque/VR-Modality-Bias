@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Phase-1 sanity (item 3): FD repeatability vs SPARC effect, paired per image.
 
-The Phase-1 equivalence check (``scripts/13_equivalence_check.py``) compares
+The Phase-1 equivalence check (``scripts/equivalence_check.py``) compares
 the **single-pass teacher-forcing** path against the **step-by-step forced
 decoding** path. That gap (~5-10% on 7B-bf16) is the bf16 numerical floor
 between two DIFFERENT collection methods.
@@ -33,8 +33,8 @@ order, which sets the real noise floor we want to measure.
 
 CLI
 ---
-    python scripts/14_repeatability_check.py --config configs/baseline.yaml --limit 3
-    python scripts/14_repeatability_check.py --config configs/baseline.yaml --limit 3 --alpha 1.3
+    python scripts/repeatability_check.py --config configs/baseline.yaml --limit 3
+    python scripts/repeatability_check.py --config configs/baseline.yaml --limit 3 --alpha 1.3
 """
 
 from __future__ import annotations
