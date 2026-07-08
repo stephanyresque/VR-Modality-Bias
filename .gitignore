@@ -32,6 +32,8 @@ htmlcov/
 
 # Project data and outputs
 data/raw/
+data/processed/*/images/*
+!data/processed/*/images/.gitkeep
 EXPERIMENT.md
 
 # Inside run directories, only heavy or regenerable artefacts are ignored.
