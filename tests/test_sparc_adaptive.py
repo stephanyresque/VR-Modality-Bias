@@ -13,6 +13,7 @@ Four invariants, in the order the spec lists them:
 
 from __future__ import annotations
 
+import math
 from functools import partial
 from types import MethodType
 
@@ -176,6 +177,27 @@ def test_target_aggregates_over_the_image_tokens():
     reference = torch.tensor([[0.4, 0.6]])  # mean 0.5
     current = torch.tensor([[0.1, 0.4]])  # mean 0.25 -> deficit 0.5
     assert adaptive_target_factor(current, reference, lam=1.0, ceiling=9.0) == pytest.approx(1.5)
+
+
+def test_target_is_neutral_when_the_reference_is_zero():
+    """0/0 -> NaN. A NaN target would land in the registry and stay in the cache."""
+    reference = torch.zeros(1, 2)
+    current = torch.zeros(1, 2)
+    assert adaptive_target_factor(current, reference, lam=5.0, ceiling=CEILING) == 1.0
+
+
+def test_target_is_neutral_when_the_reference_is_zero_and_attention_is_not():
+    reference = torch.zeros(1, 2)
+    current = torch.tensor([[0.3, 0.3]])
+    assert adaptive_target_factor(current, reference, lam=5.0, ceiling=CEILING) == 1.0
+
+
+def test_target_never_returns_a_non_finite_value():
+    reference = torch.tensor([[0.0, 0.0]])
+    current = torch.tensor([[float("nan"), 0.1]])
+    target = adaptive_target_factor(current, reference, lam=5.0, ceiling=CEILING)
+    assert math.isfinite(target)
+    assert target == 1.0
 
 
 # ---------------------------------------------------------------- registry
@@ -361,6 +383,18 @@ def test_hparams_adaptive_does_not_require_alpha_above_one():
 def test_hparams_adaptive_rejects_a_ceiling_at_or_below_one():
     with pytest.raises(ValueError, match="ceiling"):
         SparcHyperparams(alpha=1.0, adaptive=True, ceiling=1.0)
+
+
+def test_hparams_adaptive_rejects_a_negative_lam():
+    with pytest.raises(ValueError, match="lam"):
+        SparcHyperparams(alpha=1.0, adaptive=True, lam=-0.1)
+
+
+def test_hparams_non_adaptive_ignores_lam_and_ceiling():
+    hparams = SparcHyperparams(alpha=1.3, lam=-5.0, ceiling=0.5)
+    assert hparams.adaptive is False
+    assert hparams.lam == -5.0
+    assert hparams.ceiling == 0.5
 
 
 def test_hparams_non_adaptive_still_rejects_alpha_at_one():

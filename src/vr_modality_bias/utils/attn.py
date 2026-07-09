@@ -330,11 +330,19 @@ def adaptive_target_factor(image_attention, reference, lam, ceiling) -> float:
     after the softmax, and the deficit is a small difference between two small
     numbers; the upcast is local to this signal and never touches the attention
     path.
+
+    A non-finite target (a zero or degenerate reference makes the division NaN)
+    returns 1.0, the neutral factor. Unlike the selection ``ratio``, where a NaN
+    only spoils one step, a NaN target would be written into ``accum_factors``
+    and would poison the value cache for the rest of the generation.
     """
     current = image_attention.detach().float().mean()
     ref = reference.detach().float().mean()
     deficit = torch.clamp((ref - current) / ref, min=0.0)
-    return float(torch.clamp(1.0 + float(lam) * deficit, max=float(ceiling)))
+    target = torch.clamp(1.0 + float(lam) * deficit, max=float(ceiling))
+    if not bool(torch.isfinite(target)):
+        return 1.0
+    return float(target)
 
 
 # Llama text-decoder attention (transformers 5.x).

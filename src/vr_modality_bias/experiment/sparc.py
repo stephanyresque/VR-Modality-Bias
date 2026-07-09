@@ -61,6 +61,10 @@ class SparcHyperparams:
                 f"ceiling={ceiling} would make adaptive SPARC a no-op or an "
                 "attenuation. Pass ceiling > 1."
             )
+        # A negative lam turns the deficit into an attenuation of the visual
+        # tokens, which is the opposite intervention and would pass silently.
+        if adaptive and lam < 0.0:
+            raise ValueError(f"lam={lam} must be >= 0 in adaptive mode.")
         self.alpha = float(alpha)
         self.tau = float(tau)
         self.selected_layer = int(selected_layer)

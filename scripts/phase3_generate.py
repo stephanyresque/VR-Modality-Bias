@@ -118,7 +118,7 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
     return caption_start - num_image_patches, image_positions
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-name", type=str, default="phase3",
         help="Output goes to results/runs/<run-name>/.")
@@ -179,7 +179,36 @@ def main() -> int:
         help="Coherence smoke: --limit 2, --lengths long, --print-captions. "
              "Used to verify SPARC produces fluent text on long generation "
              "after the official-config switch.")
-    args = parser.parse_args()
+    # Adaptive intensity (Ponto 1). Absent => the original α^c reinforcement,
+    # so every existing invocation keeps its behaviour untouched.
+    parser.add_argument("--adaptive", action="store_true",
+        help="Replace the accumulating α^c reinforcement with the deficit-driven "
+             "target factor capped by --ceiling. α is unused in this mode.")
+    parser.add_argument("--lam", type=float, default=0.0,
+        help="SPARC λ, the deficit sensitivity of --adaptive. λ=0 is the "
+             "neutrality gate (no intervention at all).")
+    parser.add_argument("--ceiling", type=float, default=2.0,
+        help="SPARC saturation ceiling for --adaptive. The effective factor of "
+             "any visual token never exceeds it.")
+    return parser
+
+
+def sparc_hparams_from_args(args) -> SparcHyperparams:
+    """Build the SPARC hyperparameters from a parsed argparse namespace."""
+    return SparcHyperparams(
+        alpha=args.alpha,
+        tau=args.tau,
+        selected_layer=args.selected_layer,
+        se_layers=tuple(args.se_layers),
+        beta=args.beta,
+        adaptive=args.adaptive,
+        lam=args.lam,
+        ceiling=args.ceiling,
+    )
+
+
+def main() -> int:
+    args = build_parser().parse_args()
 
     if args.smoke:
         args.limit = 1
@@ -189,6 +218,11 @@ def main() -> int:
         args.limit = 2
         args.lengths = ["long"]
         args.print_captions = True
+
+    # Built before the model load so an invalid combination (α<=1 without
+    # --adaptive, negative λ, ceiling<=1) fails in a second, not after the
+    # checkpoint is on the GPU.
+    sparc_hparams = sparc_hparams_from_args(args)
 
     run_dir = args.output_root / args.run_name
     log_file = run_dir / "logs" / "phase3.log"
@@ -208,21 +242,22 @@ def main() -> int:
         f"se_layers={tuple(args.se_layers)}"
     )
     logger.info(
+        f"SPARC intensity: {'ADAPTIVE' if args.adaptive else 'ORIGINAL α^c'} "
+        f"lam={args.lam} ceiling={args.ceiling}"
+    )
+    logger.info(
         f"decoding: {'GREEDY (do_sample=False, num_beams=1)' if not args.sampling else 'SAMPLING (from config)'}"
     )
     logger.info(f"run dir : {run_dir}")
     logger.info(f"log file: {log_file}")
     logger.info("=" * 70)
 
-    # Snapshot args for reproducibility.
+    # Snapshot args for reproducibility. The SPARC block comes straight from
+    # ``as_dict`` so any hyperparameter added there lands here automatically.
     snapshot = {
         "run_name": args.run_name,
         "lengths": args.lengths,
-        "alpha": args.alpha,
-        "tau": args.tau,
-        "selected_layer": args.selected_layer,
-        "se_layers": list(args.se_layers),
-        "beta": args.beta,
+        **sparc_hparams.as_dict(),
         "limit": args.limit,
         "overwrite": args.overwrite,
         "smoke": args.smoke,
@@ -264,13 +299,6 @@ def main() -> int:
     planned_per_length = 2 * args.limit  # off + on per image
     total_planned = planned_per_length * len(args.lengths)
     logger.info(f"Planned cells: {total_planned} (per length: {planned_per_length})")
-
-    sparc_hparams = SparcHyperparams(
-        alpha=args.alpha, tau=args.tau,
-        selected_layer=args.selected_layer,
-        se_layers=tuple(args.se_layers),
-        beta=args.beta,
-    )
 
     cells_done = 0
     cells_skipped = 0

@@ -39,6 +39,12 @@ VQA_RECOGNITION: str = (
     "visible object, person, place, attribute, or action as directly as "
     "possible. If it is not visible, answer that it cannot be determined."
 )
+# Unlike every other entry, this one is a FORMAT TEMPLATE, not a ready prompt:
+# it carries a ``{object}`` placeholder. ``scripts/build_pope.py`` renders it
+# once per question and stores the result in pope_questions.jsonl, so the
+# generation script never formats it again. Wording is the POPE protocol's
+# (Li et al., EMNLP 2023); do not paraphrase, the benchmark numbers depend on it.
+VQA_POPE: str = "Is there a {object} in the image? Please answer yes or no."
 
 
 PROMPTS: dict[str, str] = {
@@ -48,6 +54,7 @@ PROMPTS: dict[str, str] = {
     "vqa_count": VQA_COUNT,
     "vqa_spatial": VQA_SPATIAL,
     "vqa_recognition": VQA_RECOGNITION,
+    "vqa_pope": VQA_POPE,
 }
 
 
