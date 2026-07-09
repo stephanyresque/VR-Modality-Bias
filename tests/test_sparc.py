@@ -129,6 +129,9 @@ def test_sparc_hyperparams_as_dict_is_serialisable():
         "selected_layer": 10,
         "se_layers": [5, 20],
         "beta": 0.1,
+        "adaptive": False,
+        "lam": 0.0,
+        "ceiling": 2.0,
     }
     import json
     json.dumps(d)  # must not raise

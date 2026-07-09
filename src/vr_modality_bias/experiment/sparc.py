@@ -46,16 +46,29 @@ class SparcHyperparams:
         selected_layer: int = 15,
         se_layers: tuple[int, int] = (0, 31),
         beta: float = 0.0,
+        adaptive: bool = False,
+        lam: float = 0.0,
+        ceiling: float = 2.0,
     ) -> None:
-        if alpha <= 1.0:
+        # ``alpha`` is dead in the adaptive path (the target factor replaces it),
+        # so the no-op guard only applies to the original alpha^c reinforcement.
+        if not adaptive and alpha <= 1.0:
             raise ValueError(
                 f"alpha={alpha} would make SPARC a no-op. Pass alpha > 1."
+            )
+        if adaptive and ceiling <= 1.0:
+            raise ValueError(
+                f"ceiling={ceiling} would make adaptive SPARC a no-op or an "
+                "attenuation. Pass ceiling > 1."
             )
         self.alpha = float(alpha)
         self.tau = float(tau)
         self.selected_layer = int(selected_layer)
         self.se_layers = (int(se_layers[0]), int(se_layers[1]))
         self.beta = float(beta)
+        self.adaptive = bool(adaptive)
+        self.lam = float(lam)
+        self.ceiling = float(ceiling)
 
     def as_dict(self) -> dict:
         return {
@@ -64,6 +77,9 @@ class SparcHyperparams:
             "selected_layer": self.selected_layer,
             "se_layers": list(self.se_layers),
             "beta": self.beta,
+            "adaptive": self.adaptive,
+            "lam": self.lam,
+            "ceiling": self.ceiling,
         }
 
 
@@ -123,7 +139,10 @@ def enable_sparc(
     Args:
         model_wrapper: Loaded :class:`ModelWrapper`.
         hparams: :class:`SparcHyperparams` with the calibration coefficient
-            and the rest of the SPARC settings.
+            and the rest of the SPARC settings. With ``adaptive=True`` the
+            caller MUST also call ``buffer.update_image_positions(...)`` before
+            the prefill; the adaptive registry cannot be sized without it and
+            the forward raises instead of falling back to a contiguous block.
         probe_image: Any image from the manifest — used to discover
             ``image_token_index`` once. The collection function still has
             to reset the buffer and refresh ``input_len`` **per image**
@@ -159,6 +178,9 @@ def enable_sparc(
         se_layers=hparams.se_layers,
         image_token_index=image_token_index,
         indices_buffer=buffer,
+        adaptive=hparams.adaptive,
+        lam=hparams.lam,
+        ceiling=hparams.ceiling,
     )
 
     try:

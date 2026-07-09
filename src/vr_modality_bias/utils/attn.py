@@ -176,14 +176,40 @@ class SelectedIndexBuffer:
         # drop-in replacement that yields identical results.
         # 1-D LongTensor (on any device — moved to attn device on use).
         self.image_positions = None
+        # ---- adaptive-intensity state (unused when adaptive=False) ----
+        # LOCAL counterparts of indices1 / indices2, i.e. offsets into
+        # image_positions rather than into input_ids. The adaptive registry is
+        # indexed locally; the cache write still uses the global positions.
+        self.indices1_local = []
+        self.indices2_local = []
+        # Target amplification factor decided at the current step (target1) and
+        # the one actually applied to the cache (target2). Same one-step delay
+        # as indices1 -> indices2.
+        self.target1 = 1.0
+        self.target2 = 1.0
+        # Factor each image position currently carries in the value cache.
+        # float32, length == len(image_positions). Allocated lazily by
+        # update_image_positions (the patch count is unknown before it).
+        self.accum_factors = None
+        # Per-position ratio target/accumulated resolved once per step; None
+        # when the cache already carries the right factors.
+        self.correction = None
 
     def update_image_positions(self, positions):
         """Store the per-image list of global positions where input_ids == image_token_id.
 
         Must be called BEFORE the prefill of each image (the per-image SPARC
         bookkeeping is reset + update_input_len + update_image_positions).
+
+        Also (re)allocates the adaptive registry at 1.0. This is the earliest
+        point where the number of image patches is known, so ``reset`` can only
+        drop the registry to None and the allocation has to happen here.
         """
         self.image_positions = positions
+        self.accum_factors = torch.ones(
+            positions.numel(), dtype=torch.float32, device=positions.device
+        )
+        self.correction = None
 
     def update_indices1(self, indices, image_token_index=None):
         """Store the (translated, global) selected indices in ``indices1``.
@@ -200,6 +226,7 @@ class SelectedIndexBuffer:
           which only works when image tokens form a contiguous block.
         """
         local = indices.squeeze(dim=-1)
+        self.indices1_local = local
         if self.image_positions is not None:
             self.indices1 = self.image_positions.to(local.device)[local]
         else:
@@ -211,6 +238,10 @@ class SelectedIndexBuffer:
                 )
             self.indices1 = local + image_token_index
 
+    def update_target1(self, target):
+        """Store the adaptive target factor decided at the current step."""
+        self.target1 = float(target)
+
     def update_indices2(self):
         """Copy indices1 → indices2 at the start of each new generation step.
 
@@ -219,6 +250,8 @@ class SelectedIndexBuffer:
         SAME positions across consecutive steps.
         """
         self.indices2 = self.indices1
+        self.indices2_local = self.indices1_local
+        self.target2 = self.target1
 
     def update_input_len(self, len):
         self.input_len = len
@@ -229,14 +262,79 @@ class SelectedIndexBuffer:
         self.input_len = 0
         self.num_image_patches = None
         self.image_positions = None
+        self.indices1_local = []
+        self.indices2_local = []
+        self.target1 = 1.0
+        self.target2 = 1.0
+        self.accum_factors = None
+        self.correction = None
 
     def calibrate(self, value, alpha):
         """Scale value-cache rows at ``indices2`` by ``alpha`` (in place)."""
         if len(self.indices2) > 0:
             value[:, :, self.indices2] *= alpha
 
+    def prepare_adaptive_correction(self):
+        """Resolve this step's correction ratio and advance the registry.
+
+        Must run once per step (layer 0), NOT once per layer: every layer in
+        the ``se_layers`` window carries the same accumulated factor, so a
+        per-layer recompute would leave ``accum_factors == target`` after the
+        first layer and silently skip all the others.
+
+        Positions in ``indices2`` (the previous step's selection, same one-step
+        delay the alpha^c path uses) target ``target2``; every other image
+        position targets 1.0, which is what makes the intensity relax when a
+        token leaves the selection or the anchoring recovers.
+        """
+        if self.image_positions is None or self.accum_factors is None:
+            raise RuntimeError(
+                "Adaptive SPARC needs update_image_positions() before the "
+                "prefill: the accumulated-factor registry is indexed by the "
+                "image-token positions and cannot be sized without them."
+            )
+        target = torch.ones_like(self.accum_factors)
+        if len(self.indices2_local) > 0:
+            target[self.indices2_local.to(target.device)] = float(self.target2)
+        if torch.equal(target, self.accum_factors):
+            self.correction = None
+            return
+        self.correction = target / self.accum_factors
+        self.accum_factors = target
+
+    def calibrate_adaptive(self, value):
+        """Rescale value-cache rows to this step's target factor (in place).
+
+        Multiplies by ``target / accumulated`` rather than by ``alpha``, so the
+        factor a position carries is always exactly the step's target, bounded
+        by the ceiling, instead of the product over every step it was selected.
+        """
+        if self.correction is None:
+            return
+        positions = self.image_positions.to(value.device)
+        correction = self.correction.to(device=value.device, dtype=value.dtype)
+        value[:, :, positions] *= correction.view(-1, 1)
+
     def update_patch_num(self, num_image_patches):
         self.num_image_patches = num_image_patches
+
+
+def adaptive_target_factor(image_attention, reference, lam, ceiling) -> float:
+    """Return ``min(1 + lam * deficit, ceiling)`` for the current step.
+
+    ``deficit`` is the relative drop of the current visual attention against
+    the moving-average reference (``self.image_attention`` BEFORE its update),
+    truncated at zero: attention at or above the reference means no deficit.
+
+    Computed in float32. ``attn_weights`` is downcast to the model dtype right
+    after the softmax, and the deficit is a small difference between two small
+    numbers; the upcast is local to this signal and never touches the attention
+    path.
+    """
+    current = image_attention.detach().float().mean()
+    ref = reference.detach().float().mean()
+    deficit = torch.clamp((ref - current) / ref, min=0.0)
+    return float(torch.clamp(1.0 + float(lam) * deficit, max=float(ceiling)))
 
 
 # Llama text-decoder attention (transformers 5.x).
@@ -259,6 +357,9 @@ def forward_llama(
     selected: Optional[bool] = False,
     se_layers: Optional[Tuple[int, int]] = None,
     indices_buffer: Optional[SelectedIndexBuffer] = None,
+    adaptive: Optional[bool] = False,
+    lam: Optional[float] = 0.0,
+    ceiling: Optional[float] = 2.0,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -276,13 +377,22 @@ def forward_llama(
 
     if self.layer_idx == 0:
         indices_buffer.update_indices2()
+        if adaptive:
+            indices_buffer.prepare_adaptive_correction()
 
     gen_new_token = (
         past_key_values is not None and past_key_values.get_seq_length(self.layer_idx) > 0
     )
 
     if self.layer_idx >= se_layers[0] and self.layer_idx <= se_layers[1]:
-        if len(indices_buffer.indices2) > 0:
+        if adaptive:
+            # Relaxation has to run on steps where nothing is selected, so the
+            # guard is the pending correction, not the emptiness of indices2.
+            if indices_buffer.correction is not None:
+                indices_buffer.calibrate_adaptive(
+                    past_key_values.layers[self.layer_idx].values
+                )
+        elif len(indices_buffer.indices2) > 0:
             indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
 
     if past_key_values is not None:
@@ -332,6 +442,12 @@ def forward_llama(
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()
             indices_buffer.update_indices1(indices, image_token_index=image_token_index)
+            if adaptive:
+                indices_buffer.update_target1(
+                    adaptive_target_factor(
+                        image_attention, self.image_attention, lam, ceiling
+                    )
+                )
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -525,6 +641,9 @@ def forward_qwen25vl(
     selected: Optional[bool] = False,
     se_layers: Optional[Tuple[int, int]] = None,
     indices_buffer: Optional[SelectedIndexBuffer] = None,
+    adaptive: Optional[bool] = False,
+    lam: Optional[float] = 0.0,
+    ceiling: Optional[float] = 2.0,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -544,13 +663,22 @@ def forward_qwen25vl(
 
     if self.layer_idx == 0:
         indices_buffer.update_indices2()
+        if adaptive:
+            indices_buffer.prepare_adaptive_correction()
 
     gen_new_token = (
         past_key_values is not None and past_key_values.get_seq_length(self.layer_idx) > 0
     )
 
     if self.layer_idx >= se_layers[0] and self.layer_idx <= se_layers[1]:
-        if len(indices_buffer.indices2) > 0:
+        if adaptive:
+            # Relaxation has to run on steps where nothing is selected, so the
+            # guard is the pending correction, not the emptiness of indices2.
+            if indices_buffer.correction is not None:
+                indices_buffer.calibrate_adaptive(
+                    past_key_values.layers[self.layer_idx].values
+                )
+        elif len(indices_buffer.indices2) > 0:
             indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
 
     if past_key_values is not None:
@@ -599,6 +727,12 @@ def forward_qwen25vl(
             ratio = ratio.squeeze(dim=0)
             indices = (ratio >= tau).nonzero()
             indices_buffer.update_indices1(indices, image_token_index=image_token_index)
+            if adaptive:
+                indices_buffer.update_target1(
+                    adaptive_target_factor(
+                        image_attention, self.image_attention, lam, ceiling
+                    )
+                )
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -638,6 +772,9 @@ def add_custom_attention_layers(
     image_token_index=None,
     indices_buffer=None,
     family: Optional[str] = None,
+    adaptive=False,
+    lam=0.0,
+    ceiling=2.0,
 ):
     """Monkey-patch every decoder layer's ``self_attn.forward`` with SPARC.
 
@@ -645,6 +782,13 @@ def add_custom_attention_layers(
         family: ``"qwen"``, ``"llama"``, or ``None`` to auto-detect from the
             model class. The Qwen variant rotates Q/K via mRoPE; the Llama
             variant uses standard 1D RoPE.
+        adaptive: Switch the value-cache reinforcement from the original
+            accumulating ``alpha^c`` to the deficit-driven target factor with a
+            ceiling. ``alpha`` is unused when this is on. Only ``forward_llama``
+            and ``forward_qwen25vl`` honour it; the legacy ``forward_internlm2``
+            swallows it via ``**kwargs`` and stays on ``alpha^c``.
+        lam: Deficit sensitivity. ``lam=0`` makes the adaptive path neutral.
+        ceiling: Saturation cap on the target factor.
     """
     if family is None:
         family = detect_model_family(model)
@@ -666,6 +810,9 @@ def add_custom_attention_layers(
             se_layers=se_layers,
             image_token_index=image_token_index,
             indices_buffer=indices_buffer,
+            adaptive=adaptive,
+            lam=lam,
+            ceiling=ceiling,
         )
         # Family-agnostic attribute lookup: `.self_attn` for qwen / llava /
         # smolvlm / idefics3; `.attention` for InternLM2 (InternVL). See
