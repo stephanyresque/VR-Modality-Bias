@@ -132,6 +132,8 @@ def test_sparc_hyperparams_as_dict_is_serialisable():
         "adaptive": False,
         "lam": 0.0,
         "ceiling": 2.0,
+        "qcond": False,
+        "qtop_frac": 0.10,
     }
     import json
     json.dumps(d)  # must not raise

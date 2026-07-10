@@ -18,6 +18,7 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+import torch
 from loguru import logger
 from PIL import Image
 from pyprojroot import here
@@ -92,7 +93,7 @@ def _append(jsonl_path: Path, entry: dict) -> None:
 
 
 def _probe_sparc_layout(model_wrapper, image, prompt):
-    """Return ``(input_len, image_positions)`` for one image's prefill.
+    """Return ``(input_len, image_positions, question_positions)`` for one prefill.
 
     * ``input_len`` is the prompt length excluding image-placeholder tokens
       (the value SPARC's ``update_input_len`` expects).
@@ -102,6 +103,10 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
       consumes this. For Qwen the mask IS contiguous; for SmolVLM/Idefics3
       it skips over <fake_token_around_image> / <row_X_col_Y> separators
       that the contiguous-block assumption would otherwise miscalibrate.
+    * ``question_positions`` is every prompt position after the last image
+      placeholder, consumed by ``update_question_positions`` when ``qcond``
+      is on. For captioning that is the instruction text plus the trailing
+      chat-template tokens.
     """
     processor = model_wrapper._processor  # noqa: SLF001
     messages = model_wrapper._build_messages(prompt, image)
@@ -115,7 +120,10 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
         prefix_inputs["input_ids"][0] == image_token_id
     ).nonzero(as_tuple=True)[0]
     num_image_patches = int(image_positions.numel())
-    return caption_start - num_image_patches, image_positions
+    question_positions = torch.arange(
+        int(image_positions[-1]) + 1, caption_start, dtype=torch.long
+    )
+    return caption_start - num_image_patches, image_positions, question_positions
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -190,6 +198,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ceiling", type=float, default=2.0,
         help="SPARC saturation ceiling for --adaptive. The effective factor of "
              "any visual token never exceeds it.")
+    # Question-conditioned selection (Ponto 2). Requires --adaptive.
+    parser.add_argument("--qcond", action="store_true",
+        help="Select the visual tokens at the prefill by the attention the "
+             "prompt text pays them, and freeze that selection. Requires "
+             "--adaptive.")
+    parser.add_argument("--qtop-frac", type=float, default=0.10,
+        help="Fraction of the visual tokens --qcond keeps.")
     return parser
 
 
@@ -204,6 +219,8 @@ def sparc_hparams_from_args(args) -> SparcHyperparams:
         adaptive=args.adaptive,
         lam=args.lam,
         ceiling=args.ceiling,
+        qcond=args.qcond,
+        qtop_frac=args.qtop_frac,
     )
 
 
@@ -244,6 +261,10 @@ def main() -> int:
     logger.info(
         f"SPARC intensity: {'ADAPTIVE' if args.adaptive else 'ORIGINAL α^c'} "
         f"lam={args.lam} ceiling={args.ceiling}"
+    )
+    logger.info(
+        f"SPARC selection: {'QUESTION-CONDITIONED' if args.qcond else 'RELATIVE RISE'} "
+        f"qtop_frac={args.qtop_frac}"
     )
     logger.info(
         f"decoding: {'GREEDY (do_sample=False, num_beams=1)' if not args.sampling else 'SAMPLING (from config)'}"
@@ -414,7 +435,7 @@ def main() -> int:
                 continue
             t_cell = time.time()
             try:
-                input_len, image_positions = _probe_sparc_layout(
+                input_len, image_positions, question_positions = _probe_sparc_layout(
                     model_wrapper, image, prompt,
                 )
                 with enable_sparc(
@@ -428,6 +449,8 @@ def main() -> int:
                     # slice — fine for Qwen, broken for Idefics3/SmolVLM where
                     # separator tokens sit inside that range.
                     buffer.update_image_positions(image_positions)
+                    if sparc_hparams.qcond:
+                        buffer.update_question_positions(question_positions)
                     caption = model_wrapper.generate_caption(
                         image=image, prompt=prompt,
                         max_new_tokens=max_new_tokens,

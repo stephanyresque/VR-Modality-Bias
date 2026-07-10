@@ -319,7 +319,7 @@ def test_question_rows_carry_the_rendered_prompt(build_pope, toy_stats):
 def _args(**overrides) -> SimpleNamespace:
     base = dict(
         alpha=1.05, beta=0.1, tau=3.0, selected_layer=18, se_layers=(0, 28),
-        lam=0.5, ceiling=1.8,
+        lam=0.5, ceiling=1.8, qtop_frac=0.10,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
@@ -340,6 +340,17 @@ def test_sparc_condition_uses_the_original_alpha_path(pope_generate):
 def test_adaptive_condition_turns_on_the_registry(pope_generate):
     hp = pope_generate.hparams_for_condition("adaptive", _args())
     assert hp.adaptive is True
+    assert hp.qcond is False
+    assert hp.lam == 0.5
+    assert hp.ceiling == 1.8
+
+
+def test_qcond_condition_turns_on_the_prefill_selection(pope_generate):
+    """The qcond arm is adaptive too: Point 2 feeds Point 1's correction."""
+    hp = pope_generate.hparams_for_condition("qcond", _args(qtop_frac=0.25))
+    assert hp.adaptive is True
+    assert hp.qcond is True
+    assert hp.qtop_frac == 0.25
     assert hp.lam == 0.5
     assert hp.ceiling == 1.8
 
@@ -368,7 +379,7 @@ def test_prompt_for_rejects_a_row_without_a_question(pope_generate):
 def test_answer_key_separates_conditions_and_strategies(pope_generate):
     row = {"image_id": "img1", "strategy": "random", "object": "dog", "expected": "yes"}
     keys = {pope_generate.answer_key(row, c) for c in pope_generate.CONDITIONS}
-    assert len(keys) == 3
+    assert len(keys) == len(pope_generate.CONDITIONS)
     other = {**row, "strategy": "popular"}
     assert pope_generate.answer_key(row, "sparc") != pope_generate.answer_key(other, "sparc")
 

@@ -16,6 +16,7 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 
+import torch
 from loguru import logger
 from PIL import Image
 from pyprojroot import here
@@ -38,7 +39,7 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.utils.seeds import derive_image_seed
 
 
-CONDITIONS = ("baseline", "sparc", "adaptive")
+CONDITIONS = ("baseline", "sparc", "adaptive", "qcond")
 
 DEFAULT_QUESTIONS = Path("data/processed/mscoco_baseline/pope_questions.jsonl")
 
@@ -128,18 +129,25 @@ def hparams_for_condition(condition: str, args) -> SparcHyperparams | None:
         selected_layer=args.selected_layer,
         se_layers=tuple(args.se_layers),
         beta=args.beta,
-        adaptive=(condition == "adaptive"),
+        adaptive=condition in ("adaptive", "qcond"),
         lam=args.lam,
         ceiling=args.ceiling,
+        qcond=(condition == "qcond"),
+        qtop_frac=args.qtop_frac,
     )
 
 
 def _probe_sparc_layout(model_wrapper, image, prompt):
-    """Return ``(input_len, image_positions)`` for this (image, question) prefill.
+    """Return ``(input_len, image_positions, question_positions)`` for this prefill.
 
     Must be re-run per QUESTION, not per image: POPE questions have different
     token lengths, so ``input_len`` (prompt length minus image placeholders)
     changes even though the image does not.
+
+    ``question_positions`` are every prompt position after the last image
+    placeholder. That deliberately includes the trailing chat-template tokens:
+    the question text is what must be inside the set, and averaging over the
+    rows dilutes the template tokens, which attend the image diffusely.
     """
     processor = model_wrapper._processor  # noqa: SLF001
     messages = model_wrapper._build_messages(prompt, image)  # noqa: SLF001
@@ -153,7 +161,10 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
         prefix_inputs["input_ids"][0] == image_token_id
     ).nonzero(as_tuple=True)[0]
     num_image_patches = int(image_positions.numel())
-    return caption_start - num_image_patches, image_positions
+    question_positions = torch.arange(
+        int(image_positions[-1]) + 1, caption_start, dtype=torch.long
+    )
+    return caption_start - num_image_patches, image_positions, question_positions
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -189,6 +200,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="SPARC lambda for the adaptive arm. 0 makes it a no-op (neutrality gate).")
     parser.add_argument("--ceiling", type=float, default=2.0,
         help="Saturation ceiling for the adaptive arm.")
+    # Question-conditioned arm.
+    parser.add_argument("--qtop-frac", type=float, default=0.10,
+        help="Fraction of the visual tokens the qcond arm selects at the prefill.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing pope_answers.jsonl before starting.")
     parser.add_argument("--print-answers", action="store_true",
@@ -298,8 +312,8 @@ def main() -> int:
                         # Per QUESTION, not per image: input_len moves with the
                         # question length, and the adaptive registry is sized
                         # from image_positions at prefill.
-                        input_len, image_positions = _probe_sparc_layout(
-                            model_wrapper, image, prompt,
+                        input_len, image_positions, question_positions = (
+                            _probe_sparc_layout(model_wrapper, image, prompt)
                         )
                         with enable_sparc(
                             model_wrapper, hparams=hp,
@@ -308,10 +322,17 @@ def main() -> int:
                             buffer.reset()
                             buffer.update_input_len(input_len)
                             buffer.update_image_positions(image_positions)
+                            if hp.qcond:
+                                buffer.update_question_positions(question_positions)
                             raw_answer = model_wrapper.generate_caption(
                                 image=image, prompt=prompt,
                                 max_new_tokens=MAX_NEW_TOKENS, seed=seed,
                                 generation_kwargs=GEN_KWARGS,
+                            )
+                            prefill_selected = (
+                                buffer.prefill_selected_local.tolist()
+                                if hp.qcond and buffer.prefill_selected_local is not None
+                                else None
                             )
 
                     entry = {
@@ -330,6 +351,8 @@ def main() -> int:
                         "sparc": hp.as_dict() if hp else None,
                         "timestamp_iso": _iso_now(),
                     }
+                    if hp is not None and hp.qcond:
+                        entry["prefill_selected"] = prefill_selected
                     append_answer(answers_path, entry)
                     done.add(key)
                     n_done += 1

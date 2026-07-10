@@ -25,7 +25,7 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.metrics.pope import compute_pope_metrics, normalize_answer
 
 
-CONDITIONS_ORDER = ("baseline", "sparc", "adaptive")
+CONDITIONS_ORDER = ("baseline", "sparc", "adaptive", "qcond")
 STRATEGIES_ORDER = ("random", "popular", "adversarial")
 # Pseudo-strategy: the three strategies pooled. Reported alongside them because
 # the POPE headline number in the literature is usually the per-strategy one.

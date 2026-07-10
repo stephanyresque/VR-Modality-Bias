@@ -49,6 +49,8 @@ class SparcHyperparams:
         adaptive: bool = False,
         lam: float = 0.0,
         ceiling: float = 2.0,
+        qcond: bool = False,
+        qtop_frac: float = 0.10,
     ) -> None:
         # ``alpha`` is dead in the adaptive path (the target factor replaces it),
         # so the no-op guard only applies to the original alpha^c reinforcement.
@@ -65,6 +67,16 @@ class SparcHyperparams:
         # tokens, which is the opposite intervention and would pass silently.
         if adaptive and lam < 0.0:
             raise ValueError(f"lam={lam} must be >= 0 in adaptive mode.")
+        # Point 2 only fills the selection and the prefill target; the machinery
+        # that turns them into a cache write is Point 1's.
+        if qcond and not adaptive:
+            raise ValueError(
+                "qcond=True requires adaptive=True: the question-conditioned "
+                "selection feeds the adaptive correction, and the alpha^c path "
+                "has no use for a prefill target factor."
+            )
+        if qcond and not (0.0 < qtop_frac <= 1.0):
+            raise ValueError(f"qtop_frac={qtop_frac} must be in (0, 1].")
         self.alpha = float(alpha)
         self.tau = float(tau)
         self.selected_layer = int(selected_layer)
@@ -73,6 +85,8 @@ class SparcHyperparams:
         self.adaptive = bool(adaptive)
         self.lam = float(lam)
         self.ceiling = float(ceiling)
+        self.qcond = bool(qcond)
+        self.qtop_frac = float(qtop_frac)
 
     def as_dict(self) -> dict:
         return {
@@ -84,6 +98,8 @@ class SparcHyperparams:
             "adaptive": self.adaptive,
             "lam": self.lam,
             "ceiling": self.ceiling,
+            "qcond": self.qcond,
+            "qtop_frac": self.qtop_frac,
         }
 
 
@@ -147,6 +163,9 @@ def enable_sparc(
             caller MUST also call ``buffer.update_image_positions(...)`` before
             the prefill; the adaptive registry cannot be sized without it and
             the forward raises instead of falling back to a contiguous block.
+            With ``qcond=True`` the caller MUST additionally call
+            ``buffer.update_question_positions(...)`` before the prefill, for
+            the same reason: the relevance signal has no default location.
         probe_image: Any image from the manifest — used to discover
             ``image_token_index`` once. The collection function still has
             to reset the buffer and refresh ``input_len`` **per image**
@@ -185,6 +204,8 @@ def enable_sparc(
         adaptive=hparams.adaptive,
         lam=hparams.lam,
         ceiling=hparams.ceiling,
+        qcond=hparams.qcond,
+        qtop_frac=hparams.qtop_frac,
     )
 
     try:
