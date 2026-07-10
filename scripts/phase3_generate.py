@@ -203,7 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Select the visual tokens at the prefill by the attention the "
              "prompt text pays them, and freeze that selection. Requires "
              "--adaptive.")
-    parser.add_argument("--qtop-frac", type=float, default=0.10,
+    parser.add_argument("--qtop-frac", type=float, default=0.05,
         help="Fraction of the visual tokens --qcond keeps.")
     return parser
 

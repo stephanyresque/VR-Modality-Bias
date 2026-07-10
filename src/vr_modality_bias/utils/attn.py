@@ -322,6 +322,34 @@ class SelectedIndexBuffer:
         self.correction = target / self.accum_factors
         self.accum_factors = target
 
+    def commit_prefill_factor(self):
+        """Record that the prefill already wrote ``target1`` at the selected rows.
+
+        The post-reference layers of the prefill multiply their value states by
+        ``target1`` before the cache write, so the registry has to agree, or the
+        decode-step correction would apply the factor a second time.
+
+        A consequence worth spelling out: at decode step 1, ``update_indices2``
+        copies the prefill selection and ``target2 = target1``, so
+        ``prepare_adaptive_correction`` finds ``target == accum_factors`` and
+        resolves a null correction. Nothing is written at step 1, which is
+        correct: the prefill already applied that factor. From step 2 on, the
+        Point-1 adaptive target takes over and the correction is the ratio
+        against the prefill factor.
+        """
+        if self.accum_factors is None:
+            raise RuntimeError(
+                "commit_prefill_factor needs the registry: call "
+                "update_image_positions() before the prefill."
+            )
+        if len(self.indices1_local) == 0:
+            raise RuntimeError(
+                "commit_prefill_factor called with an empty prefill selection; "
+                "question_conditioned_selection never returns one."
+            )
+        local = self.indices1_local.to(self.accum_factors.device)
+        self.accum_factors[local] = float(self.target1)
+
     def calibrate_adaptive(self, value):
         """Rescale value-cache rows to this step's target factor (in place).
 
@@ -365,66 +393,130 @@ def adaptive_target_factor(image_attention, reference, lam, ceiling) -> float:
     return float(target)
 
 
-def _question_to_image_attention(attn_weights, image_positions, question_positions):
-    """The ``[heads, n_question, n_image]`` submatrix of the prefill attention.
+def _rows_to_image_attention(attn_weights, image_positions, row_positions):
+    """Mean attention the given rows pay each image column, averaged over heads.
 
-    Rows are the question positions, columns the image-placeholder positions.
-    Batch is squeezed: the rest of the SPARC code already assumes bsz == 1
-    (see the ``ratio.squeeze(dim=0)`` in the forwards).
+    Returns a ``[n_image]`` float32 vector. Batch is squeezed: the rest of the
+    SPARC code already assumes bsz == 1 (see the ``ratio.squeeze(dim=0)`` in the
+    forwards). An empty row set yields zeros, which is the neutral background.
     """
-    rows = attn_weights.index_select(2, question_positions.to(attn_weights.device))
-    return rows.index_select(3, image_positions.to(attn_weights.device))[0].detach().float()
+    n_image = image_positions.numel()
+    if row_positions.numel() == 0:
+        return torch.zeros(n_image, dtype=torch.float32, device=attn_weights.device)
+    rows = attn_weights.index_select(2, row_positions.to(attn_weights.device))
+    block = rows.index_select(3, image_positions.to(attn_weights.device))
+    return block[0].detach().float().mean(dim=(0, 1))
+
+
+def _background_positions(attn_weights, question_positions) -> torch.Tensor:
+    """Every prompt row that is NOT part of the question."""
+    n_rows = attn_weights.shape[2]
+    mask = torch.ones(n_rows, dtype=torch.bool, device=attn_weights.device)
+    mask[question_positions.to(attn_weights.device)] = False
+    return mask.nonzero(as_tuple=True)[0]
 
 
 def question_conditioned_selection(
     attn_weights, image_positions, question_positions, qtop_frac
 ) -> torch.Tensor:
-    """Top-k visual tokens by the attention the question pays them, at prefill.
+    """Top-k visual tokens by CONTRASTIVE question relevance, at prefill.
 
-    Relevance of visual token j is the attention the question positions send to
-    it, averaged over heads and over question rows. Returns the LOCAL offsets
-    into ``image_positions`` of the top ``k = max(1, floor(qtop_frac * N))``, in
-    decreasing relevance.
+    Relevance of visual token j is the attention the question rows pay it minus
+    the attention every other prompt row pays it, truncated at zero. The
+    subtraction is what removes the visual sinks: a sink is attended by any text
+    row out of activation habit, so it cancels, while a region the question
+    specifically looks at survives. Raw question attention (the v1 signal) is
+    dominated by sinks: Jaccard 0.81 between selections for different questions
+    on the same image, one fixed position in 92% of them.
 
-    Top-k rather than a threshold: it can never come back empty, which is the
-    exact failure of the inherited relative-rise criterion at step 1.
+    Returns the LOCAL offsets into ``image_positions`` of the top
+    ``k = max(1, floor(qtop_frac * N))``, in decreasing relevance. Top-k rather
+    than a threshold: it can never come back empty.
+
+    Fallback: if the contrast is zero everywhere (degenerate case, e.g. every
+    row attends the image identically), rank by the raw question attention
+    instead. Never an empty selection.
 
     Non-finite relevances are zeroed before the top-k. A NaN would otherwise
     win or lose the ranking arbitrarily depending on the sort, and the picked
     positions then feed the value cache for the whole generation.
     """
-    relevance = _question_to_image_attention(
+    question_relevance = _rows_to_image_attention(
         attn_weights, image_positions, question_positions
-    ).mean(dim=(0, 1))
-    relevance = torch.nan_to_num(relevance, nan=0.0, posinf=0.0, neginf=0.0)
+    )
+    background_relevance = _rows_to_image_attention(
+        attn_weights, image_positions, _background_positions(attn_weights, question_positions)
+    )
+    question_relevance = torch.nan_to_num(question_relevance, nan=0.0, posinf=0.0, neginf=0.0)
+    background_relevance = torch.nan_to_num(
+        background_relevance, nan=0.0, posinf=0.0, neginf=0.0
+    )
+
+    relevance = torch.clamp(question_relevance - background_relevance, min=0.0)
+    if not bool(torch.any(relevance > 0)):
+        logger.debug(
+            "Contrastive relevance is zero everywhere; falling back to the raw "
+            "question attention for the top-k."
+        )
+        relevance = question_relevance
+
     k = max(1, int(math.floor(float(qtop_frac) * image_positions.numel())))
     return torch.topk(relevance, k).indices
 
 
-def prefill_target_factor(
-    attn_weights, image_positions, question_positions, lam, ceiling
-) -> float:
-    """The Point-1 target factor, evaluated at the prefill instead of at a step.
+def prefill_target(lam, ceiling) -> float:
+    """The prefill reinforcement factor: ``min(1 + lam, ceiling)``, unconditional.
 
-    ``current`` is the visual attention of the LAST prompt position, the row
-    that decides the first generated token. ``reference`` is the visual
-    attention of the question rows, i.e. what the model was doing while it read
-    the question. A drop between the two means the decision position let go of
-    the image right where the answer is formed.
+    Point 1's deficit gate has no analogue inside the prefill: there is no
+    "before" for a moving reference to compare against, and the measured prefill
+    deficit was ~0 (targets 1.0000 to 1.0008). The empirical justification that
+    the deficit exists at answer time is already on record from Point 1, so the
+    prefill applies the full intensity rather than inventing a reference. The
+    adaptive gate stays intact for the decode steps, where history exists.
 
-    Delegates to :func:`adaptive_target_factor` so the deficit formula, the
-    float32 upcast and the non-finite guard stay in one place.
+    ``lam=0`` still resolves to exactly 1.0, so the neutrality gate survives.
     """
-    submatrix = _question_to_image_attention(
-        attn_weights, image_positions, question_positions
+    return min(1.0 + float(lam), float(ceiling))
+
+
+def _applies_prefill_boost(
+    layer_idx, gen_new_token, qcond, adaptive, selected_layer, se_layers, indices_buffer
+) -> bool:
+    """Whether this layer must scale its value states during the prefill.
+
+    Shared by both forwards rather than inlined twice: the predicate has six
+    terms and a silent divergence between the Llama and Qwen copies would be
+    invisible until an evaluation run.
+
+    Only the layers strictly above the reference layer qualify. The reference
+    layer decides the selection from its own attention, which is computed after
+    its value states are already committed, so it cannot boost itself.
+    """
+    return (
+        not gen_new_token
+        and qcond
+        and adaptive
+        and selected_layer is not None
+        and layer_idx > selected_layer
+        and layer_idx <= se_layers[1]
+        and indices_buffer.prefill_selected_local is not None
     )
-    reference = submatrix.mean(dim=1)
-    current = (
-        attn_weights[:, :, -1, :]
-        .index_select(-1, image_positions.to(attn_weights.device))
-        .mean(dim=1)
+
+
+def _boost_prefill_values(value_states, indices_buffer) -> None:
+    """Scale the selected visual rows of ``value_states`` in place, at prefill.
+
+    Runs BEFORE ``past_key_values.update`` and before the attention matmul, so
+    the factor lands both in the cache and in the attention output of the last
+    prompt position, which is where the first answer token is decided. That
+    position is never reached by the decode-step calibration, which only fires
+    when ``gen_new_token`` is true.
+    """
+    positions = indices_buffer.indices1.to(value_states.device)
+    factor = torch.as_tensor(
+        indices_buffer.target1, dtype=value_states.dtype, device=value_states.device
     )
-    return adaptive_target_factor(current, reference, lam, ceiling)
+    value_states[:, :, positions] *= factor
 
 
 # Llama text-decoder attention (transformers 5.x).
@@ -451,7 +543,8 @@ def forward_llama(
     lam: Optional[float] = 0.0,
     ceiling: Optional[float] = 2.0,
     qcond: Optional[bool] = False,
-    qtop_frac: Optional[float] = 0.10,
+    qtop_frac: Optional[float] = 0.05,
+    selected_layer: Optional[int] = None,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -486,6 +579,12 @@ def forward_llama(
                 )
         elif len(indices_buffer.indices2) > 0:
             indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
+
+    if _applies_prefill_boost(
+        self.layer_idx, gen_new_token, qcond, adaptive, selected_layer,
+        se_layers, indices_buffer,
+    ):
+        _boost_prefill_values(value_states, indices_buffer)
 
     if past_key_values is not None:
         key_states, value_states = past_key_values.update(
@@ -544,9 +643,10 @@ def forward_llama(
                     )
                 )
     elif selected and qcond and adaptive:
-        # Prefill. Filling indices1/target1 here means layer 0 of step 1 copies
-        # them into indices2/target2 through the existing one-step delay, so the
-        # Point-1 correction reaches the cache before the FIRST generated token.
+        # Prefill, reference layer. The selection and the target decided here are
+        # consumed by the layers ABOVE, still inside this same prefill forward:
+        # the answer token of a VQA prompt comes out of the prefill logits, a
+        # forward the decode-step calibration never touches.
         if indices_buffer.question_positions is None:
             raise RuntimeError(
                 "Question-conditioned SPARC needs update_question_positions() "
@@ -563,9 +663,8 @@ def forward_llama(
             local.unsqueeze(-1), image_token_index=image_token_index
         )
         indices_buffer.prefill_selected_local = local.detach().cpu()
-        indices_buffer.update_target1(
-            prefill_target_factor(attn_weights, image_pos, qp, lam, ceiling)
-        )
+        indices_buffer.update_target1(prefill_target(lam, ceiling))
+        indices_buffer.commit_prefill_factor()
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -763,7 +862,8 @@ def forward_qwen25vl(
     lam: Optional[float] = 0.0,
     ceiling: Optional[float] = 2.0,
     qcond: Optional[bool] = False,
-    qtop_frac: Optional[float] = 0.10,
+    qtop_frac: Optional[float] = 0.05,
+    selected_layer: Optional[int] = None,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -800,6 +900,12 @@ def forward_qwen25vl(
                 )
         elif len(indices_buffer.indices2) > 0:
             indices_buffer.calibrate(past_key_values.layers[self.layer_idx].values, alpha)
+
+    if _applies_prefill_boost(
+        self.layer_idx, gen_new_token, qcond, adaptive, selected_layer,
+        se_layers, indices_buffer,
+    ):
+        _boost_prefill_values(value_states, indices_buffer)
 
     if past_key_values is not None:
         key_states, value_states = past_key_values.update(
@@ -857,9 +963,10 @@ def forward_qwen25vl(
                     )
                 )
     elif selected and qcond and adaptive:
-        # Prefill. Filling indices1/target1 here means layer 0 of step 1 copies
-        # them into indices2/target2 through the existing one-step delay, so the
-        # Point-1 correction reaches the cache before the FIRST generated token.
+        # Prefill, reference layer. The selection and the target decided here are
+        # consumed by the layers ABOVE, still inside this same prefill forward:
+        # the answer token of a VQA prompt comes out of the prefill logits, a
+        # forward the decode-step calibration never touches.
         if indices_buffer.question_positions is None:
             raise RuntimeError(
                 "Question-conditioned SPARC needs update_question_positions() "
@@ -876,9 +983,8 @@ def forward_qwen25vl(
             local.unsqueeze(-1), image_token_index=image_token_index
         )
         indices_buffer.prefill_selected_local = local.detach().cpu()
-        indices_buffer.update_target1(
-            prefill_target_factor(attn_weights, image_pos, qp, lam, ceiling)
-        )
+        indices_buffer.update_target1(prefill_target(lam, ceiling))
+        indices_buffer.commit_prefill_factor()
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -922,7 +1028,7 @@ def add_custom_attention_layers(
     lam=0.0,
     ceiling=2.0,
     qcond=False,
-    qtop_frac=0.10,
+    qtop_frac=0.05,
 ):
     """Monkey-patch every decoder layer's ``self_attn.forward`` with SPARC.
 
@@ -937,11 +1043,11 @@ def add_custom_attention_layers(
             swallows it via ``**kwargs`` and stays on ``alpha^c``.
         lam: Deficit sensitivity. ``lam=0`` makes the adaptive path neutral.
         ceiling: Saturation cap on the target factor.
-        qcond: Select the visual tokens at the prefill by how much attention the
-            question pays them, and freeze that selection for the generation,
-            instead of by the relative rise against the moving average. Requires
-            ``adaptive``; only ``forward_llama`` and ``forward_qwen25vl`` honour
-            it. The caller must have set ``question_positions`` on the buffer.
+        qcond: Select the visual tokens at the prefill by the contrastive
+            attention the question pays them, freeze that selection, and apply
+            the reinforcement inside the prefill itself. Requires ``adaptive``;
+            only ``forward_llama`` and ``forward_qwen25vl`` honour it. The caller
+            must have set ``question_positions`` on the buffer.
         qtop_frac: Fraction of the visual tokens the prefill selection keeps.
     """
     if family is None:
@@ -951,6 +1057,20 @@ def add_custom_attention_layers(
                          f"Known: {sorted(_FORWARD_BY_FAMILY)}.")
 
     forward_fn = _FORWARD_BY_FAMILY[family]
+
+    if qcond:
+        # Only the layers above the reference get the prefill factor written into
+        # their cache. ``accum_factors`` is one number per position, shared by
+        # every layer, so letting the decode calibration touch a layer that never
+        # received the prefill factor would apply target/prefill_target to a raw
+        # value. Narrow the window instead.
+        if selected_layer + 1 > se_layers[1]:
+            raise ValueError(
+                f"qcond=True with selected_layer={selected_layer} and "
+                f"se_layers={tuple(se_layers)} leaves no layer above the "
+                "reference to apply the reinforcement."
+            )
+        se_layers = (max(se_layers[0], selected_layer + 1), se_layers[1])
 
     decoder = decoder_of(model)
     for i, layer in enumerate(decoder.layers):
@@ -969,6 +1089,7 @@ def add_custom_attention_layers(
             ceiling=ceiling,
             qcond=qcond,
             qtop_frac=qtop_frac,
+            selected_layer=selected_layer,
         )
         # Family-agnostic attribute lookup: `.self_attn` for qwen / llava /
         # smolvlm / idefics3; `.attention` for InternLM2 (InternVL). See

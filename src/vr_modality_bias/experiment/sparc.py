@@ -50,7 +50,7 @@ class SparcHyperparams:
         lam: float = 0.0,
         ceiling: float = 2.0,
         qcond: bool = False,
-        qtop_frac: float = 0.10,
+        qtop_frac: float = 0.05,
     ) -> None:
         # ``alpha`` is dead in the adaptive path (the target factor replaces it),
         # so the no-op guard only applies to the original alpha^c reinforcement.
@@ -77,6 +77,14 @@ class SparcHyperparams:
             )
         if qcond and not (0.0 < qtop_frac <= 1.0):
             raise ValueError(f"qtop_frac={qtop_frac} must be in (0, 1].")
+        # The prefill reinforcement lives in the layers ABOVE the reference, so
+        # there has to be at least one. Fail here, not after the checkpoint load.
+        if qcond and selected_layer + 1 > se_layers[1]:
+            raise ValueError(
+                f"qcond=True with selected_layer={selected_layer} and "
+                f"se_layers={tuple(se_layers)} leaves no layer above the "
+                "reference to apply the reinforcement."
+            )
         self.alpha = float(alpha)
         self.tau = float(tau)
         self.selected_layer = int(selected_layer)

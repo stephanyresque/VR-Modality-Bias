@@ -201,7 +201,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ceiling", type=float, default=2.0,
         help="Saturation ceiling for the adaptive arm.")
     # Question-conditioned arm.
-    parser.add_argument("--qtop-frac", type=float, default=0.10,
+    parser.add_argument("--qtop-frac", type=float, default=0.05,
         help="Fraction of the visual tokens the qcond arm selects at the prefill.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing pope_answers.jsonl before starting.")
