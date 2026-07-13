@@ -7,6 +7,7 @@ their pure logic in module-level functions and only those are exercised here.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import json
 import math
@@ -320,39 +321,64 @@ def _args(**overrides) -> SimpleNamespace:
     base = dict(
         alpha=1.05, beta=0.1, tau=3.0, selected_layer=18, se_layers=(0, 28),
         lam=0.5, ceiling=1.8, qtop_frac=0.10,
+        memvr_gamma=0.75, memvr_alpha=0.12, memvr_window=None,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
 
 
-def test_baseline_condition_has_no_sparc(pope_generate):
-    assert pope_generate.hparams_for_condition("baseline", _args()) is None
+def test_baseline_condition_has_no_sparc_and_no_memvr(pope_generate):
+    assert pope_generate.hparams_for_condition("baseline", _args()) == (None, None)
 
 
 def test_sparc_condition_uses_the_original_alpha_path(pope_generate):
-    hp = pope_generate.hparams_for_condition("sparc", _args())
-    assert hp.adaptive is False
-    assert hp.alpha == 1.05
-    assert hp.tau == 3.0
-    assert hp.se_layers == (0, 28)
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc", _args())
+    assert sparc_hp.adaptive is False
+    assert sparc_hp.alpha == 1.05
+    assert sparc_hp.tau == 3.0
+    assert sparc_hp.se_layers == (0, 28)
+    assert memvr_hp is None
 
 
 def test_adaptive_condition_turns_on_the_registry(pope_generate):
-    hp = pope_generate.hparams_for_condition("adaptive", _args())
-    assert hp.adaptive is True
-    assert hp.qcond is False
-    assert hp.lam == 0.5
-    assert hp.ceiling == 1.8
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("adaptive", _args())
+    assert sparc_hp.adaptive is True
+    assert sparc_hp.qcond is False
+    assert sparc_hp.lam == 0.5
+    assert sparc_hp.ceiling == 1.8
+    assert memvr_hp is None
 
 
 def test_qcond_condition_turns_on_the_prefill_selection(pope_generate):
     """The qcond arm is adaptive too: Point 2 feeds Point 1's correction."""
-    hp = pope_generate.hparams_for_condition("qcond", _args(qtop_frac=0.25))
-    assert hp.adaptive is True
-    assert hp.qcond is True
-    assert hp.qtop_frac == 0.25
-    assert hp.lam == 0.5
-    assert hp.ceiling == 1.8
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("qcond", _args(qtop_frac=0.25))
+    assert sparc_hp.adaptive is True
+    assert sparc_hp.qcond is True
+    assert sparc_hp.qtop_frac == 0.25
+    assert sparc_hp.lam == 0.5
+    assert sparc_hp.ceiling == 1.8
+    assert memvr_hp is None
+
+
+def test_memvr_condition_has_no_sparc_and_a_memvr_hp(pope_generate):
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("memvr", _args())
+    assert sparc_hp is None
+    assert memvr_hp is not None
+    assert (memvr_hp.gamma, memvr_hp.alpha, memvr_hp.window) == (0.75, 0.12, None)
+
+
+def test_sparc_memvr_uses_original_sparc_without_adaptive_or_qcond(pope_generate):
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
+    assert sparc_hp is not None
+    assert sparc_hp.adaptive is False
+    assert sparc_hp.qcond is False
+    assert sparc_hp.alpha == 1.05
+    assert memvr_hp is not None
+
+
+def test_memvr_window_override_flows_into_the_hparams(pope_generate):
+    _, memvr_hp = pope_generate.hparams_for_condition("memvr", _args(memvr_window=[4, 12]))
+    assert memvr_hp.window == (4, 12)
 
 
 def test_unknown_condition_is_rejected(pope_generate):
@@ -363,6 +389,144 @@ def test_unknown_condition_is_rejected(pope_generate):
 def test_adaptive_condition_rejects_a_negative_lam(pope_generate):
     with pytest.raises(ValueError, match="lam"):
         pope_generate.hparams_for_condition("adaptive", _args(lam=-1.0))
+
+
+# ---------------------------------------------------------------- pope_generate context body
+
+
+def _fake_model_wrapper():
+    return SimpleNamespace(generate_caption=lambda **kw: "Yes")
+
+
+def _patch_contexts(monkeypatch, pope_generate, record):
+    """Replace the probe + both context managers with recording fakes."""
+    monkeypatch.setattr(
+        pope_generate, "_probe_sparc_layout",
+        lambda mw, image, prompt: (3, [1, 2, 4], [5, 6]),
+    )
+
+    @contextlib.contextmanager
+    def fake_enable_sparc(model_wrapper, *, hparams, probe_image, prompt):
+        record.append("sparc_enter")
+        yield SimpleNamespace(
+            reset=lambda: None,
+            update_input_len=lambda v: None,
+            update_image_positions=lambda v: None,
+            update_question_positions=lambda v: record.append("sparc_qpos"),
+            prefill_selected_local=None,
+        )
+        record.append("sparc_exit")
+
+    @contextlib.contextmanager
+    def fake_enable_memvr(model_wrapper, hparams):
+        record.append("memvr_enter")
+        yield SimpleNamespace(
+            update_image_positions=lambda v: None,
+            n_fires_total=2,
+            fired_in_prefill=True,
+            fire_layer=5,
+            fire_entropy=0.9,
+        )
+        record.append("memvr_exit")
+
+    monkeypatch.setattr(pope_generate, "enable_sparc", fake_enable_sparc)
+    monkeypatch.setattr(pope_generate, "enable_memvr", fake_enable_memvr)
+
+
+def test_generate_answer_baseline_opens_no_context(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    raw, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp=None, memvr_hp=None
+    )
+    assert raw == "Yes"
+    assert record == []
+    assert extra == {}
+
+
+def test_generate_answer_memvr_only_opens_only_the_memvr_context(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("memvr", _args())
+    _, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+    )
+    assert record == ["memvr_enter", "memvr_exit"]
+    assert extra["memvr"]["memvr_n_fires"] == 2
+    assert extra["memvr"]["memvr_fired"] is True
+    assert extra["memvr"]["memvr_fired_in_prefill"] is True
+    assert "prefill_selected" not in extra
+
+
+def test_generate_answer_sparc_memvr_nests_memvr_inside_sparc(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
+    _, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+    )
+    # SPARC outer, MemVR inner: enter sparc, enter memvr, exit memvr, exit sparc.
+    assert record == ["sparc_enter", "memvr_enter", "memvr_exit", "sparc_exit"]
+    assert extra["memvr"]["memvr_n_fires"] == 2
+    assert "prefill_selected" not in extra  # original alpha^c SPARC has no qcond
+
+
+def test_generate_answer_qcond_opens_sparc_only_and_records_selection(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("qcond", _args())
+    _, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+    )
+    assert record == ["sparc_enter", "sparc_qpos", "sparc_exit"]
+    assert "memvr" not in extra
+    assert extra["prefill_selected"] is None  # the qcond path records the key
+
+
+def test_memvr_columns_are_null_without_memvr(pope_generate):
+    cols = pope_generate._memvr_columns({})
+    assert set(cols) == set(pope_generate._MEMVR_COLUMNS)
+    assert all(v is None for v in cols.values())
+
+
+def test_memvr_columns_flatten_the_instrumentation(pope_generate):
+    extra = {"memvr": {
+        "memvr_fired": True, "memvr_fired_in_prefill": False,
+        "memvr_fire_layer": 7, "memvr_fire_entropy": 0.8, "memvr_n_fires": 3,
+    }}
+    cols = pope_generate._memvr_columns(extra)
+    assert cols["memvr_fired"] is True
+    assert cols["memvr_n_fires"] == 3
+    assert cols["memvr_fire_layer"] == 7
+
+
+# ---------------------------------------------------------------- pope_generate CLI flags
+
+
+def test_pope_conditions_default_is_all_six(pope_generate):
+    args = pope_generate.build_parser().parse_args(["--config", "x.yaml"])
+    assert tuple(args.conditions) == pope_generate.CONDITIONS
+
+
+def test_pope_conditions_flag_parses_a_subset(pope_generate):
+    args = pope_generate.build_parser().parse_args(
+        ["--config", "x.yaml", "--conditions", "baseline", "memvr", "sparc_memvr"]
+    )
+    assert args.conditions == ["baseline", "memvr", "sparc_memvr"]
+
+
+def test_pope_memvr_flag_defaults(pope_generate):
+    args = pope_generate.build_parser().parse_args(["--config", "x.yaml"])
+    assert args.memvr_gamma == 0.75
+    assert args.memvr_alpha == 0.12
+    assert args.memvr_window is None
+
+
+def test_pope_memvr_window_flag_parses_two_ints(pope_generate):
+    args = pope_generate.build_parser().parse_args(
+        ["--config", "x.yaml", "--memvr-window", "4", "12"]
+    )
+    assert args.memvr_window == [4, 12]
 
 
 def test_prompt_for_returns_the_prerendered_question(pope_generate):
@@ -517,4 +681,31 @@ def test_phase3_sparc_hparams_land_in_the_run_params_snapshot(phase3):
     assert snapshot["adaptive"] is True
     assert snapshot["lam"] == 0.3
     assert snapshot["ceiling"] == 2.0
+    json.dumps(snapshot)  # must stay serialisable
+
+
+# ---------------------------------------------------------------- phase3 MemVR wiring
+
+
+def test_phase3_memvr_off_by_default(phase3):
+    assert phase3.memvr_hparams_from_args(phase3.build_parser().parse_args([])) is None
+
+
+def test_phase3_memvr_flag_builds_hparams(phase3):
+    hp = phase3.memvr_hparams_from_args(phase3.build_parser().parse_args(["--memvr"]))
+    assert hp is not None
+    assert (hp.gamma, hp.alpha, hp.window) == (0.75, 0.12, None)
+
+
+def test_phase3_memvr_window_flag_parses_two_ints(phase3):
+    args = phase3.build_parser().parse_args(["--memvr", "--memvr-window", "4", "12"])
+    assert phase3.memvr_hparams_from_args(args).window == (4, 12)
+
+
+def test_phase3_memvr_lands_in_the_run_params_snapshot(phase3):
+    hp = phase3.memvr_hparams_from_args(
+        phase3.build_parser().parse_args(["--memvr", "--memvr-alpha", "0.2"])
+    )
+    snapshot = {"run_name": "x", "memvr": hp.as_dict() if hp else None}
+    assert snapshot["memvr"]["alpha"] == 0.2
     json.dumps(snapshot)  # must stay serialisable

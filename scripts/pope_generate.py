@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-"""Answer the POPE questions under three conditions: baseline, SPARC (alpha^c)
-and SPARC adaptive. Greedy, 10 new tokens. Resumable via pope_answers.jsonl.
+"""Answer the POPE questions under several conditions (baseline, SPARC alpha^c,
+adaptive, qcond, memvr, sparc_memvr). Greedy, 10 new tokens. Resumable via
+pope_answers.jsonl.
 
 Run: python scripts/pope_generate.py --config configs/run_smolvlm22_short.yaml
 """
@@ -8,6 +9,7 @@ Run: python scripts/pope_generate.py --config configs/run_smolvlm22_short.yaml
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -22,6 +24,11 @@ from PIL import Image
 from pyprojroot import here
 
 try:
+    from vr_modality_bias.experiment.memvr import (
+        MemVRHyperparams,
+        enable_memvr,
+        resolve_effective_window,
+    )
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from vr_modality_bias.metrics.pope import normalize_answer
     from vr_modality_bias.models.registry import build_model
@@ -31,6 +38,11 @@ try:
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
+    from src.vr_modality_bias.experiment.memvr import (
+        MemVRHyperparams,
+        enable_memvr,
+        resolve_effective_window,
+    )
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from src.vr_modality_bias.metrics.pope import normalize_answer
     from src.vr_modality_bias.models.registry import build_model
@@ -39,7 +51,7 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.utils.seeds import derive_image_seed
 
 
-CONDITIONS = ("baseline", "sparc", "adaptive", "qcond")
+CONDITIONS = ("baseline", "sparc", "adaptive", "qcond", "memvr", "sparc_memvr")
 
 DEFAULT_QUESTIONS = Path("data/processed/mscoco_baseline/pope_questions.jsonl")
 
@@ -117,12 +129,15 @@ def group_by_image(rows: list[dict]) -> OrderedDict[str, list[dict]]:
     return grouped
 
 
-def hparams_for_condition(condition: str, args) -> SparcHyperparams | None:
-    """``None`` for the baseline; otherwise the SPARC settings for that arm."""
-    if condition == "baseline":
+def sparc_hparams_for_condition(condition: str, args) -> SparcHyperparams | None:
+    """The SPARC arm of a condition, or ``None`` when it uses no attention patch.
+
+    ``sparc_memvr`` uses the ORIGINAL alpha^c SPARC (no adaptive, no qcond); the
+    ``adaptive`` / ``qcond`` arms keep Point 1 / Point 2 on. ``baseline`` and
+    ``memvr`` carry no SPARC.
+    """
+    if condition in ("baseline", "memvr"):
         return None
-    if condition not in CONDITIONS:
-        raise ValueError(f"Unknown condition {condition!r}. Known: {CONDITIONS}.")
     return SparcHyperparams(
         alpha=args.alpha,
         tau=args.tau,
@@ -135,6 +150,116 @@ def hparams_for_condition(condition: str, args) -> SparcHyperparams | None:
         qcond=(condition == "qcond"),
         qtop_frac=args.qtop_frac,
     )
+
+
+def memvr_hparams_for_condition(condition: str, args) -> MemVRHyperparams | None:
+    """The MemVR arm of a condition, or ``None`` when the condition has no MemVR."""
+    if condition not in ("memvr", "sparc_memvr"):
+        return None
+    window = tuple(args.memvr_window) if args.memvr_window else None
+    return MemVRHyperparams(
+        gamma=args.memvr_gamma, alpha=args.memvr_alpha, window=window
+    )
+
+
+def hparams_for_condition(
+    condition: str, args
+) -> tuple[SparcHyperparams | None, MemVRHyperparams | None]:
+    """Map a condition to its ``(sparc_hp, memvr_hp)`` pair.
+
+    baseline -> (None, None); sparc / adaptive / qcond -> (SPARC, None);
+    memvr -> (None, MemVR); sparc_memvr -> (original alpha^c SPARC, MemVR).
+    """
+    if condition not in CONDITIONS:
+        raise ValueError(f"Unknown condition {condition!r}. Known: {CONDITIONS}.")
+    return (
+        sparc_hparams_for_condition(condition, args),
+        memvr_hparams_for_condition(condition, args),
+    )
+
+
+# The MemVR instrumentation columns, ordered; None on the arms without MemVR.
+_MEMVR_COLUMNS = (
+    "memvr_fired",
+    "memvr_fired_in_prefill",
+    "memvr_fire_layer",
+    "memvr_fire_entropy",
+    "memvr_n_fires",
+)
+
+
+def _memvr_columns(extra: dict) -> dict:
+    """Flatten the per-question MemVR instrumentation, or all-``None`` if absent."""
+    mv = extra.get("memvr")
+    return {k: (mv[k] if mv else None) for k in _MEMVR_COLUMNS}
+
+
+def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp):
+    """Generate one POPE answer under the ``(sparc_hp, memvr_hp)`` pair.
+
+    The generation body lives here exactly once. SPARC and MemVR contexts are
+    entered only when their hyperparameters are present, nested SPARC-outer /
+    MemVR-inner, and each buffer receives its per-question updates before the
+    generate call. Returns ``(raw_answer, extra)``; ``extra`` carries the qcond
+    prefill selection and the MemVR instrumentation, both read inside the context
+    before it exits (as the old inline qcond path did).
+    """
+    extra: dict = {}
+    if sparc_hp is None and memvr_hp is None:
+        raw_answer = model_wrapper.generate_caption(
+            image=image, prompt=prompt,
+            max_new_tokens=MAX_NEW_TOKENS, seed=seed,
+            generation_kwargs=GEN_KWARGS,
+        )
+        return raw_answer, extra
+
+    # Pure tokenisation, safe to run before opening the contexts (it does not
+    # touch the patched forwards). image_positions feeds both buffers.
+    input_len, image_positions, question_positions = _probe_sparc_layout(
+        model_wrapper, image, prompt
+    )
+    with contextlib.ExitStack() as stack:
+        if sparc_hp is not None:
+            sparc_buffer = stack.enter_context(
+                enable_sparc(
+                    model_wrapper, hparams=sparc_hp, probe_image=image, prompt=prompt
+                )
+            )
+            sparc_buffer.reset()
+            sparc_buffer.update_input_len(input_len)
+            sparc_buffer.update_image_positions(image_positions)
+            if sparc_hp.qcond:
+                sparc_buffer.update_question_positions(question_positions)
+        else:
+            sparc_buffer = None
+
+        if memvr_hp is not None:
+            memvr_buffer = stack.enter_context(enable_memvr(model_wrapper, memvr_hp))
+            memvr_buffer.update_image_positions(image_positions)
+        else:
+            memvr_buffer = None
+
+        raw_answer = model_wrapper.generate_caption(
+            image=image, prompt=prompt,
+            max_new_tokens=MAX_NEW_TOKENS, seed=seed,
+            generation_kwargs=GEN_KWARGS,
+        )
+
+        if sparc_buffer is not None and sparc_hp.qcond:
+            extra["prefill_selected"] = (
+                sparc_buffer.prefill_selected_local.tolist()
+                if sparc_buffer.prefill_selected_local is not None
+                else None
+            )
+        if memvr_buffer is not None:
+            extra["memvr"] = {
+                "memvr_fired": memvr_buffer.n_fires_total > 0,
+                "memvr_fired_in_prefill": bool(memvr_buffer.fired_in_prefill),
+                "memvr_fire_layer": memvr_buffer.fire_layer,
+                "memvr_fire_entropy": memvr_buffer.fire_entropy,
+                "memvr_n_fires": memvr_buffer.n_fires_total,
+            }
+    return raw_answer, extra
 
 
 def _probe_sparc_layout(model_wrapper, image, prompt):
@@ -203,6 +328,15 @@ def build_parser() -> argparse.ArgumentParser:
     # Question-conditioned arm.
     parser.add_argument("--qtop-frac", type=float, default=0.05,
         help="Fraction of the visual tokens the qcond arm selects at the prefill.")
+    # MemVR arm (conditions memvr, sparc_memvr).
+    parser.add_argument("--memvr-gamma", type=float, default=0.75,
+        help="MemVR entropy threshold (normalised); 1.0 never fires.")
+    parser.add_argument("--memvr-alpha", type=float, default=0.12,
+        help="MemVR retracing ratio (convex-mix weight); 0.0 is a no-op.")
+    parser.add_argument("--memvr-window", type=int, nargs=2, default=None,
+        metavar=("START", "END"),
+        help="MemVR firing window (inclusive). Omitted = depth fraction "
+             "(round(L/6), round(L/2)), capped at L-2.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing pope_answers.jsonl before starting.")
     parser.add_argument("--print-answers", action="store_true",
@@ -241,26 +375,15 @@ def main() -> int:
     logger.info(f"conditions: {args.conditions}")
     logger.info(f"model     : {model_id} ({dtype_str})")
     logger.info(f"decoding  : greedy, max_new_tokens={MAX_NEW_TOKENS}")
-    for condition, hp in hparams.items():
-        logger.info(f"  {condition:<9}: {hp.as_dict() if hp else 'no SPARC'}")
+    for condition, (shp, mhp) in hparams.items():
+        logger.info(
+            f"  {condition:<12}: sparc={shp.as_dict() if shp else None} "
+            f"memvr={mhp.as_dict() if mhp else None}"
+        )
     logger.info(f"run dir   : {run_dir}")
     logger.info("=" * 70)
 
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "run_params.json").write_text(
-        json.dumps({
-            "run_name": args.run_name,
-            "questions": str(args.questions),
-            "conditions": list(args.conditions),
-            "model_id": model_id,
-            "dtype": dtype_str,
-            "max_new_tokens": MAX_NEW_TOKENS,
-            "gen_kwargs": GEN_KWARGS,
-            "sparc": {c: (hp.as_dict() if hp else None) for c, hp in hparams.items()},
-            "timestamp_iso": _iso_now(),
-        }, indent=2) + "\n",
-        encoding="utf-8",
-    )
 
     answers_path = run_dir / "pope_answers.jsonl"
     if args.overwrite and answers_path.exists():
@@ -277,6 +400,40 @@ def main() -> int:
     logger.info(f"Loading {model_id} on {device}...")
     model_wrapper.load(device)
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
+
+    # Written after the load so the MemVR window can be resolved against the
+    # real layer count (the depth-fraction default needs n_layers).
+    memvr_effective = {
+        c: {
+            "gamma": mhp.gamma,
+            "alpha": mhp.alpha,
+            "top_k": mhp.top_k,
+            "window_effective": list(
+                resolve_effective_window(
+                    model_wrapper.n_layers,
+                    tuple(mhp.window) if mhp.window else None,
+                )
+            ),
+        }
+        for c, (shp, mhp) in hparams.items()
+        if mhp is not None
+    }
+    (run_dir / "run_params.json").write_text(
+        json.dumps({
+            "run_name": args.run_name,
+            "questions": str(args.questions),
+            "conditions": list(args.conditions),
+            "model_id": model_id,
+            "dtype": dtype_str,
+            "max_new_tokens": MAX_NEW_TOKENS,
+            "gen_kwargs": GEN_KWARGS,
+            "sparc": {c: (shp.as_dict() if shp else None) for c, (shp, mhp) in hparams.items()},
+            "memvr": {c: (mhp.as_dict() if mhp else None) for c, (shp, mhp) in hparams.items()},
+            "memvr_effective": memvr_effective,
+            "timestamp_iso": _iso_now(),
+        }, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     grouped = group_by_image(questions)
     total_planned = len(questions) * len(args.conditions)
@@ -301,39 +458,13 @@ def main() -> int:
                     n_skipped += 1
                     continue
                 try:
-                    hp = hparams[condition]
-                    if hp is None:
-                        raw_answer = model_wrapper.generate_caption(
-                            image=image, prompt=prompt,
-                            max_new_tokens=MAX_NEW_TOKENS, seed=seed,
-                            generation_kwargs=GEN_KWARGS,
-                        )
-                    else:
-                        # Per QUESTION, not per image: input_len moves with the
-                        # question length, and the adaptive registry is sized
-                        # from image_positions at prefill.
-                        input_len, image_positions, question_positions = (
-                            _probe_sparc_layout(model_wrapper, image, prompt)
-                        )
-                        with enable_sparc(
-                            model_wrapper, hparams=hp,
-                            probe_image=image, prompt=prompt,
-                        ) as buffer:
-                            buffer.reset()
-                            buffer.update_input_len(input_len)
-                            buffer.update_image_positions(image_positions)
-                            if hp.qcond:
-                                buffer.update_question_positions(question_positions)
-                            raw_answer = model_wrapper.generate_caption(
-                                image=image, prompt=prompt,
-                                max_new_tokens=MAX_NEW_TOKENS, seed=seed,
-                                generation_kwargs=GEN_KWARGS,
-                            )
-                            prefill_selected = (
-                                buffer.prefill_selected_local.tolist()
-                                if hp.qcond and buffer.prefill_selected_local is not None
-                                else None
-                            )
+                    # Per QUESTION, not per image: input_len moves with the
+                    # question length, and the adaptive registry / MemVR Z are
+                    # sized from image_positions at the prefill.
+                    sparc_hp, memvr_hp = hparams[condition]
+                    raw_answer, extra = _generate_answer(
+                        model_wrapper, image, prompt, seed, sparc_hp, memvr_hp
+                    )
 
                     entry = {
                         "image_id": image_id,
@@ -348,11 +479,13 @@ def main() -> int:
                         "model_id": model_id,
                         "dtype": dtype_str,
                         "max_new_tokens": MAX_NEW_TOKENS,
-                        "sparc": hp.as_dict() if hp else None,
+                        "sparc": sparc_hp.as_dict() if sparc_hp else None,
+                        "memvr": memvr_hp.as_dict() if memvr_hp else None,
                         "timestamp_iso": _iso_now(),
+                        **_memvr_columns(extra),
                     }
-                    if hp is not None and hp.qcond:
-                        entry["prefill_selected"] = prefill_selected
+                    if "prefill_selected" in extra:
+                        entry["prefill_selected"] = extra["prefill_selected"]
                     append_answer(answers_path, entry)
                     done.add(key)
                     n_done += 1

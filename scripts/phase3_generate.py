@@ -9,6 +9,7 @@ Run: make phase3  (smoke: make phase3-smoke; coherence check: make phase3-cohere
 from __future__ import annotations
 
 import argparse
+import contextlib
 import glob
 import json
 import os
@@ -25,6 +26,11 @@ from pyprojroot import here
 
 try:
     from vr_modality_bias.data.prompts import get_prompt
+    from vr_modality_bias.experiment.memvr import (
+        MemVRHyperparams,
+        enable_memvr,
+        resolve_effective_window,
+    )
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.utils.config import load_config
@@ -34,6 +40,11 @@ except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
     from src.vr_modality_bias.data.prompts import get_prompt
+    from src.vr_modality_bias.experiment.memvr import (
+        MemVRHyperparams,
+        enable_memvr,
+        resolve_effective_window,
+    )
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.utils.config import load_config
@@ -205,6 +216,20 @@ def build_parser() -> argparse.ArgumentParser:
              "--adaptive.")
     parser.add_argument("--qtop-frac", type=float, default=0.05,
         help="Fraction of the visual tokens --qcond keeps.")
+    # MemVR (Zou et al.). Layered on the ON cell (SPARC), same as --qcond;
+    # phase 3 has no standalone MemVR cell (the ON condition is definitionally
+    # SPARC), so --memvr gives the sparc+memvr CHAIR arm.
+    parser.add_argument("--memvr", action="store_true",
+        help="Add MemVR visual retracing to the SPARC ON cell (the sparc+memvr "
+             "CHAIR arm).")
+    parser.add_argument("--memvr-gamma", type=float, default=0.75,
+        help="MemVR entropy threshold (normalised); 1.0 never fires.")
+    parser.add_argument("--memvr-alpha", type=float, default=0.12,
+        help="MemVR retracing ratio (convex-mix weight); 0.0 is a no-op.")
+    parser.add_argument("--memvr-window", type=int, nargs=2, default=None,
+        metavar=("START", "END"),
+        help="MemVR firing window (inclusive). Omitted = depth fraction "
+             "(round(L/6), round(L/2)), capped at L-2.")
     return parser
 
 
@@ -224,6 +249,16 @@ def sparc_hparams_from_args(args) -> SparcHyperparams:
     )
 
 
+def memvr_hparams_from_args(args) -> MemVRHyperparams | None:
+    """MemVR hyperparameters when ``--memvr`` is set, else ``None``."""
+    if not args.memvr:
+        return None
+    window = tuple(args.memvr_window) if args.memvr_window else None
+    return MemVRHyperparams(
+        gamma=args.memvr_gamma, alpha=args.memvr_alpha, window=window
+    )
+
+
 def main() -> int:
     args = build_parser().parse_args()
 
@@ -237,9 +272,10 @@ def main() -> int:
         args.print_captions = True
 
     # Built before the model load so an invalid combination (α<=1 without
-    # --adaptive, negative λ, ceiling<=1) fails in a second, not after the
-    # checkpoint is on the GPU.
+    # --adaptive, negative λ, ceiling<=1, MemVR alpha outside [0,1]) fails in a
+    # second, not after the checkpoint is on the GPU.
     sparc_hparams = sparc_hparams_from_args(args)
+    memvr_hparams = memvr_hparams_from_args(args)
 
     run_dir = args.output_root / args.run_name
     log_file = run_dir / "logs" / "phase3.log"
@@ -267,6 +303,9 @@ def main() -> int:
         f"qtop_frac={args.qtop_frac}"
     )
     logger.info(
+        f"MemVR: {'ON ' + str(memvr_hparams.as_dict()) if memvr_hparams else 'OFF'}"
+    )
+    logger.info(
         f"decoding: {'GREEDY (do_sample=False, num_beams=1)' if not args.sampling else 'SAMPLING (from config)'}"
     )
     logger.info(f"run dir : {run_dir}")
@@ -279,6 +318,7 @@ def main() -> int:
         "run_name": args.run_name,
         "lengths": args.lengths,
         **sparc_hparams.as_dict(),
+        "memvr": memvr_hparams.as_dict() if memvr_hparams else None,
         "limit": args.limit,
         "overwrite": args.overwrite,
         "smoke": args.smoke,
@@ -315,6 +355,12 @@ def main() -> int:
     logger.info(f"Loading {model_id} ({dtype_str}) on {device}...")
     model_wrapper.load(device)
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
+    if memvr_hparams is not None:
+        eff = resolve_effective_window(
+            model_wrapper.n_layers,
+            tuple(memvr_hparams.window) if memvr_hparams.window else None,
+        )
+        logger.info(f"MemVR effective window: {eff}")
 
     # Plan: count planned cells (informational; we still skip-on-disk live).
     planned_per_length = 2 * args.limit  # off + on per image
@@ -438,10 +484,14 @@ def main() -> int:
                 input_len, image_positions, question_positions = _probe_sparc_layout(
                     model_wrapper, image, prompt,
                 )
-                with enable_sparc(
-                    model_wrapper, hparams=sparc_hparams,
-                    probe_image=image, prompt=prompt,
-                ) as buffer:
+                # SPARC outer, MemVR inner (same nesting as pope_generate). The
+                # ON cell is definitionally SPARC; --memvr layers retracing on
+                # top of it, giving the sparc+memvr CHAIR arm.
+                with contextlib.ExitStack() as stack:
+                    buffer = stack.enter_context(enable_sparc(
+                        model_wrapper, hparams=sparc_hparams,
+                        probe_image=image, prompt=prompt,
+                    ))
                     buffer.reset()
                     buffer.update_input_len(input_len)
                     # Per-id mask of <image>-token positions for THIS image.
@@ -451,12 +501,28 @@ def main() -> int:
                     buffer.update_image_positions(image_positions)
                     if sparc_hparams.qcond:
                         buffer.update_question_positions(question_positions)
+                    if memvr_hparams is not None:
+                        memvr_buffer = stack.enter_context(
+                            enable_memvr(model_wrapper, memvr_hparams)
+                        )
+                        memvr_buffer.update_image_positions(image_positions)
+                    else:
+                        memvr_buffer = None
                     caption = model_wrapper.generate_caption(
                         image=image, prompt=prompt,
                         max_new_tokens=max_new_tokens,
                         seed=seed,
                         generation_kwargs=gen_kwargs,
                     )
+                    # Aggregates only: decode fires once per step, so the totals
+                    # over the whole generation are what we record (no per-step
+                    # logging). Read inside the context before it exits.
+                    if memvr_buffer is not None:
+                        memvr_n_fires = memvr_buffer.n_fires_total
+                        memvr_fired_in_prefill = bool(memvr_buffer.fired_in_prefill)
+                    else:
+                        memvr_n_fires = None
+                        memvr_fired_in_prefill = None
                 entry = {
                     "image_id": image_id,
                     "length": length,
@@ -466,6 +532,9 @@ def main() -> int:
                     "selected_layer": int(args.selected_layer),
                     "se_layers": list(args.se_layers),
                     "beta": float(args.beta),
+                    "memvr": memvr_hparams.as_dict() if memvr_hparams else None,
+                    "memvr_n_fires": memvr_n_fires,
+                    "memvr_fired_in_prefill": memvr_fired_in_prefill,
                     "caption": caption,
                     "seed": seed,
                     "prompt_key": prompt_key,
