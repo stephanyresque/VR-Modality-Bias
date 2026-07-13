@@ -41,6 +41,20 @@ _N_LAYERS_CANDIDATES: tuple[str, ...] = (
     "config.text_config.n_layer",
 )
 
+# Final decoder norm (applied before lm_head). Ordered decoder-specific first so
+# a wrong ``.norm`` on an outer multimodal wrapper is never picked. LLaVA-1.5
+# (transformers 5.x) keeps it at ``model.language_model.norm``.
+_FINAL_NORM_CANDIDATES: tuple[str, ...] = (
+    "model.text_model.norm",
+    "model.language_model.norm",
+    "model.language_model.model.norm",
+    "language_model.model.norm",
+    "language_model.norm",
+    "text_model.norm",
+    "model.norm",
+    "norm",
+)
+
 
 def _resolve_attr(root: Any, dotted: str) -> Any:
     """Return ``root.a.b.c`` for ``dotted="a.b.c"`` or raise :class:`AttributeError`."""
@@ -67,6 +81,7 @@ class LlavaWrapper(ModelWrapper):
         self._model = None  # transformers.PreTrainedModel after load()
         self._processor = None  # transformers.LlavaProcessor
         self._lm_head: torch.nn.Module | None = None
+        self._final_norm: torch.nn.Module | None = None
         self._n_layers: int | None = None
 
     def load(self, device: torch.device) -> None:
@@ -99,6 +114,7 @@ class LlavaWrapper(ModelWrapper):
         self._model.eval()
 
         self._lm_head = self._discover_lm_head()
+        self._final_norm = self._discover_final_norm()
         self._n_layers = self._discover_n_layers()
 
     def _discover_lm_head(self) -> torch.nn.Module:
@@ -113,6 +129,20 @@ class LlavaWrapper(ModelWrapper):
             f"Could not locate lm_head on {type(self._model).__name__}. "
             f"Tried: {list(_LM_HEAD_CANDIDATES)}. Inspect the loaded model "
             "and extend _LM_HEAD_CANDIDATES in llava.py if needed."
+        )
+
+    def _discover_final_norm(self) -> torch.nn.Module:
+        for path in _FINAL_NORM_CANDIDATES:
+            try:
+                norm = _resolve_attr(self._model, path)
+            except AttributeError:
+                continue
+            if isinstance(norm, torch.nn.Module):
+                return norm
+        raise RuntimeError(
+            f"Could not locate the final norm on {type(self._model).__name__}. "
+            f"Tried: {list(_FINAL_NORM_CANDIDATES)}. Inspect the loaded model "
+            "and extend _FINAL_NORM_CANDIDATES in llava.py if needed."
         )
 
     def _discover_n_layers(self) -> int:
@@ -138,6 +168,11 @@ class LlavaWrapper(ModelWrapper):
         if self._lm_head is None:
             raise RuntimeError("Model not loaded — call .load() first.")
         return self._lm_head
+
+    def get_final_norm(self) -> torch.nn.Module:
+        if self._final_norm is None:
+            raise RuntimeError("Model not loaded -- call .load() first.")
+        return self._final_norm
 
     def _format_prompt(self, prompt: str) -> str:
         """Render ``prompt`` into the LLaVA-1.5 chat string.

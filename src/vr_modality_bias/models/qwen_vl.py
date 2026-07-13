@@ -36,6 +36,20 @@ _N_LAYERS_CANDIDATES: tuple[str, ...] = (
     "config.llm_config.num_hidden_layers",
 )
 
+# Final decoder norm (applied before lm_head). Ordered decoder-specific first so
+# a wrong ``.norm`` on an outer multimodal wrapper is never picked. Qwen2.5-VL
+# keeps it at ``model.language_model.norm``.
+_FINAL_NORM_CANDIDATES: tuple[str, ...] = (
+    "model.text_model.norm",
+    "model.language_model.norm",
+    "model.language_model.model.norm",
+    "language_model.model.norm",
+    "language_model.norm",
+    "text_model.norm",
+    "model.norm",
+    "norm",
+)
+
 
 def _resolve_attr(root: Any, dotted: str) -> Any:
     obj = root
@@ -62,6 +76,7 @@ class QwenVLWrapper(ModelWrapper):
         self._model = None
         self._processor = None
         self._lm_head: torch.nn.Module | None = None
+        self._final_norm: torch.nn.Module | None = None
         self._n_layers: int | None = None
 
 
@@ -81,6 +96,7 @@ class QwenVLWrapper(ModelWrapper):
         self._model.eval()
 
         self._lm_head = self._discover_lm_head()
+        self._final_norm = self._discover_final_norm()
         self._n_layers = self._discover_n_layers()
 
     @staticmethod
@@ -123,6 +139,20 @@ class QwenVLWrapper(ModelWrapper):
             "Extend _LM_HEAD_CANDIDATES in qwen_vl.py if needed."
         )
 
+    def _discover_final_norm(self) -> torch.nn.Module:
+        for path in _FINAL_NORM_CANDIDATES:
+            try:
+                norm = _resolve_attr(self._model, path)
+            except AttributeError:
+                continue
+            if isinstance(norm, torch.nn.Module):
+                return norm
+        raise RuntimeError(
+            f"Could not locate the final norm on {type(self._model).__name__}. "
+            f"Tried: {list(_FINAL_NORM_CANDIDATES)}. "
+            "Extend _FINAL_NORM_CANDIDATES in qwen_vl.py if needed."
+        )
+
     def _discover_n_layers(self) -> int:
         for path in _N_LAYERS_CANDIDATES:
             try:
@@ -146,6 +176,11 @@ class QwenVLWrapper(ModelWrapper):
         if self._lm_head is None:
             raise RuntimeError("Model not loaded — call .load() first.")
         return self._lm_head
+
+    def get_final_norm(self) -> torch.nn.Module:
+        if self._final_norm is None:
+            raise RuntimeError("Model not loaded -- call .load() first.")
+        return self._final_norm
 
     def generate_caption(
         self,

@@ -60,6 +60,16 @@ class ModelWrapper(ABC):
         vocabulary logit space.
         """
 
+    @abstractmethod
+    def get_final_norm(self) -> torch.nn.Module:
+        """Return the decoder's final norm (the norm applied before ``lm_head``).
+
+        Required by MemVR's logit-lens trigger, which projects the last
+        position through ``final_norm`` then ``lm_head`` at each layer. The
+        KL diagnostic in ``metrics.kl`` deliberately skips this norm; that is
+        an internal choice of the diagnostic and stays as is.
+        """
+
     @property
     @abstractmethod
     def n_layers(self) -> int:
