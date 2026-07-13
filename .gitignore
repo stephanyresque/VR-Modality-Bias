@@ -54,3 +54,6 @@ results/runs/*/diagnostics_collect.jsonl
 .DS_Store
 Thumbs.db
 desktop.ini
+
+docs/
+.claude/
