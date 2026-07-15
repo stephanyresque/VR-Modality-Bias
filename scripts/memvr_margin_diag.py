@@ -29,10 +29,17 @@ try:
         resolve_effective_window,
     )
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from vr_modality_bias.experiment.vista import (
+        VistaHyperparams,
+        enable_vista,
+        resolve_sla_window,
+        resolve_vsv_window,
+    )
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.utils.config import load_config
     from vr_modality_bias.utils.device import resolve_dtype, select_device
     from vr_modality_bias.utils.memvr import normalized_topk_entropy
+    from vr_modality_bias.utils.vista import build_negative_inputs, compute_vsv, sla_mix_logits
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
@@ -42,16 +49,24 @@ except ModuleNotFoundError:
         resolve_effective_window,
     )
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from src.vr_modality_bias.experiment.vista import (
+        VistaHyperparams,
+        enable_vista,
+        resolve_sla_window,
+        resolve_vsv_window,
+    )
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.utils.config import load_config
     from src.vr_modality_bias.utils.device import resolve_dtype, select_device
     from src.vr_modality_bias.utils.memvr import normalized_topk_entropy
+    from src.vr_modality_bias.utils.vista import build_negative_inputs, compute_vsv, sla_mix_logits
 
 
-# Only the three arms the go/no-go needs. sparc_memvr reuses the ORIGINAL alpha^c
-# SPARC (no adaptive, no qcond), mirroring pope_generate's mapping; the
-# adaptive/qcond arms are already known to be baseline-identical on POPE.
-DIAG_CONDITIONS = ("baseline", "memvr", "sparc_memvr")
+# The go/no-go arms. sparc_memvr / (no sparc_vista) reuse the ORIGINAL alpha^c
+# SPARC, proven prefill-blind in the MemVR cycle (arms identical to the 4th
+# decimal), so a sparc_vista arm here would spend GPU without new information.
+# vista is the VSV steering; vista_sla adds the SLA logit mix at read time.
+DIAG_CONDITIONS = ("baseline", "memvr", "sparc_memvr", "vista", "vista_sla")
 
 DEFAULT_QUESTIONS = Path("data/processed/mscoco_baseline/pope_questions.jsonl")
 
@@ -73,11 +88,12 @@ def _iso_now() -> str:
 
 def hparams_for_condition(
     condition: str, args
-) -> tuple[SparcHyperparams | None, MemVRHyperparams | None]:
-    """``(sparc_hp, memvr_hp)`` for a diagnostic condition (mirrors Etapa 2).
+) -> tuple[SparcHyperparams | None, MemVRHyperparams | None, VistaHyperparams | None]:
+    """``(sparc_hp, memvr_hp, vista_hp)`` for a diagnostic condition.
 
-    baseline -> (None, None); memvr -> (None, MemVR); sparc_memvr -> (original
-    alpha^c SPARC, MemVR).
+    baseline -> (None, None, None); memvr -> (None, MemVR, None); sparc_memvr ->
+    (alpha^c SPARC, MemVR, None); vista -> (None, None, VISTA); vista_sla ->
+    (None, None, VISTA with sla=True). MemVR and VISTA are never both present.
     """
     if condition not in DIAG_CONDITIONS:
         raise ValueError(f"Unknown condition {condition!r}. Known: {DIAG_CONDITIONS}.")
@@ -96,7 +112,18 @@ def hparams_for_condition(
         memvr_hp = MemVRHyperparams(
             gamma=args.memvr_gamma, alpha=args.memvr_alpha, window=window
         )
-    return sparc_hp, memvr_hp
+    vista_hp = None
+    if condition in ("vista", "vista_sla"):
+        window = tuple(args.vista_window) if args.vista_window else None
+        sla_window = tuple(args.sla_window) if args.sla_window else None
+        vista_hp = VistaHyperparams(
+            lam=args.vista_lambda,
+            window=window,
+            sla=(condition == "vista_sla"),
+            sla_alpha=args.sla_alpha,
+            sla_window=sla_window,
+        )
+    return sparc_hp, memvr_hp, vista_hp
 
 
 # ---------------------------------------------------------------- yes/no tokens
@@ -331,6 +358,41 @@ def _prefill_logits(model_wrapper, image, prompt, sparc_hp, memvr_hp, device):
     return logits, instrumentation
 
 
+def _vista_prefill_logits(model_wrapper, inputs, vista_hp, vsv, device):
+    """Run one VSV-steered prefill; return (last-position logits, instrumentation).
+
+    ``inputs`` are the SAME positive prefill inputs the VSV was computed from.
+    With ``vista_hp.sla`` the forward keeps ``output_hidden_states`` and the last
+    position's logits are SLA-mixed (window / alpha from the resolved buffer)
+    before the margin. Instrumentation is read inside the context.
+    """
+    with enable_vista(model_wrapper, vista_hp) as vista_buffer:
+        vista_buffer.set_vsv(vsv)
+        if vista_buffer.sla:
+            moved = inputs.to(device)
+            with torch.no_grad():
+                outputs = model_wrapper._model(
+                    **moved, use_cache=False, output_hidden_states=True
+                )
+            last_logits = outputs.logits[0, -1, :]
+            per_layer_last = [h[0, -1, :] for h in outputs.hidden_states[1:]]
+            logits = sla_mix_logits(
+                per_layer_last,
+                model_wrapper.get_lm_head(),
+                last_logits,
+                vista_buffer.sla_alpha,
+                vista_buffer.sla_window,
+            ).detach().float().cpu()
+        else:
+            logits = _forward_last_logits(model_wrapper._model, inputs, device)
+        instrumentation = {
+            "vista_vsv_norm_mean": vista_buffer.vsv_norm_mean,
+            "vista_lambda_sim_mean": vista_buffer.lambda_sim_mean(),
+            "vista_n_steered_forwards": vista_buffer.n_steered_forwards,
+        }
+    return logits, instrumentation
+
+
 def _entropy_profile(model_wrapper, questions, images_dir, device, n):
     """Per-layer normalised entropy of the last prefill position, baseline only.
 
@@ -408,6 +470,18 @@ def build_parser() -> argparse.ArgumentParser:
         metavar=("START", "END"),
         help="MemVR firing window (inclusive). Omitted = depth fraction "
              "(round(L/6), round(L/2)), capped at L-2.")
+    # VISTA flags (conditions vista, vista_sla), for the later lambda sweep.
+    parser.add_argument("--vista-lambda", type=float, default=0.01,
+        help="VISTA steering strength (multiplies the VSV directly).")
+    parser.add_argument("--vista-window", type=int, nargs=2, default=None,
+        metavar=("START", "END"),
+        help="VISTA steering window (inclusive). Omitted = all layers.")
+    parser.add_argument("--sla-alpha", type=float, default=0.3,
+        help="SLA logit-mix weight (condition vista_sla).")
+    parser.add_argument("--sla-window", type=int, nargs=2, default=None,
+        metavar=("START", "END"),
+        help="SLA layer window (inclusive). Omitted = depth proportional "
+             "(round(25L/32), round(30L/32)).")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete existing diagnostic outputs before starting.")
     return parser
@@ -499,9 +573,28 @@ def main() -> int:
                 model_wrapper.n_layers, tuple(mhp.window) if mhp.window else None
             )
         )
-        for c, (shp, mhp) in hparams.items()
+        for c, (shp, mhp, vhp) in hparams.items()
         if mhp is not None
     }
+    vista_effective = {}
+    for c, (shp, mhp, vhp) in hparams.items():
+        if vhp is None:
+            continue
+        vsv_window = resolve_vsv_window(
+            model_wrapper.n_layers, tuple(vhp.window) if vhp.window else None
+        )
+        entry = {
+            "lam": vhp.lam,
+            "vsv_window_effective": list(vsv_window) if vsv_window is not None else None,
+        }
+        if vhp.sla:
+            entry["sla_alpha"] = vhp.sla_alpha
+            entry["sla_window_effective"] = list(
+                resolve_sla_window(
+                    model_wrapper.n_layers, tuple(vhp.sla_window) if vhp.sla_window else None
+                )
+            )
+        vista_effective[c] = entry
 
     tokenizer = model_wrapper._processor.tokenizer  # noqa: SLF001
 
@@ -546,13 +639,36 @@ def main() -> int:
             n_failed += 1
             continue
 
+        # The VSV is computed ONCE per question, on the clean model, before any
+        # context, and reused by vista and vista_sla. Skipped when no selected
+        # condition uses VISTA (no wasted prefills on baseline/memvr).
+        uses_vista = any(hparams[c][2] is not None for c in conditions)
+        vsv = None
+        if uses_vista:
+            try:
+                pos_inputs, *_ = _prefill_inputs_and_layout(model_wrapper, image, prompt)
+                neg_inputs = build_negative_inputs(model_wrapper, prompt)
+                vsv = compute_vsv(model_wrapper, pos_inputs, neg_inputs)
+            except Exception as exc:
+                logger.error(f"[{image_id}] VSV extraction FAILED: {exc}")
+                logger.error(traceback.format_exc())
+                vsv = None
+
         item = {"image_id": image_id, "expected": expected, "margins": {}, "fired": {}}
         for condition in conditions:
-            sparc_hp, memvr_hp = hparams[condition]
+            sparc_hp, memvr_hp, vista_hp = hparams[condition]
             try:
-                logits, instr = _prefill_logits(
-                    model_wrapper, image, prompt, sparc_hp, memvr_hp, device
-                )
+                if vista_hp is not None:
+                    if vsv is None:
+                        continue  # VSV extraction failed for this question
+                    pos_inputs, *_ = _prefill_inputs_and_layout(model_wrapper, image, prompt)
+                    logits, instr = _vista_prefill_logits(
+                        model_wrapper, pos_inputs, vista_hp, vsv, device
+                    )
+                else:
+                    logits, instr = _prefill_logits(
+                        model_wrapper, image, prompt, sparc_hp, memvr_hp, device
+                    )
             except Exception as exc:
                 n_failed += 1
                 logger.error(f"[{image_id}|{condition}] FAILED: {exc}")
@@ -569,7 +685,9 @@ def main() -> int:
 
             margin = margin_from_logits(logits, token_meta["yes_id"], token_meta["no_id"])
             item["margins"][condition] = margin
-            if instr is not None:
+            # Only MemVR has a firing gate; VISTA always steers, so it carries no
+            # "fired" split (its firing_rate stays NaN in the summary).
+            if instr is not None and "memvr_fired_in_prefill" in instr:
                 item["fired"][condition] = instr["memvr_fired_in_prefill"]
 
             record = {
@@ -599,9 +717,12 @@ def main() -> int:
             "model_id": model_id,
             "dtype": dtype_str,
             "token_meta": token_meta,
-            "memvr": {c: (mhp.as_dict() if mhp else None) for c, (shp, mhp) in hparams.items()},
+            "memvr": {c: (mhp.as_dict() if mhp else None) for c, (shp, mhp, vhp) in hparams.items()},
             "memvr_effective": memvr_effective,
-            "sparc": {c: (shp.as_dict() if shp else None) for c, (shp, mhp) in hparams.items()},
+            "sparc": {c: (shp.as_dict() if shp else None) for c, (shp, mhp, vhp) in hparams.items()},
+            "vista": {c: (vhp.as_dict() if vhp else None) for c, (shp, mhp, vhp) in hparams.items()},
+            "vista_effective": vista_effective,
+            "sla_alpha": args.sla_alpha,
             "timestamp_iso": _iso_now(),
         }, indent=2) + "\n",
         encoding="utf-8",

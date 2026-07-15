@@ -322,63 +322,96 @@ def _args(**overrides) -> SimpleNamespace:
         alpha=1.05, beta=0.1, tau=3.0, selected_layer=18, se_layers=(0, 28),
         lam=0.5, ceiling=1.8, qtop_frac=0.10,
         memvr_gamma=0.75, memvr_alpha=0.12, memvr_window=None,
+        vista_lambda=0.01, vista_window=None,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
 
 
-def test_baseline_condition_has_no_sparc_and_no_memvr(pope_generate):
-    assert pope_generate.hparams_for_condition("baseline", _args()) == (None, None)
+def test_baseline_condition_has_no_intervention(pope_generate):
+    assert pope_generate.hparams_for_condition("baseline", _args()) == (None, None, None)
 
 
 def test_sparc_condition_uses_the_original_alpha_path(pope_generate):
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("sparc", _args())
     assert sparc_hp.adaptive is False
     assert sparc_hp.alpha == 1.05
     assert sparc_hp.tau == 3.0
     assert sparc_hp.se_layers == (0, 28)
-    assert memvr_hp is None
+    assert memvr_hp is None and vista_hp is None
 
 
 def test_adaptive_condition_turns_on_the_registry(pope_generate):
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("adaptive", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("adaptive", _args())
     assert sparc_hp.adaptive is True
     assert sparc_hp.qcond is False
     assert sparc_hp.lam == 0.5
     assert sparc_hp.ceiling == 1.8
-    assert memvr_hp is None
+    assert memvr_hp is None and vista_hp is None
 
 
 def test_qcond_condition_turns_on_the_prefill_selection(pope_generate):
     """The qcond arm is adaptive too: Point 2 feeds Point 1's correction."""
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("qcond", _args(qtop_frac=0.25))
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("qcond", _args(qtop_frac=0.25))
     assert sparc_hp.adaptive is True
     assert sparc_hp.qcond is True
     assert sparc_hp.qtop_frac == 0.25
     assert sparc_hp.lam == 0.5
     assert sparc_hp.ceiling == 1.8
-    assert memvr_hp is None
+    assert memvr_hp is None and vista_hp is None
 
 
-def test_memvr_condition_has_no_sparc_and_a_memvr_hp(pope_generate):
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("memvr", _args())
-    assert sparc_hp is None
+def test_memvr_condition_has_only_a_memvr_hp(pope_generate):
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("memvr", _args())
+    assert sparc_hp is None and vista_hp is None
     assert memvr_hp is not None
     assert (memvr_hp.gamma, memvr_hp.alpha, memvr_hp.window) == (0.75, 0.12, None)
 
 
 def test_sparc_memvr_uses_original_sparc_without_adaptive_or_qcond(pope_generate):
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
     assert sparc_hp is not None
     assert sparc_hp.adaptive is False
     assert sparc_hp.qcond is False
     assert sparc_hp.alpha == 1.05
-    assert memvr_hp is not None
+    assert memvr_hp is not None and vista_hp is None
+
+
+def test_vista_condition_has_only_a_vista_hp(pope_generate):
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("vista", _args())
+    assert sparc_hp is None and memvr_hp is None
+    assert vista_hp is not None
+    assert vista_hp.lam == 0.01
+    assert vista_hp.sla is False  # SLA is out of generate in v1
+
+
+def test_sparc_vista_uses_original_sparc_plus_vista(pope_generate):
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("sparc_vista", _args())
+    assert sparc_hp is not None
+    assert sparc_hp.adaptive is False
+    assert sparc_hp.qcond is False
+    assert sparc_hp.alpha == 1.05
+    assert memvr_hp is None
+    assert vista_hp is not None
 
 
 def test_memvr_window_override_flows_into_the_hparams(pope_generate):
-    _, memvr_hp = pope_generate.hparams_for_condition("memvr", _args(memvr_window=[4, 12]))
+    _, memvr_hp, _ = pope_generate.hparams_for_condition("memvr", _args(memvr_window=[4, 12]))
     assert memvr_hp.window == (4, 12)
+
+
+def test_vista_window_override_flows_into_the_hparams(pope_generate):
+    _, _, vista_hp = pope_generate.hparams_for_condition("vista", _args(vista_window=[2, 7]))
+    assert vista_hp.window == (2, 7)
+
+
+def test_memvr_and_vista_are_mutually_exclusive(pope_generate, monkeypatch):
+    """No real condition sets both, so force a collision to exercise the guard."""
+    monkeypatch.setattr(
+        pope_generate, "vista_hparams_for_condition", lambda condition, args: object()
+    )
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        pope_generate.hparams_for_condition("memvr", _args())
 
 
 def test_unknown_condition_is_rejected(pope_generate):
@@ -399,11 +432,21 @@ def _fake_model_wrapper():
 
 
 def _patch_contexts(monkeypatch, pope_generate, record):
-    """Replace the probe + both context managers with recording fakes."""
+    """Replace the probe + VSV extraction + all context managers with fakes."""
     monkeypatch.setattr(
         pope_generate, "_probe_sparc_layout",
         lambda mw, image, prompt: (3, [1, 2, 4], [5, 6]),
     )
+    monkeypatch.setattr(
+        pope_generate, "_positive_prefill_inputs", lambda mw, image, prompt: {"pos": True}
+    )
+    monkeypatch.setattr(pope_generate, "build_negative_inputs", lambda mw, prompt: {"neg": True})
+
+    def fake_compute_vsv(mw, pos, neg):
+        record.append("compute_vsv")
+        return "VSV"
+
+    monkeypatch.setattr(pope_generate, "compute_vsv", fake_compute_vsv)
 
     @contextlib.contextmanager
     def fake_enable_sparc(model_wrapper, *, hparams, probe_image, prompt):
@@ -429,41 +472,54 @@ def _patch_contexts(monkeypatch, pope_generate, record):
         )
         record.append("memvr_exit")
 
+    @contextlib.contextmanager
+    def fake_enable_vista(model_wrapper, hparams):
+        record.append("vista_enter")
+        yield SimpleNamespace(
+            set_vsv=lambda v: record.append(f"set_vsv:{v}"),
+            vsv_norm_mean=1.5,
+            lambda_sim_mean=lambda: 1.2,
+            n_steered_forwards=1,
+        )
+        record.append("vista_exit")
+
     monkeypatch.setattr(pope_generate, "enable_sparc", fake_enable_sparc)
     monkeypatch.setattr(pope_generate, "enable_memvr", fake_enable_memvr)
+    monkeypatch.setattr(pope_generate, "enable_vista", fake_enable_vista)
 
 
 def test_generate_answer_baseline_opens_no_context(pope_generate, monkeypatch):
     record: list[str] = []
     _patch_contexts(monkeypatch, pope_generate, record)
     raw, extra = pope_generate._generate_answer(
-        _fake_model_wrapper(), None, "q", 0, sparc_hp=None, memvr_hp=None
+        _fake_model_wrapper(), None, "q", 0, sparc_hp=None, memvr_hp=None, vista_hp=None
     )
     assert raw == "Yes"
-    assert record == []
+    assert record == []  # no VSV computed, no contexts
     assert extra == {}
 
 
 def test_generate_answer_memvr_only_opens_only_the_memvr_context(pope_generate, monkeypatch):
     record: list[str] = []
     _patch_contexts(monkeypatch, pope_generate, record)
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("memvr", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("memvr", _args())
     _, extra = pope_generate._generate_answer(
-        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp, vista_hp
     )
-    assert record == ["memvr_enter", "memvr_exit"]
+    assert record == ["memvr_enter", "memvr_exit"]  # no compute_vsv for memvr
     assert extra["memvr"]["memvr_n_fires"] == 2
     assert extra["memvr"]["memvr_fired"] is True
     assert extra["memvr"]["memvr_fired_in_prefill"] is True
     assert "prefill_selected" not in extra
+    assert "vista" not in extra
 
 
 def test_generate_answer_sparc_memvr_nests_memvr_inside_sparc(pope_generate, monkeypatch):
     record: list[str] = []
     _patch_contexts(monkeypatch, pope_generate, record)
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("sparc_memvr", _args())
     _, extra = pope_generate._generate_answer(
-        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp, vista_hp
     )
     # SPARC outer, MemVR inner: enter sparc, enter memvr, exit memvr, exit sparc.
     assert record == ["sparc_enter", "memvr_enter", "memvr_exit", "sparc_exit"]
@@ -474,13 +530,41 @@ def test_generate_answer_sparc_memvr_nests_memvr_inside_sparc(pope_generate, mon
 def test_generate_answer_qcond_opens_sparc_only_and_records_selection(pope_generate, monkeypatch):
     record: list[str] = []
     _patch_contexts(monkeypatch, pope_generate, record)
-    sparc_hp, memvr_hp = pope_generate.hparams_for_condition("qcond", _args())
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("qcond", _args())
     _, extra = pope_generate._generate_answer(
-        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp, vista_hp
     )
     assert record == ["sparc_enter", "sparc_qpos", "sparc_exit"]
-    assert "memvr" not in extra
+    assert "memvr" not in extra and "vista" not in extra
     assert extra["prefill_selected"] is None  # the qcond path records the key
+
+
+def test_generate_answer_vista_computes_vsv_before_the_context(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("vista", _args())
+    _, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp, vista_hp
+    )
+    # VSV computed on the clean model BEFORE the context, then set inside it.
+    assert record == ["compute_vsv", "vista_enter", "set_vsv:VSV", "vista_exit"]
+    assert extra["vista"]["vista_n_steered_forwards"] == 1
+    assert extra["vista"]["vista_vsv_norm_mean"] == 1.5
+    assert "memvr" not in extra
+
+
+def test_generate_answer_sparc_vista_nests_vista_inside_sparc(pope_generate, monkeypatch):
+    record: list[str] = []
+    _patch_contexts(monkeypatch, pope_generate, record)
+    sparc_hp, memvr_hp, vista_hp = pope_generate.hparams_for_condition("sparc_vista", _args())
+    _, extra = pope_generate._generate_answer(
+        _fake_model_wrapper(), None, "q", 0, sparc_hp, memvr_hp, vista_hp
+    )
+    # VSV first (clean model), then SPARC outer, VISTA inner.
+    assert record == [
+        "compute_vsv", "sparc_enter", "vista_enter", "set_vsv:VSV", "vista_exit", "sparc_exit",
+    ]
+    assert extra["vista"]["vista_n_steered_forwards"] == 1
 
 
 def test_memvr_columns_are_null_without_memvr(pope_generate):
@@ -500,19 +584,35 @@ def test_memvr_columns_flatten_the_instrumentation(pope_generate):
     assert cols["memvr_fire_layer"] == 7
 
 
+def test_vista_columns_are_null_without_vista(pope_generate):
+    cols = pope_generate._vista_columns({})
+    assert set(cols) == set(pope_generate._VISTA_COLUMNS)
+    assert all(v is None for v in cols.values())
+
+
+def test_vista_columns_flatten_the_instrumentation(pope_generate):
+    extra = {"vista": {
+        "vista_vsv_norm_mean": 1.5, "vista_lambda_sim_mean": 1.2,
+        "vista_n_steered_forwards": 3,
+    }}
+    cols = pope_generate._vista_columns(extra)
+    assert cols["vista_vsv_norm_mean"] == 1.5
+    assert cols["vista_n_steered_forwards"] == 3
+
+
 # ---------------------------------------------------------------- pope_generate CLI flags
 
 
-def test_pope_conditions_default_is_all_six(pope_generate):
+def test_pope_conditions_default_is_every_condition(pope_generate):
     args = pope_generate.build_parser().parse_args(["--config", "x.yaml"])
     assert tuple(args.conditions) == pope_generate.CONDITIONS
 
 
 def test_pope_conditions_flag_parses_a_subset(pope_generate):
     args = pope_generate.build_parser().parse_args(
-        ["--config", "x.yaml", "--conditions", "baseline", "memvr", "sparc_memvr"]
+        ["--config", "x.yaml", "--conditions", "baseline", "vista", "sparc_vista"]
     )
-    assert args.conditions == ["baseline", "memvr", "sparc_memvr"]
+    assert args.conditions == ["baseline", "vista", "sparc_vista"]
 
 
 def test_pope_memvr_flag_defaults(pope_generate):
@@ -527,6 +627,19 @@ def test_pope_memvr_window_flag_parses_two_ints(pope_generate):
         ["--config", "x.yaml", "--memvr-window", "4", "12"]
     )
     assert args.memvr_window == [4, 12]
+
+
+def test_pope_vista_flag_defaults(pope_generate):
+    args = pope_generate.build_parser().parse_args(["--config", "x.yaml"])
+    assert args.vista_lambda == 0.01
+    assert args.vista_window is None
+
+
+def test_pope_vista_window_flag_parses_two_ints(pope_generate):
+    args = pope_generate.build_parser().parse_args(
+        ["--config", "x.yaml", "--vista-window", "2", "7"]
+    )
+    assert args.vista_window == [2, 7]
 
 
 def test_prompt_for_returns_the_prerendered_question(pope_generate):

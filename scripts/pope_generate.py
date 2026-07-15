@@ -30,11 +30,17 @@ try:
         resolve_effective_window,
     )
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from vr_modality_bias.experiment.vista import (
+        VistaHyperparams,
+        enable_vista,
+        resolve_vsv_window,
+    )
     from vr_modality_bias.metrics.pope import normalize_answer
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.utils.config import load_config
     from vr_modality_bias.utils.device import resolve_dtype, select_device
     from vr_modality_bias.utils.seeds import derive_image_seed
+    from vr_modality_bias.utils.vista import build_negative_inputs, compute_vsv
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
@@ -44,14 +50,22 @@ except ModuleNotFoundError:
         resolve_effective_window,
     )
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from src.vr_modality_bias.experiment.vista import (
+        VistaHyperparams,
+        enable_vista,
+        resolve_vsv_window,
+    )
     from src.vr_modality_bias.metrics.pope import normalize_answer
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.utils.config import load_config
     from src.vr_modality_bias.utils.device import resolve_dtype, select_device
     from src.vr_modality_bias.utils.seeds import derive_image_seed
+    from src.vr_modality_bias.utils.vista import build_negative_inputs, compute_vsv
 
 
-CONDITIONS = ("baseline", "sparc", "adaptive", "qcond", "memvr", "sparc_memvr")
+CONDITIONS = (
+    "baseline", "sparc", "adaptive", "qcond", "memvr", "sparc_memvr", "vista", "sparc_vista",
+)
 
 DEFAULT_QUESTIONS = Path("data/processed/mscoco_baseline/pope_questions.jsonl")
 
@@ -132,11 +146,11 @@ def group_by_image(rows: list[dict]) -> OrderedDict[str, list[dict]]:
 def sparc_hparams_for_condition(condition: str, args) -> SparcHyperparams | None:
     """The SPARC arm of a condition, or ``None`` when it uses no attention patch.
 
-    ``sparc_memvr`` uses the ORIGINAL alpha^c SPARC (no adaptive, no qcond); the
-    ``adaptive`` / ``qcond`` arms keep Point 1 / Point 2 on. ``baseline`` and
-    ``memvr`` carry no SPARC.
+    ``sparc_memvr`` / ``sparc_vista`` use the ORIGINAL alpha^c SPARC (no adaptive,
+    no qcond); the ``adaptive`` / ``qcond`` arms keep Point 1 / Point 2 on.
+    ``baseline``, ``memvr`` and ``vista`` carry no SPARC.
     """
-    if condition in ("baseline", "memvr"):
+    if condition in ("baseline", "memvr", "vista"):
         return None
     return SparcHyperparams(
         alpha=args.alpha,
@@ -162,20 +176,35 @@ def memvr_hparams_for_condition(condition: str, args) -> MemVRHyperparams | None
     )
 
 
+def vista_hparams_for_condition(condition: str, args) -> VistaHyperparams | None:
+    """The VISTA arm of a condition, or ``None``. SLA is off in generate (v1)."""
+    if condition not in ("vista", "sparc_vista"):
+        return None
+    window = tuple(args.vista_window) if args.vista_window else None
+    return VistaHyperparams(lam=args.vista_lambda, window=window, sla=False)
+
+
 def hparams_for_condition(
     condition: str, args
-) -> tuple[SparcHyperparams | None, MemVRHyperparams | None]:
-    """Map a condition to its ``(sparc_hp, memvr_hp)`` pair.
+) -> tuple[SparcHyperparams | None, MemVRHyperparams | None, VistaHyperparams | None]:
+    """Map a condition to its ``(sparc_hp, memvr_hp, vista_hp)`` trio.
 
-    baseline -> (None, None); sparc / adaptive / qcond -> (SPARC, None);
-    memvr -> (None, MemVR); sparc_memvr -> (original alpha^c SPARC, MemVR).
+    baseline -> (None, None, None); sparc / adaptive / qcond -> (SPARC, None,
+    None); memvr -> (None, MemVR, None); sparc_memvr -> (alpha^c SPARC, MemVR,
+    None); vista -> (None, None, VISTA); sparc_vista -> (alpha^c SPARC, None,
+    VISTA). MemVR and VISTA are mutually exclusive in this phase.
     """
     if condition not in CONDITIONS:
         raise ValueError(f"Unknown condition {condition!r}. Known: {CONDITIONS}.")
-    return (
-        sparc_hparams_for_condition(condition, args),
-        memvr_hparams_for_condition(condition, args),
-    )
+    sparc_hp = sparc_hparams_for_condition(condition, args)
+    memvr_hp = memvr_hparams_for_condition(condition, args)
+    vista_hp = vista_hparams_for_condition(condition, args)
+    if memvr_hp is not None and vista_hp is not None:
+        raise ValueError(
+            f"Condition {condition!r} carries both MemVR and VISTA; the two mlp "
+            "steering paths are mutually exclusive in this phase."
+        )
+    return sparc_hp, memvr_hp, vista_hp
 
 
 # The MemVR instrumentation columns, ordered; None on the arms without MemVR.
@@ -187,6 +216,13 @@ _MEMVR_COLUMNS = (
     "memvr_n_fires",
 )
 
+# The VISTA instrumentation columns, ordered; None on the arms without VISTA.
+_VISTA_COLUMNS = (
+    "vista_vsv_norm_mean",
+    "vista_lambda_sim_mean",
+    "vista_n_steered_forwards",
+)
+
 
 def _memvr_columns(extra: dict) -> dict:
     """Flatten the per-question MemVR instrumentation, or all-``None`` if absent."""
@@ -194,18 +230,39 @@ def _memvr_columns(extra: dict) -> dict:
     return {k: (mv[k] if mv else None) for k in _MEMVR_COLUMNS}
 
 
-def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp):
-    """Generate one POPE answer under the ``(sparc_hp, memvr_hp)`` pair.
+def _vista_columns(extra: dict) -> dict:
+    """Flatten the per-question VISTA instrumentation, or all-``None`` if absent."""
+    vs = extra.get("vista")
+    return {k: (vs[k] if vs else None) for k in _VISTA_COLUMNS}
 
-    The generation body lives here exactly once. SPARC and MemVR contexts are
-    entered only when their hyperparameters are present, nested SPARC-outer /
-    MemVR-inner, and each buffer receives its per-question updates before the
+
+def _positive_prefill_inputs(model_wrapper, image, prompt):
+    """The positive (image) prefill inputs, for the VSV extraction.
+
+    Same tokenisation as ``_probe_sparc_layout`` but keeps the processor output
+    (with pixel_values) that ``compute_vsv`` needs for its clean forward.
+    """
+    processor = model_wrapper._processor  # noqa: SLF001
+    messages = model_wrapper._build_messages(prompt, image)  # noqa: SLF001
+    prefix_text = processor.apply_chat_template(
+        messages, add_generation_prompt=True, tokenize=False,
+    )
+    return processor(text=[prefix_text], images=[image], return_tensors="pt")
+
+
+def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp, vista_hp):
+    """Generate one POPE answer under the ``(sparc_hp, memvr_hp, vista_hp)`` trio.
+
+    The generation body lives here exactly once. For a VISTA arm the VSV is
+    computed on the CLEAN model BEFORE any context opens (as the official code
+    computes it before add_vsv_layers), then contexts are entered nested
+    SPARC-outer / (MemVR or VISTA)-inner and each buffer is updated before the
     generate call. Returns ``(raw_answer, extra)``; ``extra`` carries the qcond
-    prefill selection and the MemVR instrumentation, both read inside the context
-    before it exits (as the old inline qcond path did).
+    prefill selection and the MemVR / VISTA instrumentation, all read inside the
+    context before it exits.
     """
     extra: dict = {}
-    if sparc_hp is None and memvr_hp is None:
+    if sparc_hp is None and memvr_hp is None and vista_hp is None:
         raw_answer = model_wrapper.generate_caption(
             image=image, prompt=prompt,
             max_new_tokens=MAX_NEW_TOKENS, seed=seed,
@@ -214,10 +271,18 @@ def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp):
         return raw_answer, extra
 
     # Pure tokenisation, safe to run before opening the contexts (it does not
-    # touch the patched forwards). image_positions feeds both buffers.
+    # touch the patched forwards). image_positions feeds the SPARC/MemVR buffers.
     input_len, image_positions, question_positions = _probe_sparc_layout(
         model_wrapper, image, prompt
     )
+    # VSV extraction runs on the clean model, before any context, and only for a
+    # VISTA arm (no wasted pair of prefills on the other conditions).
+    vsv = None
+    if vista_hp is not None:
+        pos_inputs = _positive_prefill_inputs(model_wrapper, image, prompt)
+        neg_inputs = build_negative_inputs(model_wrapper, prompt)
+        vsv = compute_vsv(model_wrapper, pos_inputs, neg_inputs)
+
     with contextlib.ExitStack() as stack:
         if sparc_hp is not None:
             sparc_buffer = stack.enter_context(
@@ -239,6 +304,12 @@ def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp):
         else:
             memvr_buffer = None
 
+        if vista_hp is not None:
+            vista_buffer = stack.enter_context(enable_vista(model_wrapper, vista_hp))
+            vista_buffer.set_vsv(vsv)
+        else:
+            vista_buffer = None
+
         raw_answer = model_wrapper.generate_caption(
             image=image, prompt=prompt,
             max_new_tokens=MAX_NEW_TOKENS, seed=seed,
@@ -258,6 +329,12 @@ def _generate_answer(model_wrapper, image, prompt, seed, sparc_hp, memvr_hp):
                 "memvr_fire_layer": memvr_buffer.fire_layer,
                 "memvr_fire_entropy": memvr_buffer.fire_entropy,
                 "memvr_n_fires": memvr_buffer.n_fires_total,
+            }
+        if vista_buffer is not None:
+            extra["vista"] = {
+                "vista_vsv_norm_mean": vista_buffer.vsv_norm_mean,
+                "vista_lambda_sim_mean": vista_buffer.lambda_sim_mean(),
+                "vista_n_steered_forwards": vista_buffer.n_steered_forwards,
             }
     return raw_answer, extra
 
@@ -337,6 +414,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar=("START", "END"),
         help="MemVR firing window (inclusive). Omitted = depth fraction "
              "(round(L/6), round(L/2)), capped at L-2.")
+    # VISTA arm (conditions vista, sparc_vista). SLA stays out of generate in v1.
+    parser.add_argument("--vista-lambda", type=float, default=0.01,
+        help="VISTA steering strength (multiplies the VSV directly).")
+    parser.add_argument("--vista-window", type=int, nargs=2, default=None,
+        metavar=("START", "END"),
+        help="VISTA steering window (inclusive). Omitted = all layers.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing pope_answers.jsonl before starting.")
     parser.add_argument("--print-answers", action="store_true",
@@ -375,10 +458,11 @@ def main() -> int:
     logger.info(f"conditions: {args.conditions}")
     logger.info(f"model     : {model_id} ({dtype_str})")
     logger.info(f"decoding  : greedy, max_new_tokens={MAX_NEW_TOKENS}")
-    for condition, (shp, mhp) in hparams.items():
+    for condition, (shp, mhp, vhp) in hparams.items():
         logger.info(
             f"  {condition:<12}: sparc={shp.as_dict() if shp else None} "
-            f"memvr={mhp.as_dict() if mhp else None}"
+            f"memvr={mhp.as_dict() if mhp else None} "
+            f"vista={vhp.as_dict() if vhp else None}"
         )
     logger.info(f"run dir   : {run_dir}")
     logger.info("=" * 70)
@@ -415,9 +499,20 @@ def main() -> int:
                 )
             ),
         }
-        for c, (shp, mhp) in hparams.items()
+        for c, (shp, mhp, vhp) in hparams.items()
         if mhp is not None
     }
+    vista_effective = {}
+    for c, (shp, mhp, vhp) in hparams.items():
+        if vhp is None:
+            continue
+        vsv_window = resolve_vsv_window(
+            model_wrapper.n_layers, tuple(vhp.window) if vhp.window else None
+        )
+        vista_effective[c] = {
+            "lam": vhp.lam,
+            "window_effective": list(vsv_window) if vsv_window is not None else None,
+        }
     (run_dir / "run_params.json").write_text(
         json.dumps({
             "run_name": args.run_name,
@@ -427,9 +522,11 @@ def main() -> int:
             "dtype": dtype_str,
             "max_new_tokens": MAX_NEW_TOKENS,
             "gen_kwargs": GEN_KWARGS,
-            "sparc": {c: (shp.as_dict() if shp else None) for c, (shp, mhp) in hparams.items()},
-            "memvr": {c: (mhp.as_dict() if mhp else None) for c, (shp, mhp) in hparams.items()},
+            "sparc": {c: (shp.as_dict() if shp else None) for c, (shp, mhp, vhp) in hparams.items()},
+            "memvr": {c: (mhp.as_dict() if mhp else None) for c, (shp, mhp, vhp) in hparams.items()},
             "memvr_effective": memvr_effective,
+            "vista": {c: (vhp.as_dict() if vhp else None) for c, (shp, mhp, vhp) in hparams.items()},
+            "vista_effective": vista_effective,
             "timestamp_iso": _iso_now(),
         }, indent=2) + "\n",
         encoding="utf-8",
@@ -461,9 +558,9 @@ def main() -> int:
                     # Per QUESTION, not per image: input_len moves with the
                     # question length, and the adaptive registry / MemVR Z are
                     # sized from image_positions at the prefill.
-                    sparc_hp, memvr_hp = hparams[condition]
+                    sparc_hp, memvr_hp, vista_hp = hparams[condition]
                     raw_answer, extra = _generate_answer(
-                        model_wrapper, image, prompt, seed, sparc_hp, memvr_hp
+                        model_wrapper, image, prompt, seed, sparc_hp, memvr_hp, vista_hp
                     )
 
                     entry = {
@@ -481,8 +578,10 @@ def main() -> int:
                         "max_new_tokens": MAX_NEW_TOKENS,
                         "sparc": sparc_hp.as_dict() if sparc_hp else None,
                         "memvr": memvr_hp.as_dict() if memvr_hp else None,
+                        "vista": vista_hp.as_dict() if vista_hp else None,
                         "timestamp_iso": _iso_now(),
                         **_memvr_columns(extra),
+                        **_vista_columns(extra),
                     }
                     if "prefill_selected" in extra:
                         entry["prefill_selected"] = extra["prefill_selected"]

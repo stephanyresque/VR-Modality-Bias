@@ -8,6 +8,7 @@ cases), and the CLI flags.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import math
 from pathlib import Path
@@ -183,38 +184,126 @@ def _args(**overrides) -> SimpleNamespace:
     base = dict(
         alpha=1.05, beta=0.1, tau=3.0, selected_layer=20, se_layers=(0, 31),
         memvr_gamma=0.75, memvr_alpha=0.12, memvr_window=None,
+        vista_lambda=0.01, vista_window=None, sla_alpha=0.3, sla_window=None,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
 
 
 def test_baseline_condition_has_no_hparams(diag):
-    assert diag.hparams_for_condition("baseline", _args()) == (None, None)
+    assert diag.hparams_for_condition("baseline", _args()) == (None, None, None)
 
 
 def test_memvr_condition_is_memvr_only(diag):
-    sparc_hp, memvr_hp = diag.hparams_for_condition("memvr", _args())
-    assert sparc_hp is None
+    sparc_hp, memvr_hp, vista_hp = diag.hparams_for_condition("memvr", _args())
+    assert sparc_hp is None and vista_hp is None
     assert (memvr_hp.gamma, memvr_hp.alpha, memvr_hp.window) == (0.75, 0.12, None)
 
 
 def test_sparc_memvr_uses_original_sparc_without_adaptive_or_qcond(diag):
-    sparc_hp, memvr_hp = diag.hparams_for_condition("sparc_memvr", _args())
+    sparc_hp, memvr_hp, vista_hp = diag.hparams_for_condition("sparc_memvr", _args())
     assert sparc_hp is not None
     assert sparc_hp.adaptive is False
     assert sparc_hp.qcond is False
     assert sparc_hp.alpha == 1.05
-    assert memvr_hp is not None
+    assert memvr_hp is not None and vista_hp is None
+
+
+def test_vista_condition_is_vista_only_without_sla(diag):
+    sparc_hp, memvr_hp, vista_hp = diag.hparams_for_condition("vista", _args())
+    assert sparc_hp is None and memvr_hp is None
+    assert vista_hp is not None
+    assert vista_hp.lam == 0.01
+    assert vista_hp.sla is False
+
+
+def test_vista_sla_condition_turns_on_sla(diag):
+    sparc_hp, memvr_hp, vista_hp = diag.hparams_for_condition("vista_sla", _args())
+    assert sparc_hp is None and memvr_hp is None
+    assert vista_hp is not None
+    assert vista_hp.sla is True
+    assert vista_hp.sla_alpha == 0.3
 
 
 def test_memvr_window_override_flows_into_the_hparams(diag):
-    _, memvr_hp = diag.hparams_for_condition("memvr", _args(memvr_window=[4, 12]))
+    _, memvr_hp, _ = diag.hparams_for_condition("memvr", _args(memvr_window=[4, 12]))
     assert memvr_hp.window == (4, 12)
+
+
+def test_vista_window_override_flows_into_the_hparams(diag):
+    _, _, vista_hp = diag.hparams_for_condition("vista", _args(vista_window=[2, 7]))
+    assert vista_hp.window == (2, 7)
 
 
 def test_unknown_condition_is_rejected(diag):
     with pytest.raises(ValueError, match="condition"):
         diag.hparams_for_condition("nonsense", _args())
+
+
+# ---------------------------------------------------------------- vista forward (SLA dispatch)
+
+
+class _SlaFakeInputs(dict):
+    def to(self, device):
+        return self
+
+
+class _SlaFakeModel:
+    def __call__(self, **kwargs):
+        seq, vocab, n_layers, d = 3, 5, 2, 4
+        hidden = tuple(torch.zeros(1, seq, d) for _ in range(n_layers + 1))
+        return SimpleNamespace(logits=torch.zeros(1, seq, vocab), hidden_states=hidden)
+
+
+def _patch_vista_forward(diag, monkeypatch, record):
+    from vr_modality_bias.experiment.vista import VistaHyperparams  # noqa: F401
+
+    @contextlib.contextmanager
+    def fake_enable_vista(model_wrapper, hparams):
+        yield SimpleNamespace(
+            sla=hparams.sla,
+            sla_alpha=hparams.sla_alpha,
+            sla_window=(1, 1),
+            set_vsv=lambda v: None,
+            vsv_norm_mean=1.0,
+            lambda_sim_mean=lambda: 1.1,
+            n_steered_forwards=1,
+        )
+
+    monkeypatch.setattr(diag, "enable_vista", fake_enable_vista)
+    monkeypatch.setattr(
+        diag, "sla_mix_logits",
+        lambda *a, **k: (record.append("sla"), torch.zeros(5))[1],
+    )
+    monkeypatch.setattr(
+        diag, "_forward_last_logits",
+        lambda *a, **k: (record.append("plain"), torch.zeros(5))[1],
+    )
+
+
+def _sla_wrapper():
+    return SimpleNamespace(
+        _model=_SlaFakeModel(), get_lm_head=lambda: torch.nn.Linear(4, 5, bias=False)
+    )
+
+
+def test_diag_applies_sla_only_for_the_vista_sla_condition(diag, monkeypatch):
+    from vr_modality_bias.experiment.vista import VistaHyperparams
+
+    record: list[str] = []
+    _patch_vista_forward(diag, monkeypatch, record)
+    inputs = _SlaFakeInputs(input_ids=torch.tensor([[1, 2, 3]]))
+
+    diag._vista_prefill_logits(
+        _sla_wrapper(), inputs, VistaHyperparams(sla=True), "VSV", "cpu"
+    )
+    assert record == ["sla"]
+
+    record.clear()
+    diag._vista_prefill_logits(
+        _sla_wrapper(), inputs, VistaHyperparams(sla=False), "VSV", "cpu"
+    )
+    assert record == ["plain"]
 
 
 # ---------------------------------------------------------------- CLI flags
@@ -228,19 +317,34 @@ def test_flag_defaults(diag):
     assert args.memvr_gamma == 0.75
     assert args.memvr_alpha == 0.12
     assert args.memvr_window is None
+    assert args.vista_lambda == 0.01
+    assert args.vista_window is None
+    assert args.sla_alpha == 0.3
+    assert args.sla_window is None
     assert args.conditions == list(diag.DIAG_CONDITIONS)
 
 
 def test_conditions_flag_parses_a_subset(diag):
     args = diag.build_parser().parse_args(
-        ["--config", "x.yaml", "--conditions", "baseline", "memvr"]
+        ["--config", "x.yaml", "--conditions", "baseline", "vista", "vista_sla"]
     )
-    assert args.conditions == ["baseline", "memvr"]
+    assert args.conditions == ["baseline", "vista", "vista_sla"]
 
 
 def test_memvr_window_flag_parses_two_ints(diag):
     args = diag.build_parser().parse_args(["--config", "x.yaml", "--memvr-window", "4", "12"])
     assert args.memvr_window == [4, 12]
+
+
+def test_vista_and_sla_flags_parse(diag):
+    args = diag.build_parser().parse_args([
+        "--config", "x.yaml", "--vista-lambda", "0.05", "--vista-window", "2", "7",
+        "--sla-alpha", "0.4", "--sla-window", "19", "22",
+    ])
+    assert args.vista_lambda == 0.05
+    assert args.vista_window == [2, 7]
+    assert args.sla_alpha == 0.4
+    assert args.sla_window == [19, 22]
 
 
 def test_entropy_profile_flag_parses(diag):
