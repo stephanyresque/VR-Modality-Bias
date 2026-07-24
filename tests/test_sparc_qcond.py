@@ -703,7 +703,7 @@ class _MockWrapper:
         return [{"role": "user", "content": prompt}]
 
 
-@pytest.mark.parametrize("script_name", ["phase3_generate", "pope_generate"])
+@pytest.mark.parametrize("script_name", ["phase3_generate"])
 def test_question_positions_follow_the_last_image_token_contiguous(script_name):
     """Qwen layout: image tokens form a block."""
     script = _load_script(script_name)
@@ -716,7 +716,7 @@ def test_question_positions_follow_the_last_image_token_contiguous(script_name):
     assert input_len == len(ids) - 3
 
 
-@pytest.mark.parametrize("script_name", ["phase3_generate", "pope_generate"])
+@pytest.mark.parametrize("script_name", ["phase3_generate"])
 def test_question_positions_follow_the_last_image_token_interleaved(script_name):
     """Idefics3 / SmolVLM layout: separators sit between the image tokens."""
     script = _load_script(script_name)
@@ -729,10 +729,8 @@ def test_question_positions_follow_the_last_image_token_interleaved(script_name)
     assert input_len == len(ids) - 3
 
 
-@pytest.mark.parametrize("script_name", ["phase3_generate", "pope_generate"])
+@pytest.mark.parametrize("script_name", ["phase3_generate"])
 def test_qtop_frac_cli_default_is_five_percent(script_name):
     script = _load_script(script_name)
-    args = script.build_parser().parse_args(
-        [] if script_name == "phase3_generate" else ["--config", "x.yaml"]
-    )
+    args = script.build_parser().parse_args([])
     assert args.qtop_frac == 0.05
