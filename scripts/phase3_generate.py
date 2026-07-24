@@ -92,6 +92,45 @@ def _append(jsonl_path: Path, entry: dict) -> None:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def _sparc_snapshot(hparams: SparcHyperparams | None) -> dict | None:
+    """Per-entry SPARC record: the full hyperparameter dict for ON, None for OFF.
+
+    Written into every caption entry so a run dir is self-describing and the
+    CHAIR report can label each arm from the record, not from alpha alone.
+    """
+    return hparams.as_dict() if hparams is not None else None
+
+
+def assert_resume_arm_matches(jsonl_path: Path, current_sparc: dict) -> None:
+    """Abort resuming into a captions.jsonl written by a different SPARC arm.
+
+    The resume key is (image_id, length, condition), so a second arm pointed at
+    a dir the first already populated would silently skip every ON cell. Any ON
+    entry whose ``sparc`` record differs from the current arm -- including a
+    legacy entry without the field -- is a config collision, not a resume.
+    """
+    if not jsonl_path.exists():
+        return
+    with jsonl_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("condition") != "on":
+                continue
+            existing = entry.get("sparc")
+            if existing != current_sparc:
+                raise ValueError(
+                    f"{jsonl_path} already holds ON captions from a different "
+                    f"SPARC arm (found sparc={existing}, current sparc="
+                    f"{current_sparc}). Use a different --run-name or --overwrite."
+                )
+
+
 def _probe_sparc_layout(model_wrapper, image, prompt):
     """Return ``(input_len, image_positions, question_positions)`` for one prefill.
 
@@ -307,6 +346,16 @@ def main() -> int:
     done = _read_done(jsonl_path)
     logger.info(f"Resume state: {len(done)} cells already in {jsonl_path}")
 
+    # A run dir holds exactly one arm: the resume key (image_id, length,
+    # condition) would otherwise skip a new arm's ON cells silently. Fail fast,
+    # before the checkpoint load, if this dir was written by another arm.
+    sparc_dict = _sparc_snapshot(sparc_hparams)
+    try:
+        assert_resume_arm_matches(jsonl_path, sparc_dict)
+    except ValueError as exc:
+        logger.error(str(exc))
+        return 1
+
     length_configs = _resolve_length_configs(args.length_config_pattern)
     logger.info(f"length_configs: {length_configs}")
 
@@ -409,6 +458,7 @@ def main() -> int:
                         "length": length,
                         "condition": "off",
                         "alpha": None,
+                        "sparc": None,
                         "caption": caption,
                         "seed": seed,
                         "prompt_key": prompt_key,
@@ -477,6 +527,7 @@ def main() -> int:
                     "selected_layer": int(args.selected_layer),
                     "se_layers": list(args.se_layers),
                     "beta": float(args.beta),
+                    "sparc": sparc_dict,
                     "caption": caption,
                     "seed": seed,
                     "prompt_key": prompt_key,

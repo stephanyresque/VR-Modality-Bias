@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -127,26 +128,66 @@ def _section(title: str) -> None:
     print("=" * 78)
 
 
+def _label_from_sparc(sparc: dict) -> str:
+    """Compact deterministic arm label from a SPARC hyperparameter record.
+
+    Names the arm and only the parameters that distinguish it, always including
+    the reference layer. Checked most-specific first (conserve implies qcond
+    implies adaptive). ``:g`` mirrors the rest of the report.
+    """
+    layer = f"L{int(sparc['selected_layer'])}"
+    if sparc.get("conserve"):
+        return (f"on adaptive+qcond+conserve rho={float(sparc['rho']):g} "
+                f"s={float(sparc['sink_frac']):g} {layer}")
+    if sparc.get("qcond"):
+        return f"on adaptive+qcond q={float(sparc['qtop_frac']):g} {layer}"
+    if sparc.get("adaptive"):
+        return (f"on adaptive lam={float(sparc['lam']):g} "
+                f"ceil={float(sparc['ceiling']):g} {layer}")
+    return f"on sparc a={float(sparc['alpha']):g} {layer}"
+
+
 def _condition_label(entry: dict) -> str:
     """Human-readable condition string for tables.
 
-    Uses ``:g`` for the alpha so 1.05 shows as ``"1.05"`` (not the
-    truncated ``"1.1"`` that ``:.1f`` would produce) while 1.1 stays
-    ``"1.1"`` (no trailing zero).
+    ``off`` stays ``"off"``. An ON entry with a ``sparc`` record is labelled by
+    its arm (see :func:`_label_from_sparc`). A legacy ON entry (no ``sparc``
+    record) keeps the historical ``"on α=X"``, with ``:g`` so 1.05 stays
+    ``"1.05"`` rather than the truncated ``"1.1"`` a ``:.1f`` would produce.
     """
     if entry["condition"] == "off":
         return "off"
-    return f"on α={float(entry.get('alpha', 0)):g}"
+    sparc = entry.get("sparc")
+    if sparc is None:
+        return f"on α={float(entry.get('alpha', 0)):g}"
+    return _label_from_sparc(sparc)
 
 
-def _condition_sort_key(label: str) -> tuple[int, float]:
+def _num_after(label: str, token: str) -> float:
+    """The float that follows ``token`` in ``label`` (0.0 if absent)."""
+    match = re.search(re.escape(token) + r"([-+eE\d.]+)", label)
+    return float(match.group(1)) if match else 0.0
+
+
+def _condition_sort_key(label: str) -> tuple[int, float, float]:
+    """off first, then arms by increasing complexity (sparc, adaptive,
+    adaptive+qcond, adaptive+qcond+conserve), tie-broken by alpha or lambda and
+    by the reference layer. Legacy ``on α=X`` keeps its spot next to sparc.
+    """
     if label == "off":
-        return (0, 0.0)
-    # "on α=1.1" → extract the float
-    try:
-        return (1, float(label.split("=")[1]))
-    except (IndexError, ValueError):
-        return (1, 0.0)
+        return (0, 0.0, 0.0)
+    layer = _num_after(label, "L")
+    if label.startswith("on α="):
+        return (1, _num_after(label, "α="), 0.0)
+    if label.startswith("on sparc"):
+        return (1, _num_after(label, "a="), layer)
+    if label.startswith("on adaptive+qcond+conserve"):
+        return (4, 0.0, layer)
+    if label.startswith("on adaptive+qcond"):
+        return (3, 0.0, layer)
+    if label.startswith("on adaptive"):
+        return (2, _num_after(label, "lam="), layer)
+    return (5, 0.0, layer)
 
 
 def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None:

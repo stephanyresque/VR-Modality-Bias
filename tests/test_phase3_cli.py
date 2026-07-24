@@ -98,3 +98,65 @@ def test_phase3_conserve_lands_in_the_run_params_snapshot(phase3):
     assert snapshot["rho"] == 0.5
     assert snapshot["sink_frac"] == 0.05
     json.dumps(snapshot)  # must stay serialisable
+
+
+# ---------------------------------------------------------------- per-entry sparc record
+
+
+def test_sparc_snapshot_is_the_full_dict_for_on_and_none_for_off(phase3):
+    hp = phase3.sparc_hparams_from_args(
+        phase3.build_parser().parse_args(["--adaptive", "--lam", "0.3"])
+    )
+    assert phase3._sparc_snapshot(hp) == hp.as_dict()
+    assert phase3._sparc_snapshot(None) is None
+
+
+# ---------------------------------------------------------------- resume-arm guard
+
+
+def _write_captions(path: Path, entries: list[dict]) -> None:
+    with path.open("w", encoding="utf-8") as fh:
+        for entry in entries:
+            fh.write(json.dumps(entry) + "\n")
+
+
+def _sparc_for(phase3, argv: list[str]) -> dict:
+    return phase3.sparc_hparams_from_args(phase3.build_parser().parse_args(argv)).as_dict()
+
+
+def test_resume_guard_accepts_the_same_arm(phase3, tmp_path):
+    sparc = _sparc_for(phase3, ["--adaptive", "--lam", "0.5"])
+    path = tmp_path / "captions.jsonl"
+    _write_captions(path, [
+        {"image_id": "a", "length": "short", "condition": "off", "sparc": None},
+        {"image_id": "a", "length": "short", "condition": "on", "sparc": sparc},
+    ])
+    phase3.assert_resume_arm_matches(path, sparc)  # must not raise
+
+
+def test_resume_guard_rejects_a_different_arm(phase3, tmp_path):
+    written = _sparc_for(phase3, ["--adaptive", "--lam", "0.5"])
+    current = _sparc_for(phase3, ["--adaptive", "--lam", "0.7"])
+    path = tmp_path / "captions.jsonl"
+    _write_captions(path, [{"image_id": "a", "length": "short", "condition": "on", "sparc": written}])
+    with pytest.raises(ValueError, match="different SPARC arm"):
+        phase3.assert_resume_arm_matches(path, current)
+
+
+def test_resume_guard_rejects_a_legacy_entry_without_the_record(phase3, tmp_path):
+    current = _sparc_for(phase3, ["--adaptive"])
+    path = tmp_path / "captions.jsonl"
+    _write_captions(path, [{"image_id": "a", "length": "short", "condition": "on", "alpha": 1.1}])
+    with pytest.raises(ValueError, match="different SPARC arm"):
+        phase3.assert_resume_arm_matches(path, current)
+
+
+def test_resume_guard_ignores_off_entries(phase3, tmp_path):
+    current = _sparc_for(phase3, ["--adaptive"])
+    path = tmp_path / "captions.jsonl"
+    _write_captions(path, [{"image_id": "a", "length": "short", "condition": "off", "sparc": None}])
+    phase3.assert_resume_arm_matches(path, current)  # off is not an arm; no raise
+
+
+def test_resume_guard_is_a_noop_when_the_file_is_absent(phase3, tmp_path):
+    phase3.assert_resume_arm_matches(tmp_path / "missing.jsonl", {"adaptive": True})
