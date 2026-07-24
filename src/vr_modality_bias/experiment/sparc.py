@@ -51,6 +51,9 @@ class SparcHyperparams:
         ceiling: float = 2.0,
         qcond: bool = False,
         qtop_frac: float = 0.05,
+        conserve: bool = False,
+        rho: float = 0.5,
+        sink_frac: float = 0.05,
     ) -> None:
         # ``alpha`` is dead in the adaptive path (the target factor replaces it),
         # so the no-op guard only applies to the original alpha^c reinforcement.
@@ -85,6 +88,17 @@ class SparcHyperparams:
                 f"se_layers={tuple(se_layers)} leaves no layer above the "
                 "reference to apply the reinforcement."
             )
+        # Point 3's sink signal is derived from the same contrastive computation
+        # as the qcond selection, so it cannot exist without it.
+        if conserve and not qcond:
+            raise ValueError(
+                "conserve=True requires qcond=True: the sink signal comes from "
+                "the same contrastive prefill computation as the qcond selection."
+            )
+        if conserve and not (0.0 <= rho <= 1.0):
+            raise ValueError(f"rho={rho} must be in [0, 1].")
+        if conserve and not (0.0 < sink_frac < 1.0):
+            raise ValueError(f"sink_frac={sink_frac} must be in (0, 1).")
         self.alpha = float(alpha)
         self.tau = float(tau)
         self.selected_layer = int(selected_layer)
@@ -95,6 +109,9 @@ class SparcHyperparams:
         self.ceiling = float(ceiling)
         self.qcond = bool(qcond)
         self.qtop_frac = float(qtop_frac)
+        self.conserve = bool(conserve)
+        self.rho = float(rho)
+        self.sink_frac = float(sink_frac)
 
     def as_dict(self) -> dict:
         return {
@@ -108,6 +125,9 @@ class SparcHyperparams:
             "ceiling": self.ceiling,
             "qcond": self.qcond,
             "qtop_frac": self.qtop_frac,
+            "conserve": self.conserve,
+            "rho": self.rho,
+            "sink_frac": self.sink_frac,
         }
 
 
@@ -214,6 +234,9 @@ def enable_sparc(
         ceiling=hparams.ceiling,
         qcond=hparams.qcond,
         qtop_frac=hparams.qtop_frac,
+        conserve=hparams.conserve,
+        rho=hparams.rho,
+        sink_frac=hparams.sink_frac,
     )
 
     try:

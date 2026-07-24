@@ -70,3 +70,31 @@ def test_phase3_sparc_hparams_land_in_the_run_params_snapshot(phase3):
     assert snapshot["lam"] == 0.3
     assert snapshot["ceiling"] == 2.0
     json.dumps(snapshot)  # must stay serialisable
+
+
+def test_phase3_conserve_defaults_are_off(phase3):
+    args = phase3.build_parser().parse_args([])
+    assert args.conserve is False
+    assert args.rho == 0.5
+    assert args.sink_frac == 0.05
+
+
+def test_phase3_conserve_flags_wire_into_the_hparams(phase3):
+    args = phase3.build_parser().parse_args(
+        ["--adaptive", "--qcond", "--conserve", "--rho", "0.25", "--sink-frac", "0.1"]
+    )
+    hp = phase3.sparc_hparams_from_args(args)
+    assert hp.conserve is True
+    assert hp.rho == 0.25
+    assert hp.sink_frac == 0.1
+
+
+def test_phase3_conserve_lands_in_the_run_params_snapshot(phase3):
+    hp = phase3.sparc_hparams_from_args(
+        phase3.build_parser().parse_args(["--adaptive", "--qcond", "--conserve"])
+    )
+    snapshot = {"run_name": "x", **hp.as_dict()}
+    assert snapshot["conserve"] is True
+    assert snapshot["rho"] == 0.5
+    assert snapshot["sink_frac"] == 0.05
+    json.dumps(snapshot)  # must stay serialisable

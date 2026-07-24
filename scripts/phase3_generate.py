@@ -205,6 +205,14 @@ def build_parser() -> argparse.ArgumentParser:
              "--adaptive.")
     parser.add_argument("--qtop-frac", type=float, default=0.05,
         help="Fraction of the visual tokens --qcond keeps.")
+    # Conserved reinforcement (Ponto 3). Requires --qcond.
+    parser.add_argument("--conserve", action="store_true",
+        help="Reallocate attention mass from the visual sinks to the qcond "
+             "selection at each decode step. Requires --qcond.")
+    parser.add_argument("--rho", type=float, default=0.5,
+        help="Fraction of each sink's attention mass reallocated per step.")
+    parser.add_argument("--sink-frac", type=float, default=0.05,
+        help="Top fraction by raw question attention that is a sink candidate.")
     return parser
 
 
@@ -221,6 +229,9 @@ def sparc_hparams_from_args(args) -> SparcHyperparams:
         ceiling=args.ceiling,
         qcond=args.qcond,
         qtop_frac=args.qtop_frac,
+        conserve=args.conserve,
+        rho=args.rho,
+        sink_frac=args.sink_frac,
     )
 
 

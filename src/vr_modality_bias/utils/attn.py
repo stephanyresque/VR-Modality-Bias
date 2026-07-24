@@ -204,6 +204,16 @@ class SelectedIndexBuffer:
         # script can log which visual tokens were picked per question (the
         # sink-contamination check) without re-reading the attention.
         self.prefill_selected_local = None
+        # ---- conserved-reinforcement state (Ponto 3; unused when conserve=False) ----
+        # Visual sinks frozen at the prefill, exactly like the qcond selection:
+        # LOCAL offsets into image_positions and their GLOBAL input_ids positions.
+        self.sink_local = []
+        self.sink_positions = None
+        # Instrumentation only: sink count, mean raw question attention on the
+        # sinks at the prefill, and the mass moved at the last decode step.
+        self.n_sinks = 0
+        self.prefill_sink_mass = 0.0
+        self.reallocated_mass = 0.0
 
     def update_question_positions(self, positions):
         """Store the global prompt positions that carry the question.
@@ -288,6 +298,26 @@ class SelectedIndexBuffer:
         self.correction = None
         self.question_positions = None
         self.prefill_selected_local = None
+        self.sink_local = []
+        self.sink_positions = None
+        self.n_sinks = 0
+        self.prefill_sink_mass = 0.0
+        self.reallocated_mass = 0.0
+
+    def update_sinks(self, sink_local):
+        """Freeze the prefill visual sinks (Ponto 3).
+
+        Stores the LOCAL offsets and translates them to GLOBAL input_ids
+        positions through ``image_positions`` — the same local->global path
+        ``update_indices1`` uses for the selection, so the reallocation and the
+        value-cache calibration index the same columns.
+        """
+        self.sink_local = sink_local
+        if self.image_positions is not None:
+            self.sink_positions = self.image_positions.to(sink_local.device)[sink_local]
+        else:
+            self.sink_positions = sink_local
+        self.n_sinks = int(sink_local.numel())
 
     def calibrate(self, value, alpha):
         """Scale value-cache rows at ``indices2`` by ``alpha`` (in place)."""
@@ -464,6 +494,99 @@ def question_conditioned_selection(
     return torch.topk(relevance, k).indices
 
 
+def question_conditioned_sinks(
+    attn_weights, image_positions, question_positions, sink_frac, selected_local
+) -> torch.Tensor:
+    """Local offsets of the visual SINKS at the prefill (Ponto 3).
+
+    A sink is a visual position with zero contrastive relevance (attended out of
+    habit by any text row, not preferred by the question) AND raw question
+    attention in the top ``sink_frac`` of the visual positions. That is the
+    operational signature the Point-2 finding measured.
+
+    The qcond selection is subtracted so sinks and the selection are disjoint by
+    construction: ``question_conditioned_selection`` returns exactly k indices
+    via ``topk``, so it can pad the selection with zero-contrast columns that
+    would otherwise also match the sink rule. This reuses the exact building
+    blocks of that function and never calls it, so the selection itself stays
+    byte-identical.
+
+    Returns the LOCAL offsets into ``image_positions``; ``[]`` (an empty
+    LongTensor) is a valid result and makes the reallocation a no-op.
+    """
+    question_relevance = _rows_to_image_attention(
+        attn_weights, image_positions, question_positions
+    )
+    background_relevance = _rows_to_image_attention(
+        attn_weights, image_positions, _background_positions(attn_weights, question_positions)
+    )
+    question_relevance = torch.nan_to_num(question_relevance, nan=0.0, posinf=0.0, neginf=0.0)
+    background_relevance = torch.nan_to_num(
+        background_relevance, nan=0.0, posinf=0.0, neginf=0.0
+    )
+    contrast = torch.clamp(question_relevance - background_relevance, min=0.0)
+
+    n_image = image_positions.numel()
+    k = max(1, int(math.floor(float(sink_frac) * n_image)))
+    top_raw = torch.topk(question_relevance, k).indices
+    is_top_raw = torch.zeros(n_image, dtype=torch.bool, device=attn_weights.device)
+    is_top_raw[top_raw] = True
+
+    is_selected = torch.zeros(n_image, dtype=torch.bool, device=attn_weights.device)
+    if selected_local is not None and selected_local.numel() > 0:
+        is_selected[selected_local.to(is_top_raw.device)] = True
+
+    sink_mask = (contrast == 0) & is_top_raw & ~is_selected
+    return sink_mask.nonzero(as_tuple=True)[0]
+
+
+def conserve_reallocation(attn_row, sink_cols, target_cols, rho, eps: float = 1e-12):
+    """Reallocate visual sink attention to the selected visual columns (Ponto 3).
+
+    Operates per head on the last post-softmax attention row. Each sink loses the
+    same fraction ``rho`` of its own mass; the pooled budget is added to the
+    selected columns in proportion to the head's current attention on them, or
+    uniformly when that attention is ~0. Text columns and unselected visual
+    columns are never touched, so the row sum is preserved by construction.
+
+    float32 local math, returned in the input dtype (the Point-1 discipline).
+    Exact short-circuit with no arithmetic when ``rho == 0``, the sink set is
+    empty, or the selection is empty: the input tensor is returned unchanged.
+    Callers guarantee ``sink_cols`` and ``target_cols`` are disjoint.
+    """
+    if (
+        rho == 0
+        or sink_cols is None
+        or len(sink_cols) == 0
+        or target_cols is None
+        or len(target_cols) == 0
+    ):
+        return attn_row
+
+    orig_dtype = attn_row.dtype
+    row = attn_row.to(torch.float32)
+    last = row.dim() - 1
+    sink_cols = sink_cols.to(row.device)
+    target_cols = target_cols.to(row.device)
+
+    sink_vals = row.index_select(last, sink_cols)
+    removed = float(rho) * sink_vals
+    budget = removed.sum(dim=last, keepdim=True)
+
+    target_vals = row.index_select(last, target_cols)
+    target_sum = target_vals.sum(dim=last, keepdim=True)
+    n_target = target_cols.numel()
+    add_proportional = budget * (target_vals / target_sum.clamp(min=eps))
+    add_uniform = (budget / n_target).expand_as(target_vals)
+    add = torch.where(target_sum <= eps, add_uniform, add_proportional)
+
+    # Out-of-place so the input row is never mutated (identity holds on
+    # short-circuit, and the caller decides whether to write back).
+    row = row.index_copy(last, sink_cols, sink_vals - removed)
+    row = row.index_copy(last, target_cols, target_vals + add)
+    return row.to(orig_dtype)
+
+
 def prefill_target(lam, ceiling) -> float:
     """The prefill reinforcement factor: ``min(1 + lam, ceiling)``, unconditional.
 
@@ -545,6 +668,9 @@ def forward_llama(
     qcond: Optional[bool] = False,
     qtop_frac: Optional[float] = 0.05,
     selected_layer: Optional[int] = None,
+    conserve: Optional[bool] = False,
+    rho: Optional[float] = 0.5,
+    sink_frac: Optional[float] = 0.05,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -665,6 +791,17 @@ def forward_llama(
         indices_buffer.prefill_selected_local = local.detach().cpu()
         indices_buffer.update_target1(prefill_target(lam, ceiling))
         indices_buffer.commit_prefill_factor()
+        if conserve:
+            sink_local = question_conditioned_sinks(
+                attn_weights, image_pos, qp, sink_frac, indices_buffer.indices1_local
+            )
+            indices_buffer.update_sinks(sink_local)
+            if sink_local.numel() > 0:
+                q_rel = _rows_to_image_attention(attn_weights, image_pos, qp)
+                indices_buffer.prefill_sink_mass = float(q_rel[sink_local].mean())
+            assert not (
+                set(indices_buffer.indices1_local.tolist()) & set(sink_local.tolist())
+            ), "Ponto 3: sinks and the qcond selection must be disjoint."
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -672,6 +809,27 @@ def forward_llama(
         self.image_attention = (
             1 - beta
         ) * image_attention + beta * self.image_attention
+
+    # Ponto 3: conserved reinforcement. Runs only at decode, on the layers above
+    # the reference (same window as the qcond boost), AFTER image_attention and
+    # its EMA are read so the Point-1 deficit still measures natural behaviour,
+    # and BEFORE the value matmul so the reallocation reaches the output.
+    if (
+        conserve
+        and gen_new_token
+        and selected_layer is not None
+        and self.layer_idx > selected_layer
+        and self.layer_idx <= se_layers[1]
+    ):
+        attn_row = attn_weights[:, :, -1, :]
+        new_row = conserve_reallocation(
+            attn_row, indices_buffer.sink_positions, indices_buffer.indices1, rho
+        )
+        if new_row is not attn_row:
+            indices_buffer.reallocated_mass = float(
+                (new_row.float() - attn_row.float()).clamp(min=0).sum()
+            )
+            attn_weights[:, :, -1, :] = new_row
 
     attn_output = torch.matmul(attn_weights, value_states)
 
@@ -864,6 +1022,9 @@ def forward_qwen25vl(
     qcond: Optional[bool] = False,
     qtop_frac: Optional[float] = 0.05,
     selected_layer: Optional[int] = None,
+    conserve: Optional[bool] = False,
+    rho: Optional[float] = 0.5,
+    sink_frac: Optional[float] = 0.05,
     **kwargs,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     bsz, q_len, _ = hidden_states.size()
@@ -985,6 +1146,17 @@ def forward_qwen25vl(
         indices_buffer.prefill_selected_local = local.detach().cpu()
         indices_buffer.update_target1(prefill_target(lam, ceiling))
         indices_buffer.commit_prefill_factor()
+        if conserve:
+            sink_local = question_conditioned_sinks(
+                attn_weights, image_pos, qp, sink_frac, indices_buffer.indices1_local
+            )
+            indices_buffer.update_sinks(sink_local)
+            if sink_local.numel() > 0:
+                q_rel = _rows_to_image_attention(attn_weights, image_pos, qp)
+                indices_buffer.prefill_sink_mass = float(q_rel[sink_local].mean())
+            assert not (
+                set(indices_buffer.indices1_local.tolist()) & set(sink_local.tolist())
+            ), "Ponto 3: sinks and the qcond selection must be disjoint."
 
     if not gen_new_token:
         self.image_attention = image_attention
@@ -992,6 +1164,27 @@ def forward_qwen25vl(
         self.image_attention = (
             1 - beta
         ) * image_attention + beta * self.image_attention
+
+    # Ponto 3: conserved reinforcement. Runs only at decode, on the layers above
+    # the reference (same window as the qcond boost), AFTER image_attention and
+    # its EMA are read so the Point-1 deficit still measures natural behaviour,
+    # and BEFORE the value matmul so the reallocation reaches the output.
+    if (
+        conserve
+        and gen_new_token
+        and selected_layer is not None
+        and self.layer_idx > selected_layer
+        and self.layer_idx <= se_layers[1]
+    ):
+        attn_row = attn_weights[:, :, -1, :]
+        new_row = conserve_reallocation(
+            attn_row, indices_buffer.sink_positions, indices_buffer.indices1, rho
+        )
+        if new_row is not attn_row:
+            indices_buffer.reallocated_mass = float(
+                (new_row.float() - attn_row.float()).clamp(min=0).sum()
+            )
+            attn_weights[:, :, -1, :] = new_row
 
     attn_output = torch.matmul(attn_weights, value_states)
 
@@ -1029,6 +1222,9 @@ def add_custom_attention_layers(
     ceiling=2.0,
     qcond=False,
     qtop_frac=0.05,
+    conserve=False,
+    rho=0.5,
+    sink_frac=0.05,
 ):
     """Monkey-patch every decoder layer's ``self_attn.forward`` with SPARC.
 
@@ -1049,6 +1245,13 @@ def add_custom_attention_layers(
             only ``forward_llama`` and ``forward_qwen25vl`` honour it. The caller
             must have set ``question_positions`` on the buffer.
         qtop_frac: Fraction of the visual tokens the prefill selection keeps.
+        conserve: Reallocate attention mass from the visual sinks to the qcond
+            selection at each decode step, within the same layer window as the
+            qcond boost. Requires ``qcond``; only ``forward_llama`` and
+            ``forward_qwen25vl`` honour it. ``rho=0`` or an empty sink set makes
+            it an exact no-op.
+        rho: Fraction of each sink's attention mass reallocated per step.
+        sink_frac: Top fraction by raw question attention that is a sink candidate.
     """
     if family is None:
         family = detect_model_family(model)
@@ -1090,6 +1293,9 @@ def add_custom_attention_layers(
             qcond=qcond,
             qtop_frac=qtop_frac,
             selected_layer=selected_layer,
+            conserve=conserve,
+            rho=rho,
+            sink_frac=sink_frac,
         )
         # Family-agnostic attribute lookup: `.self_attn` for qwen / llava /
         # smolvlm / idefics3; `.attention` for InternLM2 (InternVL). See
