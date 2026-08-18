@@ -9,9 +9,8 @@ Run: make phase3  (smoke: make phase3-smoke; coherence check: make phase3-cohere
 from __future__ import annotations
 
 import argparse
-import glob
+import itertools
 import json
-import os
 import sys
 import time
 import traceback
@@ -24,6 +23,7 @@ from PIL import Image
 from pyprojroot import here
 
 try:
+    from vr_modality_bias.data.manifests import iter_manifest
     from vr_modality_bias.data.prompts import get_prompt
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from vr_modality_bias.models.registry import build_model
@@ -33,6 +33,7 @@ try:
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
+    from src.vr_modality_bias.data.manifests import iter_manifest
     from src.vr_modality_bias.data.prompts import get_prompt
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
     from src.vr_modality_bias.models.registry import build_model
@@ -165,6 +166,56 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
     return caption_start - num_image_patches, image_positions, question_positions
 
 
+def resolve_manifest_items(
+    cfg: dict,
+    *,
+    image_ids: list[str] | None,
+    limit: int,
+) -> list[tuple[str, Path]]:
+    """Return the ``(image_id, image_path)`` pairs this run should generate for.
+
+    Identity comes from the manifest, not from the file name: ``image_id`` is
+    the manifest's own key and the path is ``images_dir / file_name``. That is
+    the same contract collect_hidden_states.py and generate_refs.py already
+    use, and it is what lets a dataset carry ids that are not file stems and
+    images that are not ``.jpg``.
+
+    A file listed in the manifest but absent from disk raises. Skipping it
+    would silently shrink the evaluation set, which is indistinguishable from
+    a smaller dataset when reading the results months later.
+    """
+    manifest_path = Path(cfg["dataset"]["manifest_path"])
+    images_dir = Path(cfg["dataset"]["images_dir"])
+
+    if image_ids:
+        by_id = {record.image_id: record for record in iter_manifest(manifest_path)}
+        unknown = [i for i in image_ids if i not in by_id]
+        if unknown:
+            raise ValueError(
+                f"--image-ids not present in {manifest_path}: {unknown}. "
+                f"The manifest holds {len(by_id)} item(s)."
+            )
+        records = [by_id[i] for i in image_ids]
+    else:
+        records = list(itertools.islice(iter_manifest(manifest_path), limit))
+
+    if not records:
+        raise ValueError(f"{manifest_path} yielded no items to generate for.")
+
+    items: list[tuple[str, Path]] = []
+    for record in records:
+        image_path = images_dir / record.file_name
+        if not image_path.is_file():
+            raise FileNotFoundError(
+                f"{manifest_path} lists image_id={record.image_id!r} with "
+                f"file_name={record.file_name!r}, but {image_path} does not "
+                f"exist. Fix the manifest or restage the images; this run "
+                f"will not quietly drop the item."
+            )
+        items.append((record.image_id, image_path))
+    return items
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-name", type=str, default="phase3",
@@ -207,9 +258,9 @@ def build_parser() -> argparse.ArgumentParser:
              "n-gram from appearing twice. Hard guard against 'the room. "
              "the room.' style loops in greedy.")
     parser.add_argument("--image-ids", type=str, nargs="+", default=None,
-        help="Specific COCO image IDs (zero-padded 12-digit stems) to use, "
-             "in order. Overrides the auto-pick of the first --limit images. "
-             "Used by the isolation tests in the SPARC degeneration audit.")
+        help="Specific manifest image_id(s) to use, in order. Overrides the "
+             "auto-pick of the first --limit entries. Used by the isolation "
+             "tests in the SPARC degeneration audit.")
     parser.add_argument("--length-config-pattern", type=str, default=None,
         help="Pattern with '{length}' placeholder for length-specific configs. "
              "Default: configs/run_qwen7b_{length}.yaml. For the SmolVLM smoke, "
@@ -415,26 +466,16 @@ def main() -> int:
         if args.no_repeat_ngram_size is not None:
             gen_kwargs["no_repeat_ngram_size"] = int(args.no_repeat_ngram_size)
 
-        images_dir = cfg["dataset"]["images_dir"]
-        if args.image_ids:
-            # Explicit IDs override the auto-pick (used by the audit experiments).
-            image_files = [str(Path(images_dir) / f"{i}.jpg") for i in args.image_ids]
-            missing = [p for p in image_files if not Path(p).exists()]
-            if missing:
-                logger.error(f"[{length}] missing image files: {missing}")
-                continue
-        else:
-            image_files = sorted(glob.glob(f"{images_dir}{os.sep}*.jpg"))[: args.limit]
-        if not image_files:
-            logger.error(f"[{length}] no images under {images_dir}; skipping length.")
-            continue
+        items = resolve_manifest_items(
+            cfg, image_ids=args.image_ids, limit=args.limit,
+        )
         logger.info(
-            f"[{length}] {len(image_files)} image(s), prompt_key={prompt_key}, "
+            f"[{length}] {len(items)} image(s) from "
+            f"{cfg['dataset']['manifest_path']}, prompt_key={prompt_key}, "
             f"max_new_tokens={max_new_tokens}, gen_kwargs={gen_kwargs}"
         )
 
-        for image_path in image_files:
-            image_id = Path(image_path).stem
+        for image_id, image_path in items:
             with Image.open(image_path) as raw:
                 image = raw.convert("RGB")
             # Same seed used for OFF and ON so the pair is directly comparable.
