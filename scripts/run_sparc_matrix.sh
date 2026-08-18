@@ -17,7 +17,11 @@ re-run resumes (phase3_generate.py skips done cells, the arm guard protects dirs
 Required env: DERIVED_LAYER  arm5's reference layer, from select_reference_layer.py
               VOCABULARY    JSON vocabulary (name, categories, synonyms)
               ANNOTATIONS   JSON Lines object annotations (image_id, objects)
-Optional env: MODEL_ID, LENGTH_CONFIG_PATTERN, NUM_IMAGES (default 100),
+Optional env: ARMS          space-separated subset of
+                            "baseline arm1_sparc arm2_adaptive arm3_qcond
+                             arm4_conserve arm5_reflayer"
+                            (default: the five arm* ones)
+              MODEL_ID, LENGTH_CONFIG_PATTERN, NUM_IMAGES (default 100),
               SEED (default 0), OUTPUT_ROOT (default results/runs), PYTHON.
   --smoke   run the whole sequence with 2 images for an end-to-end check.
 EOF
@@ -103,13 +107,30 @@ ADAPTIVE_FLAGS=(--adaptive --lam 0.5 --ceiling 2.0)
 QCOND_FLAGS=(--qcond --qtop-frac 0.05)
 CONSERVE_FLAGS=(--conserve --rho 0.5 --sink-frac 0.05)
 
-RUN_NAMES=(
-    "arm1_sparc${SUFFIX}"
-    "arm2_adaptive${SUFFIX}"
-    "arm3_qcond${SUFFIX}"
-    "arm4_conserve${SUFFIX}"
-    "arm5_reflayer${SUFFIX}"
-)
+# ---- arm selection ----------------------------------------------------------
+# ARMS picks which arms run; the five incremental ones stay the default. The
+# extra 'baseline' arm generates the SPARC-OFF condition only, which is what a
+# three-arm pilot (baseline / published method / our full version) needs.
+KNOWN_ARMS=(baseline arm1_sparc arm2_adaptive arm3_qcond arm4_conserve arm5_reflayer)
+DEFAULT_ARMS="arm1_sparc arm2_adaptive arm3_qcond arm4_conserve arm5_reflayer"
+read -r -a SELECTED_ARMS <<< "${ARMS:-$DEFAULT_ARMS}"
+
+for arm in "${SELECTED_ARMS[@]}"; do
+    found=0
+    for known in "${KNOWN_ARMS[@]}"; do
+        [[ "$arm" == "$known" ]] && found=1 && break
+    done
+    if [[ "$found" -eq 0 ]]; then
+        echo "ERROR: unknown arm '$arm'." >&2
+        echo "  known arms: ${KNOWN_ARMS[*]}" >&2
+        exit 1
+    fi
+done
+
+RUN_NAMES=()
+for arm in "${SELECTED_ARMS[@]}"; do
+    RUN_NAMES+=("${arm}${SUFFIX}")
+done
 
 echo "=================================================================="
 echo "SPARC evaluation matrix"
@@ -117,6 +138,7 @@ echo "  model_id         : $MODEL_ID"
 echo "  config pattern   : $LENGTH_CONFIG_PATTERN"
 echo "  images/arm       : $NUM_IMAGES   lengths: ${LENGTHS[*]}"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
+echo "  arms             : ${SELECTED_ARMS[*]}"
 echo "  arm5 ref layer   : $DERIVED_LAYER"
 echo "  vocabulary       : $VOCABULARY"
 echo "  annotations      : $ANNOTATIONS"
@@ -158,11 +180,28 @@ run_arm() {
         2>&1 | tee "$run_dir/chair_report.txt"
 }
 
-run_arm "${RUN_NAMES[0]}" "$SELECTED_LAYER"
-run_arm "${RUN_NAMES[1]}" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}"
-run_arm "${RUN_NAMES[2]}" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}"
-run_arm "${RUN_NAMES[3]}" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}" "${CONSERVE_FLAGS[@]}"
-run_arm "${RUN_NAMES[4]}" "$DERIVED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}" "${CONSERVE_FLAGS[@]}"
+dispatch_arm() {
+    local arm="$1"
+    local run_name="${arm}${SUFFIX}"
+    case "$arm" in
+        baseline)
+            run_arm "$run_name" "$SELECTED_LAYER" --baseline-only ;;
+        arm1_sparc)
+            run_arm "$run_name" "$SELECTED_LAYER" ;;
+        arm2_adaptive)
+            run_arm "$run_name" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}" ;;
+        arm3_qcond)
+            run_arm "$run_name" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}" ;;
+        arm4_conserve)
+            run_arm "$run_name" "$SELECTED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}" "${CONSERVE_FLAGS[@]}" ;;
+        arm5_reflayer)
+            run_arm "$run_name" "$DERIVED_LAYER" "${ADAPTIVE_FLAGS[@]}" "${QCOND_FLAGS[@]}" "${CONSERVE_FLAGS[@]}" ;;
+    esac
+}
+
+for arm in "${SELECTED_ARMS[@]}"; do
+    dispatch_arm "$arm"
+done
 
 # ---- summary (reached only if every arm succeeded; set -e stops on failure) --
 echo ""

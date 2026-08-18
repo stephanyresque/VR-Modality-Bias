@@ -112,6 +112,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="A JSON file with the already-aggregated curve (list of floats).")
     parser.add_argument("--theta", type=float, default=0.5,
         help="Threshold on the normalized curve (default 0.5).")
+    parser.add_argument("--out", type=Path, default=None,
+        help="Write the recommended layer, as a bare integer, to this path so "
+             "an orchestrator can read it back without scraping stdout.")
     return parser
 
 
@@ -157,6 +160,12 @@ def main() -> int:
         return 1
 
     _print_report(curve, theta=args.theta, source_desc=source_desc)
+
+    if args.out is not None:
+        result = reference_layer_from_curve(curve, theta=args.theta)
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(f"{result.recommended_layer}\n", encoding="utf-8")
+        print(f"  recommended layer written to : {args.out}")
     return 0
 
 

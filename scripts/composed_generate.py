@@ -302,6 +302,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override repetition_penalty in gen_kwargs.")
     parser.add_argument("--no-repeat-ngram-size", type=int, default=None,
         help="If set, pass no_repeat_ngram_size to generate().")
+    parser.add_argument("--baseline-only", action="store_true",
+        help="Generate only the SPARC-OFF condition. This is what the "
+             "'baseline' arm of the matrix is: no intervention at all, rather "
+             "than an intervention tuned to zero.")
     parser.add_argument("--print-answers", action="store_true",
         help="Print each answer to stdout in addition to the log.")
     parser.add_argument("--overwrite", action="store_true",
@@ -425,7 +429,7 @@ def main() -> int:
     model_wrapper.load(device)
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
 
-    total_planned = 2 * len(pairs)
+    total_planned = (1 if args.baseline_only else 2) * len(pairs)
     cells_done = cells_skipped = cells_failed = 0
     t_start = time.time()
 
@@ -487,6 +491,9 @@ def main() -> int:
                 cells_failed += 1
                 logger.error(f"[{image_id}|{question.question_id}|off] FAILED: {exc}")
                 logger.error(traceback.format_exc())
+
+        if args.baseline_only:
+            continue
 
         # ---------------- ON (SPARC) ----------------
         # SPARC is reopened per PAIR, not per image: the buffer is sized from

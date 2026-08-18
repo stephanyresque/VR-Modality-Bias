@@ -270,6 +270,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pattern with '{length}' placeholder for length-specific configs. "
              "Default: configs/run_qwen7b_{length}.yaml. For the SmolVLM smoke, "
              "use 'configs/run_smolvlm22_{length}.yaml'.")
+    parser.add_argument("--baseline-only", action="store_true",
+        help="Generate only the SPARC-OFF condition. This is what the "
+             "'baseline' arm of the matrix is: no intervention at all, rather "
+             "than an intervention tuned to zero.")
     parser.add_argument("--print-captions", action="store_true",
         help="Print each generated caption to stdout (in addition to the log). "
              "Useful for eyeball coherence checks.")
@@ -433,7 +437,7 @@ def main() -> int:
     logger.info(f"Model loaded. n_layers={model_wrapper.n_layers}")
 
     # Plan: count planned cells (informational; we still skip-on-disk live).
-    planned_per_length = 2 * args.limit  # off + on per image
+    planned_per_length = (1 if args.baseline_only else 2) * args.limit
     total_planned = planned_per_length * len(args.lengths)
     logger.info(f"Planned cells: {total_planned} (per length: {planned_per_length})")
 
@@ -534,6 +538,9 @@ def main() -> int:
                     cells_failed += 1
                     logger.error(f"[{length}|{image_id}|off] FAILED: {exc}")
                     logger.error(traceback.format_exc())
+
+            if args.baseline_only:
+                continue
 
             # ---------------- ON (SPARC α) ----------------
             key_on = (image_id, length, "on")
