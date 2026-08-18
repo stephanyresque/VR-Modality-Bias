@@ -1261,6 +1261,39 @@ def add_custom_attention_layers(
 
     forward_fn = _FORWARD_BY_FAMILY[family]
 
+    decoder = decoder_of(model)
+    n_layers = len(decoder.layers)
+
+    # Out-of-range layer indices do not crash: ``selected_layer == i`` simply
+    # never matches and the ``se_layers`` window silently clamps, so a window
+    # calibrated for a deeper backbone yields a plausible run that is not the
+    # experiment anyone meant to run. Reject it here, where every caller passes.
+    if selected_layer != -1 and not (0 <= selected_layer < n_layers):
+        raise ValueError(
+            f"selected_layer={selected_layer} is outside the decoder, which has "
+            f"{n_layers} layer(s) (valid indices 0..{n_layers - 1}; -1 means no "
+            "reference layer)."
+        )
+    lo, hi = int(se_layers[0]), int(se_layers[1])
+    if not (0 <= lo < n_layers):
+        raise ValueError(
+            f"se_layers lower bound {lo} is outside the decoder, which has "
+            f"{n_layers} layer(s) (valid indices 0..{n_layers - 1}). Received "
+            f"se_layers={tuple(se_layers)}."
+        )
+    # The upper bound is compared inclusively, and the repository spells it two
+    # ways: the last index (n_layers - 1) and the layer count (n_layers). Both
+    # select the same layers, so both are accepted; anything past that declares
+    # a window for a model that is not the one loaded.
+    if not (lo <= hi <= n_layers):
+        raise ValueError(
+            f"se_layers upper bound {hi} is outside the decoder, which has "
+            f"{n_layers} layer(s): the bound is inclusive, so the deepest "
+            f"meaningful value is {n_layers - 1} (the layer count, {n_layers}, "
+            f"is tolerated as the equivalent spelling). Received "
+            f"se_layers={tuple(se_layers)}."
+        )
+
     if qcond:
         # Only the layers above the reference get the prefill factor written into
         # their cache. ``accum_factors`` is one number per position, shared by
@@ -1275,7 +1308,6 @@ def add_custom_attention_layers(
             )
         se_layers = (max(se_layers[0], selected_layer + 1), se_layers[1])
 
-    decoder = decoder_of(model)
     for i, layer in enumerate(decoder.layers):
         selected = True if selected_layer == i else False
         forward_ = partial(

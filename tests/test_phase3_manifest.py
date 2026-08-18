@@ -80,11 +80,11 @@ def test_items_come_from_the_manifest(phase3, tmp_path: Path):
 
 
 def test_the_id_is_the_manifest_key_not_the_file_stem(phase3, tmp_path: Path):
-    cfg = _stage(tmp_path, [_record("scene_A/frame_7", "0000123.png")])
+    cfg = _stage(tmp_path, [_record("scene_A__frame_7", "0000123.png")])
 
     (image_id, image_path) = phase3.resolve_manifest_items(cfg, image_ids=None, limit=1)[0]
 
-    assert image_id == "scene_A/frame_7"
+    assert image_id == "scene_A__frame_7"
     assert image_path.stem == "0000123", (
         "the stem and the id must be free to disagree; that is the whole "
         "point of reading the manifest."

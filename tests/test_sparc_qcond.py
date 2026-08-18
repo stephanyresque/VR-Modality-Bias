@@ -732,5 +732,7 @@ def test_question_positions_follow_the_last_image_token_interleaved(script_name)
 @pytest.mark.parametrize("script_name", ["phase3_generate"])
 def test_qtop_frac_cli_default_is_five_percent(script_name):
     script = _load_script(script_name)
-    args = script.build_parser().parse_args([])
+    argv = ["--selected-layer", "20", "--se-layers", "0", "31"] \
+        if script_name == "phase3_generate" else []
+    args = script.build_parser().parse_args(argv)
     assert args.qtop_frac == 0.05

@@ -19,7 +19,7 @@ help:
 	@echo "  phase2         full Phase-2 sweep (50 imgs * 3 lengths * (OFF + 5 alphas)). Resumable; safe under tmux."
 	@echo "  phase3-smoke   quick Phase-3 smoke (1 img, short, OFF + SPARC alpha=1.1) — confirms entrypoint + IO"
 	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
-	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
+	@echo "  phase3         full Phase-3 generation. Needs SELECTED_LAYER= and SE_LAYERS="
 	@echo "  chair-report   CHAIR + degeneration + pair samples. Needs VOCABULARY= and ANNOTATIONS="
 	@echo "  phase4-smolvlm-smoke  Phase-4 coherence smoke for SmolVLM-2.2B + SPARC (Llama variant of attn forward)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
@@ -90,17 +90,40 @@ ifeq ($(OVERWRITE),1)
     PHASE3_FLAGS += --overwrite
 endif
 
+# SELECTED_LAYER and SE_LAYERS deliberately have no defaults. The reference
+# layer is an experimental result for one model, derived with
+# scripts/select_reference_layer.py; baking a number in here would freeze an
+# experiment decision into the build file, and a value carried over from a
+# deeper backbone produces a plausible run that is silently not the one
+# configured.
+define require_sparc_layers
+	@if [ -z "$(SELECTED_LAYER)" ] || [ -z "$(SE_LAYERS)" ]; then \
+		echo "ERROR: SELECTED_LAYER and SE_LAYERS are required and have no defaults." >&2; \
+		echo "  SELECTED_LAYER  SPARC reference layer for THIS model" >&2; \
+		echo "  SE_LAYERS       inclusive window, two integers, e.g. \"0 23\"" >&2; \
+		echo "  Derive the reference layer with scripts/select_reference_layer.py." >&2; \
+		echo "  e.g. make $@ SELECTED_LAYER=15 SE_LAYERS=\"0 23\"" >&2; \
+		exit 1; \
+	fi
+endef
+
 phase3-smoke:
-	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke
+	$(require_sparc_layers)
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_smoke --smoke \
+		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
 
 # Coherence smoke — 2 imgs on `long`, captions printed to stdout. Use this
 # to eyeball whether SPARC (with the official COCO hparams + greedy) stays
 # coherent on long captions BEFORE launching the full sweep.
 phase3-coherence:
-	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_coherence --coherence-smoke
+	$(require_sparc_layers)
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME)_coherence --coherence-smoke \
+		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
 
 phase3:
-	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)
+	$(require_sparc_layers)
+	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS) \
+		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
 
 # VOCABULARY and ANNOTATIONS deliberately have no defaults: the category list
 # and the ground truth are properties of the dataset, not of the pipeline.
@@ -125,11 +148,12 @@ chair-report:
 # add_custom_attention_layers (and the SmolVLM decoder-path lookup) work
 # before committing to a full Phase-1/2/3 run on SmolVLM.
 phase4-smolvlm-smoke:
+	$(require_sparc_layers)
 	$(PYTHON) scripts/phase3_generate.py \
 		--run-name phase4_smolvlm_coherence \
 		--coherence-smoke \
 		--length-config-pattern configs/run_smolvlm22_{length}.yaml \
-		--selected-layer 15
+		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
 
 # Bloco-2: single resumable orchestrator
 #   * Stage A — diagnostic (SmolVLM only) via scripts generate_refs.py→summarize.py

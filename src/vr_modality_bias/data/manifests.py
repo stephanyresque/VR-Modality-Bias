@@ -21,6 +21,15 @@ class ImageRecord:
     scene_id: str | None = None
     frame_index: int | None = None
 
+    def __post_init__(self) -> None:
+        if "/" in self.image_id or "\\" in self.image_id:
+            raise ValueError(
+                f"image_id {self.image_id!r} contains a path separator. The "
+                "diagnostic names its artefacts '{image_id}__A.h5', so a "
+                "separator would resolve to a subdirectory that does not "
+                "exist and the write would fail far from the cause."
+            )
+
 
 def write_manifest(records: Iterable[ImageRecord], path: Path) -> int:
     """Write ``records`` as JSON Lines at ``path``. Returns the number written."""

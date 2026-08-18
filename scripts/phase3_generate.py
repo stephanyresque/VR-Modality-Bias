@@ -237,10 +237,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="SPARC α. Official COCO value: 1.1.")
     parser.add_argument("--tau", type=float, default=1.5,
         help="SPARC τ. Official COCO value: 1.5.")
-    parser.add_argument("--selected-layer", type=int, default=20,
-        help="SPARC selected_layer. Official COCO value: 20.")
-    parser.add_argument("--se-layers", type=int, nargs=2, default=(0, 31),
-        help="SPARC se_layers (lo hi). Official COCO value: (0, 31).")
+    parser.add_argument("--selected-layer", type=int, required=True,
+        help="SPARC reference layer. No default on purpose: it is an "
+             "experimental result for one model (derive it with "
+             "scripts/select_reference_layer.py), not a pipeline constant. "
+             "The SPARC paper's COCO value was 20, for a 32-layer backbone.")
+    parser.add_argument("--se-layers", type=int, nargs=2, required=True,
+        help="SPARC se_layers (lo hi), inclusive. No default, same reason: a "
+             "window copied from a deeper backbone silently clamps and "
+             "produces a plausible run that is not the configured one.")
     parser.add_argument("--beta", type=float, default=0.1,
         help="SPARC β. Official COCO value: 0.1 — smooths the reference "
              "attention used for selection; β=0 makes selection erratic.")

@@ -13,6 +13,12 @@ import pytest
 
 _SCRIPTS = Path(__file__).parent.parent / "scripts"
 
+# --selected-layer / --se-layers became required: they are an experimental
+# result per model, and a value inherited from a deeper backbone silently
+# produces an invalid run. Every parse_args below prepends them so the tests
+# keep exercising what they were written for.
+_LAYERS = ["--selected-layer", "20", "--se-layers", "0", "31"]
+
 
 def _load_script(name: str):
     spec = importlib.util.spec_from_file_location(f"_script_{name}", _SCRIPTS / f"{name}.py")
@@ -28,33 +34,33 @@ def phase3():
 
 
 def test_phase3_defaults_keep_the_original_alpha_path(phase3):
-    hp = phase3.sparc_hparams_from_args(phase3.build_parser().parse_args([]))
+    hp = phase3.sparc_hparams_from_args(phase3.build_parser().parse_args(_LAYERS))
     assert hp.adaptive is False
     assert hp.lam == 0.0
     assert hp.ceiling == 2.0
 
 
 def test_phase3_adaptive_flag_switches_the_path(phase3):
-    hp = phase3.sparc_hparams_from_args(phase3.build_parser().parse_args(["--adaptive"]))
+    hp = phase3.sparc_hparams_from_args(phase3.build_parser().parse_args([*_LAYERS, "--adaptive"]))
     assert hp.adaptive is True
     assert hp.lam == 0.0
 
 
 def test_phase3_adaptive_accepts_lam_and_ceiling(phase3):
     args = phase3.build_parser().parse_args(
-        ["--adaptive", "--lam", "0.7", "--ceiling", "1.5"]
+        [*_LAYERS, "--adaptive", "--lam", "0.7", "--ceiling", "1.5"]
     )
     hp = phase3.sparc_hparams_from_args(args)
     assert (hp.adaptive, hp.lam, hp.ceiling) == (True, 0.7, 1.5)
 
 
 def test_phase3_adaptive_does_not_require_alpha_above_one(phase3):
-    args = phase3.build_parser().parse_args(["--adaptive", "--alpha", "1.0"])
+    args = phase3.build_parser().parse_args([*_LAYERS, "--adaptive", "--alpha", "1.0"])
     assert phase3.sparc_hparams_from_args(args).adaptive is True
 
 
 def test_phase3_without_adaptive_still_rejects_alpha_at_one(phase3):
-    args = phase3.build_parser().parse_args(["--alpha", "1.0"])
+    args = phase3.build_parser().parse_args([*_LAYERS, "--alpha", "1.0"])
     with pytest.raises(ValueError, match="alpha"):
         phase3.sparc_hparams_from_args(args)
 
@@ -63,7 +69,7 @@ def test_phase3_sparc_hparams_land_in_the_run_params_snapshot(phase3):
     """run_params.json is built by splatting as_dict(), so new hyperparameters
     reach the artefact without touching the snapshot code."""
     hp = phase3.sparc_hparams_from_args(
-        phase3.build_parser().parse_args(["--adaptive", "--lam", "0.3"])
+        phase3.build_parser().parse_args([*_LAYERS, "--adaptive", "--lam", "0.3"])
     )
     snapshot = {"run_name": "x", **hp.as_dict()}
     assert snapshot["adaptive"] is True
@@ -73,7 +79,7 @@ def test_phase3_sparc_hparams_land_in_the_run_params_snapshot(phase3):
 
 
 def test_phase3_conserve_defaults_are_off(phase3):
-    args = phase3.build_parser().parse_args([])
+    args = phase3.build_parser().parse_args(_LAYERS)
     assert args.conserve is False
     assert args.rho == 0.5
     assert args.sink_frac == 0.05
@@ -81,7 +87,8 @@ def test_phase3_conserve_defaults_are_off(phase3):
 
 def test_phase3_conserve_flags_wire_into_the_hparams(phase3):
     args = phase3.build_parser().parse_args(
-        ["--adaptive", "--qcond", "--conserve", "--rho", "0.25", "--sink-frac", "0.1"]
+        [*_LAYERS, "--adaptive", "--qcond", "--conserve", "--rho", "0.25",
+         "--sink-frac", "0.1"]
     )
     hp = phase3.sparc_hparams_from_args(args)
     assert hp.conserve is True
@@ -91,7 +98,7 @@ def test_phase3_conserve_flags_wire_into_the_hparams(phase3):
 
 def test_phase3_conserve_lands_in_the_run_params_snapshot(phase3):
     hp = phase3.sparc_hparams_from_args(
-        phase3.build_parser().parse_args(["--adaptive", "--qcond", "--conserve"])
+        phase3.build_parser().parse_args([*_LAYERS, "--adaptive", "--qcond", "--conserve"])
     )
     snapshot = {"run_name": "x", **hp.as_dict()}
     assert snapshot["conserve"] is True
@@ -105,7 +112,7 @@ def test_phase3_conserve_lands_in_the_run_params_snapshot(phase3):
 
 def test_sparc_snapshot_is_the_full_dict_for_on_and_none_for_off(phase3):
     hp = phase3.sparc_hparams_from_args(
-        phase3.build_parser().parse_args(["--adaptive", "--lam", "0.3"])
+        phase3.build_parser().parse_args([*_LAYERS, "--adaptive", "--lam", "0.3"])
     )
     assert phase3._sparc_snapshot(hp) == hp.as_dict()
     assert phase3._sparc_snapshot(None) is None
@@ -121,7 +128,9 @@ def _write_captions(path: Path, entries: list[dict]) -> None:
 
 
 def _sparc_for(phase3, argv: list[str]) -> dict:
-    return phase3.sparc_hparams_from_args(phase3.build_parser().parse_args(argv)).as_dict()
+    return phase3.sparc_hparams_from_args(
+        phase3.build_parser().parse_args([*_LAYERS, *argv])
+    ).as_dict()
 
 
 def test_resume_guard_accepts_the_same_arm(phase3, tmp_path):

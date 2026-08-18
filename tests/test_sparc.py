@@ -161,7 +161,7 @@ def test_probe_image_token_index_returns_first_image_position():
 
 def test_enable_sparc_swaps_forward_for_each_layer():
     wrapper = _MockWrapper(n_layers=4)
-    hparams = SparcHyperparams(alpha=1.3)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=2, se_layers=(0, 3))
 
     # Snapshot original sentinel forward IDs.
     decoder = wrapper._model.model.language_model
@@ -181,7 +181,7 @@ def test_enable_sparc_swaps_forward_for_each_layer():
 
 def test_enable_sparc_restores_originals_on_normal_exit():
     wrapper = _MockWrapper(n_layers=4)
-    hparams = SparcHyperparams(alpha=1.3)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=2, se_layers=(0, 3))
 
     decoder = wrapper._model.model.language_model
     original_forwards = [layer.self_attn.forward for layer in decoder.layers]
@@ -208,7 +208,7 @@ def test_enable_sparc_restores_originals_on_exception():
     a SPARC run.
     """
     wrapper = _MockWrapper(n_layers=4)
-    hparams = SparcHyperparams(alpha=1.3)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=2, se_layers=(0, 3))
 
     decoder = wrapper._model.model.language_model
     original_forwards = [layer.self_attn.forward for layer in decoder.layers]
@@ -225,7 +225,7 @@ def test_enable_sparc_restores_originals_on_exception():
 
 def test_enable_sparc_patches_and_restores_a_dot_attention_decoder():
     wrapper = _MockWrapper(n_layers=4, layer_cls=_MockAttentionLayer)
-    hparams = SparcHyperparams(alpha=1.3)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=2, se_layers=(0, 3))
 
     decoder = wrapper._model.model.language_model
     original_forwards = [layer.attention.forward for layer in decoder.layers]
@@ -243,10 +243,105 @@ def test_enable_sparc_patches_and_restores_a_dot_attention_decoder():
         )
 
 
+# ---------------------------------------------------------------- layer range
+#
+# Out-of-range layer indices never crash on their own: `selected_layer == i`
+# just never matches and the se_layers window clamps. The run then looks
+# plausible and is not the experiment anyone configured. These pin the guard
+# in `add_custom_attention_layers`, which is where every caller passes.
+
+
+def _patch(n_layers: int, *, selected_layer: int, se_layers: tuple[int, int]):
+    from vr_modality_bias.utils.attn import add_custom_attention_layers
+
+    model = _MockTopLevelModel(n_layers=n_layers)
+    return add_custom_attention_layers(
+        model,
+        alpha=1.3,
+        selected_layer=selected_layer,
+        se_layers=se_layers,
+        image_token_index=2,
+        indices_buffer=None,
+    )
+
+
+def test_the_phase4_smolvlm_smoke_misconfiguration_is_rejected():
+    """The concrete live bug: layers 0..31 declared against a 24-layer SmolVLM."""
+    with pytest.raises(ValueError) as excinfo:
+        _patch(24, selected_layer=15, se_layers=(0, 31))
+
+    message = str(excinfo.value)
+    assert "31" in message, "the message must show the value received"
+    assert "24" in message, "the message must show how many layers the model has"
+
+
+def test_a_selected_layer_past_the_last_one_is_rejected():
+    with pytest.raises(ValueError, match="selected_layer=24"):
+        _patch(24, selected_layer=24, se_layers=(0, 23))
+
+
+def test_a_negative_selected_layer_other_than_the_sentinel_is_rejected():
+    with pytest.raises(ValueError, match="selected_layer=-2"):
+        _patch(24, selected_layer=-2, se_layers=(0, 23))
+
+
+def test_minus_one_disables_the_reference_layer_and_is_accepted():
+    """scripts/internvl_exactness_gate.py relies on this to run SPARC as a no-op."""
+    _patch(24, selected_layer=-1, se_layers=(0, 23))
+
+
+def test_an_se_layers_lower_bound_past_the_decoder_is_rejected():
+    with pytest.raises(ValueError, match="lower bound 24"):
+        _patch(24, selected_layer=15, se_layers=(24, 24))
+
+
+def test_both_spellings_of_the_upper_bound_are_accepted():
+    """The repo writes the inclusive bound as both n_layers-1 and n_layers."""
+    _patch(24, selected_layer=15, se_layers=(0, 23))
+    _patch(24, selected_layer=15, se_layers=(0, 24))
+
+
+def test_an_upper_bound_one_past_the_tolerated_spelling_is_rejected():
+    with pytest.raises(ValueError, match="upper bound 25"):
+        _patch(24, selected_layer=15, se_layers=(0, 25))
+
+
+def test_an_inverted_window_is_rejected():
+    with pytest.raises(ValueError, match="upper bound 3"):
+        _patch(24, selected_layer=15, se_layers=(10, 3))
+
+
+def test_a_correct_configuration_still_patches_every_layer():
+    model = _MockTopLevelModel(n_layers=24)
+    decoder = model.model.language_model
+    originals = [id(layer.self_attn.forward) for layer in decoder.layers]
+
+    from vr_modality_bias.utils.attn import add_custom_attention_layers
+
+    add_custom_attention_layers(
+        model, alpha=1.3, selected_layer=15, se_layers=(0, 24),
+        image_token_index=2, indices_buffer=None,
+    )
+
+    for layer, original in zip(decoder.layers, originals):
+        assert id(layer.self_attn.forward) != original
+
+
+def test_enable_sparc_is_covered_by_the_same_guard():
+    wrapper = _MockWrapper(n_layers=24)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=15, se_layers=(0, 31))
+
+    with pytest.raises(ValueError, match="24 layer"):
+        with enable_sparc(
+            wrapper, hparams=hparams, probe_image=_blank_image(), prompt="hi"
+        ):
+            pass
+
+
 def test_enable_sparc_yields_a_buffer_per_block():
     """Re-entering the context manager gives a fresh buffer each time."""
     wrapper = _MockWrapper(n_layers=4)
-    hparams = SparcHyperparams(alpha=1.3)
+    hparams = SparcHyperparams(alpha=1.3, selected_layer=2, se_layers=(0, 3))
 
     with enable_sparc(wrapper, hparams=hparams, probe_image=_blank_image(), prompt="hi") as b1:
         pass

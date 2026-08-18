@@ -82,6 +82,49 @@ def test_round_trip_with_the_provenance_fields(tmp_path: Path):
     assert read_manifest(path) == records
 
 
+def test_an_image_id_with_a_forward_slash_is_rejected():
+    with pytest.raises(ValueError, match="path separator"):
+        ImageRecord(
+            image_id="scene_A/frame_7",
+            file_name="frame_7.png",
+            width=8,
+            height=8,
+            source="adt",
+        )
+
+
+def test_an_image_id_with_a_backslash_is_rejected():
+    with pytest.raises(ValueError, match="path separator"):
+        ImageRecord(
+            image_id="scene_A\\frame_7",
+            file_name="frame_7.png",
+            width=8,
+            height=8,
+            source="adt",
+        )
+
+
+def test_the_rejection_names_the_offending_identifier():
+    with pytest.raises(ValueError, match=r"scene_A/frame_7"):
+        ImageRecord("scene_A/frame_7", "f.png", 8, 8, "adt")
+
+
+def test_a_double_underscore_in_the_image_id_is_allowed():
+    """compute_metrics.py splits '{image_id}__{condition}' with rsplit('__', 1),
+    so the separator is unambiguous however many '__' the id itself holds."""
+    record = ImageRecord("scene__A__frame7", "f.png", 8, 8, "adt")
+
+    assert record.image_id == "scene__A__frame7"
+    assert record.image_id.rsplit("__", 1) == ["scene__A", "frame7"]
+
+
+def test_a_file_name_may_still_contain_a_separator(tmp_path: Path):
+    """Only the identity is constrained; the path under images_dir is free."""
+    record = ImageRecord("seq07_000123", "seq07/frame_000123.png", 8, 8, "adt")
+
+    assert record.file_name == "seq07/frame_000123.png"
+
+
 def test_malformed_line_names_the_file_and_the_line(tmp_path: Path):
     path = tmp_path / "manifest.jsonl"
     path.write_text(_LEGACY_LINE + "\n" + "{ not json\n", encoding="utf-8")
