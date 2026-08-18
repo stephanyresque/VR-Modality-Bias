@@ -22,6 +22,7 @@ try:
         DEFAULT_TARGET_DIR as DEFAULT_ANNOTATIONS_DIR,
         ensure_coco_annotations,
     )
+    from vr_modality_bias.data.vocabulary import Vocabulary, load_vocabulary
     from vr_modality_bias.metrics.chair import (
         chair_per_caption,
         compute_chair_aggregate,
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
         DEFAULT_TARGET_DIR as DEFAULT_ANNOTATIONS_DIR,
         ensure_coco_annotations,
     )
+    from src.vr_modality_bias.data.vocabulary import Vocabulary, load_vocabulary
     from src.vr_modality_bias.metrics.chair import (
         chair_per_caption,
         compute_chair_aggregate,
@@ -190,7 +192,9 @@ def _condition_sort_key(label: str) -> tuple[int, float, float]:
     return (5, 0.0, layer)
 
 
-def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None:
+def report_chair_by_length(
+    entries: list[dict], gt: dict[str, set[str]], vocabulary: Vocabulary
+) -> None:
     _section("1. CHAIR BY LENGTH — baseline vs SPARC")
     print("  CHAIR_s = fraction of captions with ≥1 hallucinated object (lower is better).")
     print("  CHAIR_i = fraction of OBJECT MENTIONS that are hallucinated (lower is better).")
@@ -217,7 +221,7 @@ def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None
             if not cells:
                 continue
             per_caption = [
-                chair_per_caption(c["caption"], gt[c["image_id"]])
+                chair_per_caption(c["caption"], gt[c["image_id"]], vocabulary)
                 for c in cells
             ]
             agg = compute_chair_aggregate(per_caption)
@@ -232,6 +236,7 @@ def report_chair_by_length(entries: list[dict], gt: dict[str, set[str]]) -> None
 def report_precision_recall_by_length(
     entries: list[dict],
     gt_instances: dict[str, set[str]],
+    vocabulary: Vocabulary,
     *,
     gt_captions: dict[str, set[str]] | None = None,
 ) -> None:
@@ -277,7 +282,7 @@ def report_precision_recall_by_length(
             cells = groups.get((length, label), [])
             if not cells:
                 continue
-            per_inst = [chair_per_caption(c["caption"], gt_instances[c["image_id"]])
+            per_inst = [chair_per_caption(c["caption"], gt_instances[c["image_id"]], vocabulary)
                         for c in cells]
             agg_inst = compute_chair_aggregate(per_inst)
             row = [length, label, agg_inst["n_captions"],
@@ -285,7 +290,7 @@ def report_precision_recall_by_length(
                    f"{agg_inst['recall']:.4f}",
                    f"{agg_inst['f1']:.4f}"]
             if gt_captions is not None:
-                per_capt = [chair_per_caption(c["caption"], gt_captions.get(c["image_id"], set()))
+                per_capt = [chair_per_caption(c["caption"], gt_captions.get(c["image_id"], set()), vocabulary)
                             for c in cells]
                 agg_capt = compute_chair_aggregate(per_capt)
                 row.extend([f"{agg_capt['recall']:.4f}", f"{agg_capt['f1']:.4f}"])
@@ -336,6 +341,7 @@ def report_degeneration(entries: list[dict]) -> None:
 def report_pair_samples(
     entries: list[dict],
     gt: dict[str, set[str]],
+    vocabulary: Vocabulary,
     *,
     n_samples: int,
     image_ids: list[str] | None,
@@ -380,14 +386,14 @@ def report_pair_samples(
                 continue
             print(f"    [{length}]")
             if off:
-                cp = chair_per_caption(off["caption"], gt.get(img_id, set()))
+                cp = chair_per_caption(off["caption"], gt.get(img_id, set()), vocabulary)
                 print(f"      OFF             : {off['caption']}")
                 print(f"        mentioned    : {sorted(cp['mentioned'])}")
                 print(f"        hallucinated : {sorted(cp['hallucinated'])}")
             if on:
                 alpha = on.get("alpha")
                 a_str = f"α={alpha:.1f}" if alpha is not None else ""
-                cp = chair_per_caption(on["caption"], gt.get(img_id, set()))
+                cp = chair_per_caption(on["caption"], gt.get(img_id, set()), vocabulary)
                 print(f"      ON {a_str:<8s} : {on['caption']}")
                 print(f"        mentioned    : {sorted(cp['mentioned'])}")
                 print(f"        hallucinated : {sorted(cp['hallucinated'])}")
@@ -434,6 +440,7 @@ def _alpha_from_entries(entries: list[dict]) -> float | None:
 def collect_chair_rows(
     entries: list[dict],
     gt_instances: dict[str, set[str]],
+    vocabulary: Vocabulary,
     *,
     model_id: str,
     gt_captions: dict[str, set[str]] | None = None,
@@ -477,7 +484,7 @@ def collect_chair_rows(
             chair_cells = chair_groups.get(key, [])
             if chair_cells:
                 per_caption_inst = [
-                    chair_per_caption(c["caption"], gt_instances[c["image_id"]])
+                    chair_per_caption(c["caption"], gt_instances[c["image_id"]], vocabulary)
                     for c in chair_cells
                 ]
                 agg_inst = compute_chair_aggregate(per_caption_inst)
@@ -501,7 +508,7 @@ def collect_chair_rows(
             total_c_capt = total_gt_capt = 0
             if gt_captions is not None and chair_cells:
                 per_caption_capt = [
-                    chair_per_caption(c["caption"], gt_captions.get(c["image_id"], set()))
+                    chair_per_caption(c["caption"], gt_captions.get(c["image_id"], set()), vocabulary)
                     for c in chair_cells
                 ]
                 agg_capt = compute_chair_aggregate(per_caption_capt)
@@ -612,6 +619,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", type=Path, required=True,
         help="Directory containing captions.jsonl (= results/runs/<name>).")
+    parser.add_argument("--vocabulary", type=Path, required=True,
+        help="JSON vocabulary file (keys: name, categories, synonyms) naming "
+             "the object categories CHAIR scores against. No default: the "
+             "category list is a property of the dataset, not of the metric.")
     parser.add_argument("--annotations-dir", type=Path,
         default=DEFAULT_ANNOTATIONS_DIR,
         help="Where instances_val2017.json lives.")
@@ -641,6 +652,11 @@ def main() -> int:
         print(f"ERROR: {captions_path} not found.", file=sys.stderr)
         return 1
 
+    if not args.vocabulary.exists():
+        print(f"ERROR: vocabulary {args.vocabulary} not found.", file=sys.stderr)
+        return 1
+    vocabulary = load_vocabulary(args.vocabulary)
+
     instances_path = args.annotations_dir / "instances_val2017.json"
     if not instances_path.exists():
         if args.auto_download:
@@ -659,6 +675,8 @@ def main() -> int:
     print(f"  run_dir         : {args.run_dir}")
     print(f"  captions        : {captions_path}")
     print(f"  annotations     : {instances_path}")
+    print(f"  vocabulary      : {args.vocabulary} "
+          f"({vocabulary.name}, {len(vocabulary.categories)} categories)")
     print()
 
     entries = _load_captions(captions_path)
@@ -683,7 +701,7 @@ def main() -> int:
                     "--recall-gt instances.", file=sys.stderr,
                 )
                 return 1
-        gt_captions = load_reference_caption_objects(captions_gt_path)
+        gt_captions = load_reference_caption_objects(captions_gt_path, vocabulary)
         print(f"  caption-GT path : {captions_gt_path}")
         print(f"  caption-GT imgs : {len(gt_captions)}")
 
@@ -693,11 +711,11 @@ def main() -> int:
         print("ERROR: captions.jsonl is empty.", file=sys.stderr)
         return 1
 
-    report_chair_by_length(entries, gt)
-    report_precision_recall_by_length(entries, gt, gt_captions=gt_captions)
+    report_chair_by_length(entries, gt, vocabulary)
+    report_precision_recall_by_length(entries, gt, vocabulary, gt_captions=gt_captions)
     report_degeneration(entries)
     report_pair_samples(
-        entries, gt,
+        entries, gt, vocabulary,
         n_samples=args.pair_samples,
         image_ids=args.pair_image_ids,
     )
@@ -706,7 +724,7 @@ def main() -> int:
     # precision/recall/F1 (against the GT(s) the user asked for).
     model_id = _derive_model_id(entries)
     chair_rows = collect_chair_rows(
-        entries, gt, model_id=model_id,
+        entries, gt, vocabulary, model_id=model_id,
         gt_captions=gt_captions if args.recall_gt in ("captions", "both") else None,
     )
     json_path, csv_path = write_chair_results(chair_rows, args.run_dir)

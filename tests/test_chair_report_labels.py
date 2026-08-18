@@ -11,9 +11,11 @@ from pathlib import Path
 
 import pytest
 
+from vr_modality_bias.data.vocabulary import load_vocabulary
 from vr_modality_bias.experiment.sparc import SparcHyperparams
 
 _SCRIPTS = Path(__file__).parent.parent / "scripts"
+_COCO80 = load_vocabulary(Path(__file__).parent / "fixtures" / "vocab_coco80.json")
 
 
 def _load_script(name: str):
@@ -156,7 +158,9 @@ def _entry(sparc: dict | None, *, alpha=1.1, condition="on", length="short") -> 
 
 
 def _alpha_by_label(chair_report, entries: list[dict]) -> dict:
-    rows = chair_report.collect_chair_rows(entries, _GT, model_id="mock/test")
+    rows = chair_report.collect_chair_rows(
+        entries, _GT, _COCO80, model_id="mock/test"
+    )
     return {row["condition_label"]: row["alpha"] for row in rows}
 
 

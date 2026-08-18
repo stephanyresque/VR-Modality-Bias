@@ -1,7 +1,9 @@
-"""CHAIR (Rohrbach et al. 2018) — caption-hallucination metrics against the
-COCO-80 categories: CHAIR_i (per-mention) and CHAIR_s (per-caption), plus the
-precision/recall/F1 ingredients. The synonym map mirrors the original CHAIR
-release, augmented with common plurals and colloquial variants.
+"""CHAIR (Rohrbach et al. 2018) — caption-hallucination metrics against a
+vocabulary of object categories: CHAIR_i (per-mention) and CHAIR_s
+(per-caption), plus the precision/recall/F1 ingredients. The categories and
+their synonyms are not defined here: the caller supplies them as a
+:class:`~vr_modality_bias.data.vocabulary.Vocabulary`, so the metric is not
+bound to any one dataset.
 """
 
 from __future__ import annotations
@@ -9,150 +11,18 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from vr_modality_bias.data.vocabulary import Vocabulary
 
 __all__ = [
-    "COCO_CATEGORIES",
-    "COCO_SYNONYMS",
     "extract_mentioned_objects",
     "chair_per_caption",
     "compute_chair_aggregate",
     "load_ground_truth_objects",
     "load_reference_caption_objects",
 ]
-
-
-COCO_CATEGORIES: tuple[str, ...] = (
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train",
-    "truck", "boat", "traffic light", "fire hydrant", "stop sign",
-    "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep",
-    "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
-    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
-    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
-    "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork",
-    "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
-    "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
-    "couch", "potted plant", "bed", "dining table", "toilet", "tv",
-    "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
-    "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
-    "scissors", "teddy bear", "hair drier", "toothbrush",
-)
-
-
-COCO_SYNONYMS: dict[str, tuple[str, ...]] = {
-    "person": (
-        "man", "woman", "boy", "girl", "child", "kid", "baby", "adult",
-        "lady", "gentleman", "guy", "people", "men", "women", "children",
-        "persons", "kids", "boys", "girls", "someone", "player", "players",
-        "rider", "skier", "snowboarder", "surfer", "skateboarder",
-        "pedestrian", "pedestrians", "athlete", "athletes",
-    ),
-    "bicycle": ("bike", "bicycles", "bikes", "cyclist", "cyclists"),
-    "car": ("automobile", "automobiles", "vehicle", "vehicles", "sedan",
-            "taxi", "cab", "cars", "suv", "minivan"),
-    "motorcycle": ("motorbike", "motorcycles", "motorbikes", "scooter", "moped"),
-    "airplane": ("plane", "aircraft", "jet", "airplanes", "planes", "jets",
-                 "airliner", "airliners"),
-    "bus": ("buses",),
-    "train": ("locomotive", "trains", "tram", "subway", "railroad", "railway"),
-    "truck": ("lorry", "trucks", "pickup"),
-    "boat": ("ship", "sailboat", "canoe", "kayak", "boats", "ships",
-             "yacht", "raft"),
-    "traffic light": ("traffic lights", "stoplight", "stoplights",
-                      "traffic signal", "traffic signals"),
-    "fire hydrant": ("hydrant", "hydrants", "fire hydrants"),
-    "stop sign": ("stop signs",),
-    "parking meter": ("parking meters",),
-    "bench": ("benches",),
-    "bird": ("birds", "sparrow", "crow", "pigeon", "duck", "ducks",
-             "goose", "geese", "seagull", "seagulls", "parrot", "eagle",
-             "owl", "chicken", "chickens", "hen", "rooster"),
-    "cat": ("cats", "kitten", "kitty", "kittens", "feline", "felines"),
-    "dog": ("dogs", "puppy", "puppies", "canine", "canines"),
-    "horse": ("horses", "pony", "ponies", "stallion", "mare", "foal"),
-    "sheep": ("lamb", "lambs", "ram"),
-    "cow": ("cows", "cattle", "bull", "bulls", "calf", "calves", "ox", "oxen"),
-    "elephant": ("elephants",),
-    "bear": ("bears", "cub", "cubs", "grizzly", "polar bear"),
-    "zebra": ("zebras",),
-    "giraffe": ("giraffes",),
-    "backpack": ("backpacks", "rucksack", "knapsack"),
-    "umbrella": ("umbrellas", "parasol"),
-    "handbag": ("handbags", "purse", "purses", "pocketbook"),
-    "tie": ("ties", "necktie", "neckties", "bowtie", "bow tie"),
-    "suitcase": ("suitcases", "luggage"),
-    "frisbee": ("frisbees", "disc"),
-    "skis": ("ski",),
-    "snowboard": ("snowboards",),
-    "sports ball": ("soccer ball", "basketball", "football", "baseball",
-                    "tennis ball", "volleyball"),
-    "kite": ("kites",),
-    "baseball bat": ("bat", "bats"),
-    "baseball glove": ("mitt", "mitts"),
-    "skateboard": ("skateboards",),
-    "surfboard": ("surfboards",),
-    "tennis racket": ("racket", "rackets", "racquet", "racquets"),
-    "bottle": ("bottles",),
-    "wine glass": ("wine glasses", "wineglass", "wineglasses"),
-    "cup": ("cups", "mug", "mugs"),
-    "fork": ("forks",),
-    "knife": ("knives",),
-    "spoon": ("spoons",),
-    "bowl": ("bowls",),
-    "banana": ("bananas",),
-    "apple": ("apples",),
-    "sandwich": ("sandwiches", "burger", "burgers", "hamburger",
-                 "hamburgers", "cheeseburger", "cheeseburgers"),
-    "orange": ("oranges",),
-    "broccoli": ("broccolis",),
-    "carrot": ("carrots",),
-    "hot dog": ("hotdog", "hotdogs", "hot dogs"),
-    "pizza": ("pizzas",),
-    "donut": ("donuts", "doughnut", "doughnuts"),
-    "cake": ("cakes", "cupcake", "cupcakes"),
-    "chair": ("chairs", "armchair", "armchairs", "recliner"),
-    "couch": ("sofa", "sofas", "couches"),
-    "potted plant": ("houseplant", "houseplants", "potted plants"),
-    "bed": ("beds",),
-    "dining table": ("table", "tables", "desk", "desks", "tabletop"),
-    "toilet": ("toilets", "urinal"),
-    "tv": ("television", "televisions", "tvs", "screen", "screens"),
-    "laptop": ("laptops", "notebook", "notebooks"),
-    "mouse": ("mice",),
-    "remote": ("remotes", "remote control"),
-    "keyboard": ("keyboards",),
-    "cell phone": ("cellphone", "cellphones", "phone", "phones",
-                   "smartphone", "smartphones", "iphone", "iphones",
-                   "mobile phone", "mobile phones"),
-    "microwave": ("microwaves", "microwave oven"),
-    "oven": ("ovens", "stove", "stoves", "range"),
-    "toaster": ("toasters",),
-    "sink": ("sinks", "basin", "basins"),
-    "refrigerator": ("fridge", "refrigerators", "fridges"),
-    "book": ("books",),
-    "clock": ("clocks",),
-    "vase": ("vases",),
-    "scissors": ("scissor", "shears"),
-    "teddy bear": ("teddy", "teddy bears", "stuffed bear", "stuffed animal",
-                   "plush bear"),
-    "hair drier": ("hair dryer", "hairdryer", "blow dryer", "hair driers"),
-    "toothbrush": ("toothbrushes",),
-}
-
-
-# Pre-compile a single regex that recognises any synonym (including the
-# canonical name) and gives us back which category it mapped to. Built
-# lazily on first use so import is cheap.
-_SYNONYM_TO_CATEGORY: dict[str, str] | None = None
-
-
-def _build_synonym_index() -> dict[str, str]:
-    """{synonym_lowercased: category} for fast membership lookup."""
-    out: dict[str, str] = {}
-    for cat in COCO_CATEGORIES:
-        out[cat] = cat
-        for syn in COCO_SYNONYMS.get(cat, ()):
-            out[syn] = cat
-    return out
 
 
 def _normalise(text: str) -> str:
@@ -167,29 +37,15 @@ def _normalise(text: str) -> str:
     return f" {text} "
 
 
-def extract_mentioned_objects(
-    caption: str,
-    synonyms: dict[str, tuple[str, ...] | list[str]] | None = None,
-) -> set[str]:
-    """Return the COCO-80 categories mentioned in ``caption``.
+def extract_mentioned_objects(caption: str, vocabulary: Vocabulary) -> set[str]:
+    """Return the ``vocabulary`` categories mentioned in ``caption``.
 
     Multi-word synonyms (``hot dog``, ``fire hydrant``) match correctly
     because we use space-padded substring search on the normalised text.
     Single-word synonyms also need surrounding spaces, so ``"cat"`` does
     NOT match inside ``"category"``.
     """
-    global _SYNONYM_TO_CATEGORY
-    if synonyms is None:
-        if _SYNONYM_TO_CATEGORY is None:
-            _SYNONYM_TO_CATEGORY = _build_synonym_index()
-        syn_index = _SYNONYM_TO_CATEGORY
-    else:
-        # Custom synonym dict (mostly for tests).
-        syn_index = {}
-        for cat, syns in synonyms.items():
-            syn_index[cat] = cat
-            for s in syns:
-                syn_index[s] = cat
+    syn_index = vocabulary.synonym_to_category
 
     text = _normalise(caption)
     mentioned: set[str] = set()
@@ -204,12 +60,12 @@ def extract_mentioned_objects(
 def chair_per_caption(
     caption: str,
     ground_truth_objects: set[str],
-    synonyms: dict | None = None,
+    vocabulary: Vocabulary,
 ) -> dict:
     """Per-caption decomposition (CHAIR + precision/recall ingredients).
 
     Returns a dict with:
-        mentioned        : set of COCO categories named in the caption
+        mentioned        : set of ``vocabulary`` categories named in the caption
         hallucinated     : mentioned − ground_truth   (false positives)
         correct          : mentioned ∩ ground_truth   (true positives)
         n_mentioned      : len(mentioned)
@@ -223,7 +79,7 @@ def chair_per_caption(
     (= 1 − CHAIR_i), recall, and F1.
     """
     gt_set = set(ground_truth_objects)
-    mentioned = extract_mentioned_objects(caption, synonyms)
+    mentioned = extract_mentioned_objects(caption, vocabulary)
     hallucinated = mentioned - gt_set
     correct = mentioned & gt_set
     return {
@@ -336,19 +192,23 @@ def load_ground_truth_objects(instances_path: Path) -> dict[str, set[str]]:
     return image_to_objects
 
 
-def load_reference_caption_objects(captions_path: Path) -> dict[str, set[str]]:
+def load_reference_caption_objects(
+    captions_path: Path,
+    vocabulary: Vocabulary,
+) -> dict[str, set[str]]:
     """Read ``captions_val2017.json`` -> ``{image_id_str: set(category_name)}``.
 
-    This is the "GT-B" definition used by the SPARC paper: every COCO
-    category mentioned in any of the ~5 reference captions humans wrote
-    for the image (union across captions). Aligned with what humans
-    chose to describe -- the recall denominator under GT-B is "did the
+    This is the "GT-B" definition used by the SPARC paper: every
+    ``vocabulary`` category mentioned in any of the ~5 reference captions
+    humans wrote for the image (union across captions). Aligned with what
+    humans chose to describe -- the recall denominator under GT-B is "did the
     model name the things humans named?", not "did it name every
     physically-present object?".
 
     Implementation: for each image, take the union of
-    ``extract_mentioned_objects(caption)`` over all reference captions.
-    Same synonym list as the per-caption extraction (no special-casing).
+    ``extract_mentioned_objects(caption, vocabulary)`` over all reference
+    captions. Same vocabulary as the per-caption extraction (no
+    special-casing).
 
     image_id format: zero-padded 12-digit string, same as
     :func:`load_ground_truth_objects`.
@@ -366,7 +226,7 @@ def load_reference_caption_objects(captions_path: Path) -> dict[str, set[str]]:
         caption = str(ann.get("caption", ""))
         if not caption.strip():
             continue
-        mentioned = extract_mentioned_objects(caption)
+        mentioned = extract_mentioned_objects(caption, vocabulary)
         image_to_objects.setdefault(img_id_str, set()).update(mentioned)
 
     for img in data.get("images", []):

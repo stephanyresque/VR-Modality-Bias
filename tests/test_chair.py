@@ -14,18 +14,31 @@ recogniser**. Specifically:
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 from pathlib import Path
 
 import pytest
 
+from vr_modality_bias.data.vocabulary import load_vocabulary
 from vr_modality_bias.metrics.chair import (
-    chair_per_caption,
+    chair_per_caption as _chair_per_caption,
     compute_chair_aggregate,
-    extract_mentioned_objects,
+    extract_mentioned_objects as _extract_mentioned_objects,
     load_ground_truth_objects,
 )
+
+# The COCO-80 vocabulary used to live inside chair.py as two module constants.
+# It is now a test fixture, bound here so the assertions below stay exactly as
+# they were written against the hard-coded version — that is what makes them
+# evidence that extracting the vocabulary did not change behaviour.
+COCO80 = load_vocabulary(Path(__file__).parent / "fixtures" / "vocab_coco80.json")
+
+extract_mentioned_objects = functools.partial(
+    _extract_mentioned_objects, vocabulary=COCO80
+)
+chair_per_caption = functools.partial(_chair_per_caption, vocabulary=COCO80)
 
 
 # ---------------------------------------------------------------- extraction
@@ -317,7 +330,7 @@ def test_load_reference_caption_objects_unions_per_image(tmp_path):
     p = tmp_path / "captions_val2017.json"
     p.write_text(json.dumps(fake), encoding="utf-8")
 
-    out = load_reference_caption_objects(p)
+    out = load_reference_caption_objects(p, COCO80)
     assert out["000000000139"] == {"cat", "bed", "dog"}
     assert out["000000000632"] == {"bicycle", "person"}
     # image 285 listed but no captions -> empty set, NOT KeyError on lookup
@@ -334,7 +347,7 @@ def test_load_reference_caption_objects_uses_zero_padded_image_id(tmp_path):
     }
     p = tmp_path / "captions_val2017.json"
     p.write_text(json.dumps(fake), encoding="utf-8")
-    out = load_reference_caption_objects(p)
+    out = load_reference_caption_objects(p, COCO80)
     # zero-padded to 12 digits
     assert "000000000007" in out
     assert "7" not in out
