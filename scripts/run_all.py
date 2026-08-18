@@ -200,6 +200,8 @@ def stage_evaluation_chair(
     lengths: list[str],
     limit: int,
     overwrite: bool,
+    vocabulary: Path,
+    annotations: Path,
 ) -> int:
     """Stage B -- for each family: generate (phase3_generate.py) then CHAIR (chair_report.py)."""
     fail_count = 0
@@ -261,7 +263,8 @@ def stage_evaluation_chair(
         cmd = [
             sys.executable, "scripts/chair_report.py",
             "--run-dir", str(run_dir),
-            "--auto-download",
+            "--vocabulary", str(vocabulary),
+            "--annotations", str(annotations),
         ]
         rc = _run_subprocess(cmd, log_prefix=f"EVAL {family} chair")
         if rc != 0:
@@ -384,6 +387,16 @@ def main() -> int:
         help="Which families to evaluate in Stage B.",
     )
     parser.add_argument(
+        "--vocabulary", type=Path, required=True,
+        help="JSON vocabulary file handed to scripts/chair_report.py. No "
+             "default: the category list belongs to the dataset.",
+    )
+    parser.add_argument(
+        "--annotations", type=Path, required=True,
+        help="JSON Lines object-annotation file handed to "
+             "scripts/chair_report.py. No default, same reason.",
+    )
+    parser.add_argument(
         "--skip-diagnostico", action="store_true",
         help="Skip Stage A (SmolVLM diagnostic).",
     )
@@ -451,6 +464,7 @@ def main() -> int:
             output_root=output_root, families=args.families,
             lengths=args.lengths, limit=args.limit,
             overwrite=args.overwrite,
+            vocabulary=args.vocabulary, annotations=args.annotations,
         )
     else:
         logger.info("--- Stage B skipped (--skip-avaliacao) ---")

@@ -20,7 +20,7 @@ help:
 	@echo "  phase3-smoke   quick Phase-3 smoke (1 img, short, OFF + SPARC alpha=1.1) — confirms entrypoint + IO"
 	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
 	@echo "  phase3         full Phase-3 generation (50 imgs * 3 lengths * (OFF + SPARC alpha=1.1)). Resumable."
-	@echo "  chair-report   compute CHAIR + degeneration + pair samples from a phase3 run (stdout)"
+	@echo "  chair-report   CHAIR + degeneration + pair samples. Needs VOCABULARY= and ANNOTATIONS="
 	@echo "  phase4-smolvlm-smoke  Phase-4 coherence smoke for SmolVLM-2.2B + SPARC (Llama variant of attn forward)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
@@ -102,9 +102,24 @@ phase3-coherence:
 phase3:
 	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS)
 
-# CHAIR report — auto-downloads COCO val2017 annotations if missing.
+# VOCABULARY and ANNOTATIONS deliberately have no defaults: the category list
+# and the ground truth are properties of the dataset, not of the pipeline.
+# Every target that reaches scripts/chair_report.py demands both up front.
+define require_dataset_paths
+	@if [ -z "$(VOCABULARY)" ] || [ -z "$(ANNOTATIONS)" ]; then \
+		echo "ERROR: VOCABULARY and ANNOTATIONS are required and have no defaults." >&2; \
+		echo "  VOCABULARY  JSON vocabulary (name, categories, synonyms)" >&2; \
+		echo "  ANNOTATIONS JSON Lines object annotations (image_id, objects)" >&2; \
+		echo "  e.g. make $@ VOCABULARY=path/vocab.json ANNOTATIONS=path/annotations.jsonl" >&2; \
+		exit 1; \
+	fi
+endef
+
+# CHAIR report over a phase3 run.
 chair-report:
-	$(PYTHON) scripts/chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) --auto-download
+	$(require_dataset_paths)
+	$(PYTHON) scripts/chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) \
+		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
 
 # Phase 4 — SmolVLM-2.2B coherence smoke. Confirms the Llama variant of
 # add_custom_attention_layers (and the SmolVLM decoder-path lookup) work
@@ -130,14 +145,18 @@ ifeq ($(OVERWRITE),1)
 endif
 
 run-all:
-	$(PYTHON) scripts/run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
+	$(require_dataset_paths)
+	$(PYTHON) scripts/run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS) \
+		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
 
 # Smoke per the Bloco-2 spec: 1 image, only Qwen evaluation, no diagnostic.
 # Confirms the generation → CHAIR plumbing without burning a full run.
 run-all-smoke:
+	$(require_dataset_paths)
 	$(PYTHON) scripts/run_all.py \
 		--smoke --skip-diagnostico --families qwen2.5-vl-7b \
-		--run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS)
+		--run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS) \
+		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

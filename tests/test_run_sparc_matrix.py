@@ -75,11 +75,34 @@ def test_aborts_when_derived_layer_is_unset():
     assert "select_reference_layer" in (result.stdout + result.stderr)
 
 
+@needs_bash
+@pytest.mark.parametrize("missing", ["VOCABULARY", "ANNOTATIONS"])
+def test_aborts_when_a_dataset_path_is_unset(missing):
+    """Same contract as DERIVED_LAYER: no default, abort naming the variable."""
+    env = {
+        **os.environ,
+        "DERIVED_LAYER": "12",
+        "VOCABULARY": "vocab.json",
+        "ANNOTATIONS": "annotations.jsonl",
+        "PYTHON": "echo",
+    }
+    del env[missing]
+
+    result = subprocess.run(
+        [_bash, str(_SCRIPT)], capture_output=True, text=True, env=env
+    )
+
+    assert result.returncode != 0
+    assert missing in (result.stdout + result.stderr)
+
+
 def _expanded_commands(tmp_path, extra_env=None):
     out_root = str(tmp_path / "runs").replace("\\", "/")
     env = {
         **os.environ,
         "DERIVED_LAYER": "12",
+        "VOCABULARY": "vocab.json",
+        "ANNOTATIONS": "annotations.jsonl",
         "PYTHON": "echo",  # print each command instead of running it
         "OUTPUT_ROOT": out_root,
     }
@@ -105,7 +128,8 @@ def test_expands_five_generation_and_five_chair_commands(tmp_path):
     gen, chair = _expanded_commands(tmp_path)
     assert len(gen) == 5
     assert len(chair) == 5
-    assert all("--auto-download" in ln for ln in chair)
+    assert all("--vocabulary vocab.json" in ln for ln in chair)
+    assert all("--annotations annotations.jsonl" in ln for ln in chair)
 
 
 @needs_bash

@@ -15,7 +15,6 @@ recogniser**. Specifically:
 from __future__ import annotations
 
 import functools
-import json
 import math
 from pathlib import Path
 
@@ -26,7 +25,6 @@ from vr_modality_bias.metrics.chair import (
     chair_per_caption as _chair_per_caption,
     compute_chair_aggregate,
     extract_mentioned_objects as _extract_mentioned_objects,
-    load_ground_truth_objects,
 )
 
 # The COCO-80 vocabulary used to live inside chair.py as two module constants.
@@ -170,36 +168,6 @@ def test_aggregate_all_hallucinated():
     assert agg["chair_s"] == pytest.approx(1.0)
 
 
-# ---------------------------------------------------------------- gt loader
-
-
-def test_load_ground_truth_objects_keys_are_zero_padded(tmp_path: Path):
-    """image_id keys must be 12-digit zero-padded strings matching COCO file stems."""
-    fake_instances = {
-        "categories": [
-            {"id": 1, "name": "person"},
-            {"id": 18, "name": "dog"},
-        ],
-        "annotations": [
-            {"image_id": 139, "category_id": 1},
-            {"image_id": 139, "category_id": 18},
-            {"image_id": 285, "category_id": 1},
-        ],
-        "images": [
-            {"id": 139}, {"id": 285}, {"id": 9999},
-        ],
-    }
-    p = tmp_path / "instances_val2017.json"
-    p.write_text(json.dumps(fake_instances), encoding="utf-8")
-    gt = load_ground_truth_objects(p)
-
-    assert "000000000139" in gt
-    assert gt["000000000139"] == {"person", "dog"}
-    assert gt["000000000285"] == {"person"}
-    # Image with no annotations still appears with an empty set.
-    assert gt["000000009999"] == set()
-
-
 # ================================================================
 # Precision / Recall / F1 — added on top of CHAIR (recall-GT block).
 #
@@ -301,54 +269,75 @@ def test_aggregate_empty_input_returns_nan_for_metrics():
         assert math.isnan(agg[k])
 
 
-# ================================================================
-# GT-B loader (load_reference_caption_objects)
-# Mini synthetic captions_val2017.json: 1 image with 3 ref captions,
-# one image with 0 captions but listed in images.
-# ================================================================
+# ---------------------------------------------------------------- cover
+
+# Cover is AMBER's macro recall: the mean of the per-caption ratios, as
+# opposed to `recall`, which pools the totals and divides once. Every test
+# here uses ground truths of DIFFERENT sizes, because with equal sizes the
+# two collapse onto the same number and prove nothing.
 
 
-def test_load_reference_caption_objects_unions_per_image(tmp_path):
-    from vr_modality_bias.metrics.chair import load_reference_caption_objects
-
-    fake = {
-        "images": [
-            {"id": 139, "file_name": "139.jpg"},
-            {"id": 285, "file_name": "285.jpg"},   # 0 captions -> empty set
-            {"id": 632, "file_name": "632.jpg"},
-        ],
-        "annotations": [
-            # image 139: 3 ref captions, mention {cat, bed, dog}
-            {"image_id": 139, "id": 1, "caption": "a cat sleeps on the bed"},
-            {"image_id": 139, "id": 2, "caption": "a dog and a cat together"},
-            {"image_id": 139, "id": 3, "caption": "the cat is on the pillow"},
-            # image 632: 2 ref captions, mention {bicycle, person}
-            {"image_id": 632, "id": 4, "caption": "a man riding a bicycle"},
-            {"image_id": 632, "id": 5, "caption": "two cyclists on the road"},  # bike + person via synonyms
-        ],
+def _result(*, n_correct: int, n_ground_truth: int, n_mentioned: int = 1) -> dict:
+    return {
+        "n_mentioned": n_mentioned,
+        "n_hallucinated": 0,
+        "has_hallucination": False,
+        "n_correct": n_correct,
+        "n_ground_truth": n_ground_truth,
     }
-    p = tmp_path / "captions_val2017.json"
-    p.write_text(json.dumps(fake), encoding="utf-8")
-
-    out = load_reference_caption_objects(p, COCO80)
-    assert out["000000000139"] == {"cat", "bed", "dog"}
-    assert out["000000000632"] == {"bicycle", "person"}
-    # image 285 listed but no captions -> empty set, NOT KeyError on lookup
-    assert out["000000000285"] == set()
 
 
-def test_load_reference_caption_objects_uses_zero_padded_image_id(tmp_path):
-    """ID keys must be 12-digit zero-padded strings, matching the file-stem convention."""
-    from vr_modality_bias.metrics.chair import load_reference_caption_objects
+def test_cover_is_the_mean_of_the_per_caption_ratios():
+    agg = compute_chair_aggregate([
+        _result(n_correct=1, n_ground_truth=1),
+        _result(n_correct=1, n_ground_truth=4),
+    ])
 
-    fake = {
-        "images": [{"id": 7, "file_name": "7.jpg"}],
-        "annotations": [{"image_id": 7, "id": 1, "caption": "a dog"}],
-    }
-    p = tmp_path / "captions_val2017.json"
-    p.write_text(json.dumps(fake), encoding="utf-8")
-    out = load_reference_caption_objects(p, COCO80)
-    # zero-padded to 12 digits
-    assert "000000000007" in out
-    assert "7" not in out
-    assert out["000000000007"] == {"dog"}
+    assert agg["cover"] == pytest.approx((1 / 1 + 1 / 4) / 2)
+
+
+def test_cover_and_recall_disagree_when_ground_truths_differ_in_size():
+    per_caption = [
+        _result(n_correct=1, n_ground_truth=1),
+        _result(n_correct=1, n_ground_truth=4),
+    ]
+
+    agg = compute_chair_aggregate(per_caption)
+
+    assert agg["recall"] == pytest.approx(2 / 5), "recall must stay micro"
+    assert agg["cover"] == pytest.approx(0.625), "cover must be macro"
+    assert agg["cover"] != pytest.approx(agg["recall"]), (
+        "if these two ever agree on unequal ground-truth sizes, one of them "
+        "stopped being the average it is supposed to be."
+    )
+
+
+def test_cover_equals_recall_when_every_ground_truth_has_the_same_size():
+    agg = compute_chair_aggregate([
+        _result(n_correct=1, n_ground_truth=2),
+        _result(n_correct=2, n_ground_truth=2),
+    ])
+
+    assert agg["cover"] == pytest.approx(agg["recall"])
+
+
+def test_a_caption_with_an_empty_ground_truth_is_left_out_of_cover():
+    agg = compute_chair_aggregate([
+        _result(n_correct=1, n_ground_truth=4),
+        _result(n_correct=0, n_ground_truth=0, n_mentioned=0),
+    ])
+
+    assert agg["cover"] == pytest.approx(0.25), (
+        "covering nothing is undefined, not zero; averaging a 0.0 in would "
+        "drag the metric down for items the dataset simply did not annotate."
+    )
+
+
+def test_cover_is_nan_when_no_caption_has_a_ground_truth():
+    agg = compute_chair_aggregate([_result(n_correct=0, n_ground_truth=0, n_mentioned=0)])
+
+    assert math.isnan(agg["cover"])
+
+
+def test_cover_is_nan_on_empty_input():
+    assert math.isnan(compute_chair_aggregate([])["cover"])

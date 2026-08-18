@@ -4,6 +4,16 @@ set -euo pipefail
 REPO="/aluno/aluno_stephany/repos/VR-Modality-Bias"
 cd "$REPO"
 
+# Sem valor padrao, mesmo contrato do scripts/run_sparc_matrix.sh.
+if [[ -z "${VOCABULARY:-}" ]]; then
+    echo "ERRO: VOCABULARY nao definido; chair_report.py precisa dele." >&2
+    exit 1
+fi
+if [[ -z "${ANNOTATIONS:-}" ]]; then
+    echo "ERRO: ANNOTATIONS nao definido; chair_report.py precisa dele." >&2
+    exit 1
+fi
+
 LIMIT=50
 LENGTHS="short medium long"
 BETA=0.1
@@ -58,7 +68,8 @@ for cfg in "${CONFIGS[@]}"; do
     echo ">>> [$CNAME/$FAM] rodando CHAIR..."
     python scripts/chair_report.py \
       --run-dir "$RUN_DIR" \
-      --auto-download
+      --vocabulary "$VOCABULARY" \
+      --annotations "$ANNOTATIONS"
 
     echo ">>> [$CNAME/$FAM] OK -- chair_results em $RUN_DIR"
   done

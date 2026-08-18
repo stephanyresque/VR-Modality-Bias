@@ -15,6 +15,8 @@ each into its own results/runs/<arm> dir. A failing arm stops the script; a
 re-run resumes (phase3_generate.py skips done cells, the arm guard protects dirs).
 
 Required env: DERIVED_LAYER  arm5's reference layer, from select_reference_layer.py
+              VOCABULARY    JSON vocabulary (name, categories, synonyms)
+              ANNOTATIONS   JSON Lines object annotations (image_id, objects)
 Optional env: MODEL_ID, LENGTH_CONFIG_PATTERN, NUM_IMAGES (default 100),
               SEED (default 0), OUTPUT_ROOT (default results/runs), PYTHON.
   --smoke   run the whole sequence with 2 images for an end-to-end check.
@@ -76,6 +78,19 @@ if [[ -z "${DERIVED_LAYER:-}" ]]; then
     exit 1
 fi
 
+# No defaults on purpose: the vocabulary and the ground truth belong to the
+# dataset, not to the matrix. Same contract as DERIVED_LAYER above.
+if [[ -z "${VOCABULARY:-}" ]]; then
+    echo "ERROR: VOCABULARY is not set; chair_report.py needs it." >&2
+    echo "  export VOCABULARY=<vocab.json>  and re-run." >&2
+    exit 1
+fi
+if [[ -z "${ANNOTATIONS:-}" ]]; then
+    echo "ERROR: ANNOTATIONS is not set; chair_report.py needs it." >&2
+    echo "  export ANNOTATIONS=<annotations.jsonl>  and re-run." >&2
+    exit 1
+fi
+
 if [[ "$SMOKE" -eq 1 ]]; then
     NUM_IMAGES=2
     SUFFIX="_smoke"
@@ -103,6 +118,8 @@ echo "  config pattern   : $LENGTH_CONFIG_PATTERN"
 echo "  images/arm       : $NUM_IMAGES   lengths: ${LENGTHS[*]}"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
 echo "  arm5 ref layer   : $DERIVED_LAYER"
+echo "  vocabulary       : $VOCABULARY"
+echo "  annotations      : $ANNOTATIONS"
 echo "  seed (provenance): $SEED"
 echo "  output root      : $OUTPUT_ROOT"
 echo "  smoke            : $SMOKE"
@@ -136,7 +153,8 @@ run_arm() {
         2>&1 | tee -a "$run_dir/console.log"
 
     echo "[matrix] CHAIR report for $run_name -> $run_dir/chair_report.txt"
-    "$PYTHON" scripts/chair_report.py --run-dir "$run_dir" --auto-download \
+    "$PYTHON" scripts/chair_report.py --run-dir "$run_dir" \
+        --vocabulary "$VOCABULARY" --annotations "$ANNOTATIONS" \
         2>&1 | tee "$run_dir/chair_report.txt"
 }
 
