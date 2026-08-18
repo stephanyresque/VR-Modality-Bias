@@ -1,0 +1,58 @@
+{
+  "name": "directions_en",
+  "categories": [
+    "left",
+    "right",
+    "above",
+    "below",
+    "front",
+    "behind"
+  ],
+  "synonyms": {
+    "left": [
+      "to the left",
+      "on the left",
+      "left side",
+      "left-hand",
+      "leftward",
+      "leftwards"
+    ],
+    "right": [
+      "to the right",
+      "on the right",
+      "right side",
+      "right-hand",
+      "rightward",
+      "rightwards"
+    ],
+    "above": [
+      "over",
+      "on top of",
+      "atop",
+      "upper",
+      "overhead",
+      "above of"
+    ],
+    "below": [
+      "under",
+      "underneath",
+      "beneath",
+      "lower",
+      "at the bottom of",
+      "bottom of"
+    ],
+    "front": [
+      "in front of",
+      "ahead of",
+      "foreground",
+      "frontmost"
+    ],
+    "behind": [
+      "at the back of",
+      "in the back of",
+      "back of",
+      "rear",
+      "background"
+    ]
+  }
+}
