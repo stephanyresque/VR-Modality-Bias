@@ -17,6 +17,9 @@ class ImageRecord:
     width: int
     height: int
     source: str
+    dataset: str | None = None
+    scene_id: str | None = None
+    frame_index: int | None = None
 
 
 def write_manifest(records: Iterable[ImageRecord], path: Path) -> int:
