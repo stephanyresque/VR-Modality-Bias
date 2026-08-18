@@ -26,10 +26,14 @@ CAPTION_LONG: str = (
 )
 
 
+VQA_COMPOSED: str = "Answer the question about the image.\n\n{question}"
+
+
 PROMPTS: dict[str, str] = {
     "caption_short": CAPTION_SHORT,
     "caption_medium": CAPTION_MEDIUM,
     "caption_long": CAPTION_LONG,
+    "vqa_composed": VQA_COMPOSED,
 }
 
 
