@@ -138,3 +138,52 @@ def test_legacy_alpha_label_sorts_with_the_sparc_arm(chair_report):
     assert key("on α=1.1")[0] == 1
     assert key("on sparc a=1.1 L20")[0] == 1
     assert key("on adaptive lam=0.5 ceil=2 L20")[0] == 2
+
+
+_IMAGE_ID = "000000000139"
+_GT = {_IMAGE_ID: {"person", "horse"}}
+
+
+def _entry(sparc: dict | None, *, alpha=1.1, condition="on", length="short") -> dict:
+    return {
+        "image_id": _IMAGE_ID,
+        "length": length,
+        "condition": condition,
+        "alpha": alpha,
+        "sparc": sparc,
+        "caption": "A man riding a horse on the beach.",
+    }
+
+
+def _alpha_by_label(chair_report, entries: list[dict]) -> dict:
+    rows = chair_report.collect_chair_rows(entries, _GT, model_id="mock/test")
+    return {row["condition_label"]: row["alpha"] for row in rows}
+
+
+def test_alpha_column_is_filled_for_every_new_arm(chair_report):
+    by_label = _alpha_by_label(chair_report, [
+        _entry(ARM_SPARC_DICT, length="short"),
+        _entry(ARM_ADAPTIVE_DICT, length="medium"),
+        _entry(ARM_QCOND_DICT, length="long"),
+        _entry(ARM_CONSERVE_DICT, length="long"),
+    ])
+    assert by_label["on sparc a=1.1 L20"] == 1.1
+    assert by_label["on adaptive lam=0.5 ceil=2 L20"] == 1.0, (
+        "the adaptive arms record alpha=1.0 while the entry's flat `alpha` "
+        "field says 1.1; reading 1.1 back means the flat field or the label "
+        "was used instead of the sparc record."
+    )
+    assert by_label["on adaptive+qcond q=0.05 L20"] == 1.0
+    assert by_label["on adaptive+qcond+conserve rho=0.5 s=0.05 L20"] == 1.0
+
+
+def test_alpha_column_still_works_for_a_legacy_entry(chair_report):
+    by_label = _alpha_by_label(chair_report, [_entry(None, alpha=1.05)])
+    assert by_label["on α=1.05"] == 1.05
+
+
+def test_alpha_column_stays_none_for_off(chair_report):
+    by_label = _alpha_by_label(
+        chair_report, [_entry(None, alpha=None, condition="off")]
+    )
+    assert by_label["off"] is None

@@ -420,6 +420,17 @@ def _derive_model_id(entries: list[dict]) -> str:
     return ids_list[0]
 
 
+def _alpha_from_entries(entries: list[dict]) -> float | None:
+    for entry in entries:
+        if entry.get("condition") == "off":
+            continue
+        sparc = entry.get("sparc")
+        value = sparc.get("alpha") if isinstance(sparc, dict) else entry.get("alpha")
+        if value is not None:
+            return float(value)
+    return None
+
+
 def collect_chair_rows(
     entries: list[dict],
     gt_instances: dict[str, set[str]],
@@ -515,10 +526,7 @@ def collect_chair_rows(
             # --- pick alpha for ON rows (None for OFF) ---
             alpha = None
             if label.startswith("on"):
-                try:
-                    alpha = float(label.split("=")[1])
-                except (IndexError, ValueError):
-                    alpha = None
+                alpha = _alpha_from_entries(d_cells)
             condition = "off" if label == "off" else "on"
 
             rows.append({

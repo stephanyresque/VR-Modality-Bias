@@ -16,6 +16,7 @@ from pyprojroot import here
 try:
     from vr_modality_bias.utils.attn import (
         SelectedIndexBuffer,
+        _attention_module_of,
         add_custom_attention_layers,
         decoder_of,
     )
@@ -24,6 +25,7 @@ except ModuleNotFoundError:
 
     from src.vr_modality_bias.utils.attn import (
         SelectedIndexBuffer,
+        _attention_module_of,
         add_custom_attention_layers,
         decoder_of,
     )
@@ -209,7 +211,8 @@ def enable_sparc(
     decoder = _decoder_of(model)
 
     # Snapshot the original forwards so we can restore them after the block.
-    originals = [layer.self_attn.forward for layer in decoder.layers]
+    attn_modules = [_attention_module_of(layer) for layer in decoder.layers]
+    originals = [module.forward for module in attn_modules]
 
     image_token_index, input_len, _ = probe_image_token_index(
         model_wrapper, probe_image.convert("RGB"), prompt
@@ -245,10 +248,10 @@ def enable_sparc(
         # Restore originals — important even on exceptions, otherwise the
         # next "SPARC OFF" run would still be running through the patched
         # forwards.
-        for layer, original in zip(decoder.layers, originals):
+        for module, original in zip(attn_modules, originals):
             # ``add_custom_attention_layers`` stored a partial bound via
             # ``MethodType``; we just replace it back with the original.
-            layer.self_attn.forward = original  # type: ignore[assignment]
+            module.forward = original  # type: ignore[assignment]
         # Reset buffer so a re-entry starts clean.
         buffer.reset()
 

@@ -49,18 +49,26 @@ class _MockDecoderLayer(nn.Module):
         self.self_attn = _MockSelfAttn()
 
 
-class _MockLanguageModel(nn.Module):
-    def __init__(self, n_layers: int = 4):
+class _MockAttentionLayer(nn.Module):
+    def __init__(self):
         super().__init__()
-        self.layers = nn.ModuleList([_MockDecoderLayer() for _ in range(n_layers)])
+        self.attention = _MockSelfAttn()
+
+
+class _MockLanguageModel(nn.Module):
+    def __init__(self, n_layers: int = 4, layer_cls=_MockDecoderLayer):
+        super().__init__()
+        self.layers = nn.ModuleList([layer_cls() for _ in range(n_layers)])
 
 
 class _MockTopLevelModel(nn.Module):
     """Mirrors ``model.model.language_model`` path the SPARC code walks."""
 
-    def __init__(self, n_layers: int = 4):
+    def __init__(self, n_layers: int = 4, layer_cls=_MockDecoderLayer):
         super().__init__()
-        self.model = SimpleNamespace(language_model=_MockLanguageModel(n_layers))
+        self.model = SimpleNamespace(
+            language_model=_MockLanguageModel(n_layers, layer_cls)
+        )
         self.config = SimpleNamespace(image_token_id=42)
 
 
@@ -83,9 +91,9 @@ class _MockProcessor:
 
 
 class _MockWrapper:
-    def __init__(self, n_layers: int = 4):
+    def __init__(self, n_layers: int = 4, layer_cls=_MockDecoderLayer):
         self.model_id = "mock/test"
-        self._model = _MockTopLevelModel(n_layers=n_layers)
+        self._model = _MockTopLevelModel(n_layers=n_layers, layer_cls=layer_cls)
         self._processor = _MockProcessor()
         self._device = torch.device("cpu")
 
@@ -212,6 +220,26 @@ def test_enable_sparc_restores_originals_on_exception():
     for layer, original in zip(decoder.layers, original_forwards):
         assert layer.self_attn.forward is original, (
             "SPARC must restore originals even when the with-block raised."
+        )
+
+
+def test_enable_sparc_patches_and_restores_a_dot_attention_decoder():
+    wrapper = _MockWrapper(n_layers=4, layer_cls=_MockAttentionLayer)
+    hparams = SparcHyperparams(alpha=1.3)
+
+    decoder = wrapper._model.model.language_model
+    original_forwards = [layer.attention.forward for layer in decoder.layers]
+
+    with enable_sparc(wrapper, hparams=hparams, probe_image=_blank_image(), prompt="hi"):
+        for layer, original in zip(decoder.layers, original_forwards):
+            assert layer.attention.forward is not original, (
+                "SPARC did not patch a layer whose attention module is `.attention`."
+            )
+
+    for layer, original in zip(decoder.layers, original_forwards):
+        assert layer.attention.forward is original, (
+            "SPARC must snapshot and restore through the same resolver it "
+            "installs with (`_attention_module_of`), not through `.self_attn`."
         )
 
 
