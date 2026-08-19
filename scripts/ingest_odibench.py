@@ -73,7 +73,8 @@ TYPE_ORDER: tuple[str, ...] = ("existence", "count", "direction")
 # lookup tries these in order and raises naming the keys actually present, so a
 # wrong guess fails on the first record instead of mis-parsing silently.
 IMAGE_KEYS: tuple[str, ...] = (
-    "image", "image_id", "image_name", "image_path", "img", "file_name", "filename",
+    "image", "imagename", "image_id", "image_name", "image_path", "img",
+    "file_name", "filename",
 )
 QUESTION_KEYS: tuple[str, ...] = ("question", "text", "query", "prompt")
 ANSWER_KEYS: tuple[str, ...] = ("answer", "gt", "ground_truth", "label", "response")
@@ -101,10 +102,16 @@ class Candidate:
 
 
 def _pick(record: dict, keys: tuple[str, ...], what: str, source: str, lineno: int):
+    """Return the first present key's value; raise only if none of them exist.
+
+    Presence, not truthiness: an empty answer is annotation noise and belongs in
+    the answer filter alongside the rest of it, not as a fatal error that stops
+    the whole ingestion. Testing for a non-empty value also produced the
+    self-contradicting message "no answer field; this record has ['answer']".
+    """
     for key in keys:
-        value = record.get(key)
-        if value not in (None, ""):
-            return value
+        if key in record:
+            return record[key]
     raise ValueError(
         f"{source}:{lineno}: no {what} field. Tried {list(keys)}; this record "
         f"has {sorted(record)}. Fix the key list at the top of "
@@ -214,16 +221,37 @@ def group_by_image(candidates: list[Candidate]) -> dict[str, list[Candidate]]:
 
 
 def qualifies(components: list[Candidate]) -> bool:
-    return len({c.component_type for c in components}) >= 2
+    """Two verifiable components, of any type.
+
+    Requiring two DISTINCT types rejected 174 of the 259 qualifying images,
+    because view_orientation.jsonl and relative.jsonl both feed `direction` and
+    two direction questions on one image is the commonest shape in the set.
+    Two directions about different targets are a valid composed question.
+    """
+    return len(components) >= 2
 
 
-def sample_images(image_ids: list[str], *, limit: int | None, seed: int) -> list[str]:
-    """Deterministic subset. Sampled, not sorted-and-cut: the latter biases the
-    selection towards whatever the low indices happen to be."""
-    population = sorted(image_ids)
+def select_images(
+    grouped: dict[str, list[Candidate]], *, limit: int | None, seed: int
+) -> list[str]:
+    """Pick the images to keep, richest first.
+
+    A uniform draw would spend the quota on the majority type: the set holds 643
+    direction components against 90 existence ones, so half the items would end
+    up direction-only and the scarce types would land too thin to mean anything.
+    The order is: more distinct types first, then more components, then a
+    seeded shuffle to break the remaining ties reproducibly.
+    """
+    population = sorted(grouped)
+    random.Random(seed).shuffle(population)
+    # Stable sort, so equal-priority images keep the shuffled order.
+    population.sort(key=lambda image_id: (
+        -len({c.component_type for c in grouped[image_id]}),
+        -len(grouped[image_id]),
+    ))
     if limit is None or limit >= len(population):
-        return population
-    return sorted(random.Random(seed).sample(population, limit))
+        return sorted(population)
+    return sorted(population[:limit])
 
 
 # ---------------------------------------------------------------- images
@@ -320,8 +348,10 @@ def run_emit(args) -> int:
     candidates, tally = select_candidates(iter_raw_components(args.raw), directions)
 
     grouped = group_by_image(candidates)
-    qualified = [image_id for image_id, comps in grouped.items() if qualifies(comps)]
-    chosen = sample_images(qualified, limit=args.limit, seed=args.seed)
+    qualified = {
+        image_id: comps for image_id, comps in grouped.items() if qualifies(comps)
+    }
+    chosen = select_images(qualified, limit=args.limit, seed=args.seed)
     chosen_set = set(chosen)
 
     selected = [c for c in candidates if c.image_id in chosen_set]
@@ -424,7 +454,7 @@ def run_build(args) -> int:
     manifest: list[ImageRecord] = []
     questions: list[QuestionAnnotation] = []
     n_dropped_by_negative = 0
-    n_single_component = 0
+    n_discarded_single_component = 0
     missing_images: list[str] = []
 
     for image_id in sorted(grouped):
@@ -436,10 +466,12 @@ def run_build(args) -> int:
         )
         ordered, dropped = apply_negative_existence_rule(ordered)
         n_dropped_by_negative += dropped
-        if not ordered:
+        # A one-component item is an ordinary short question, which is the
+        # opposite of what this track measures: the answer has to be long
+        # because the question asks for several things.
+        if len(ordered) < 2:
+            n_discarded_single_component += 1
             continue
-        if len(ordered) == 1:
-            n_single_component += 1
 
         source = index[image_id]
         destination = images_out / source.name
@@ -485,7 +517,7 @@ def run_build(args) -> int:
     print(f"  rows without a target  : {untargeted} (ignored)")
     print(f"  files skipped in images_final (not an image): {skipped_files}")
     print(f"  components dropped by the negative-existence rule: {n_dropped_by_negative}")
-    print(f"  items left with a single component: {n_single_component}")
+    print(f"  items discarded, fewer than 2 components left: {n_discarded_single_component}")
     print(f"  manifest               : {len(manifest)} item(s) -> {manifest_path}")
     print(f"  questions              : {len(questions)} item(s) -> {questions_path}")
     print(f"  images copied to       : {images_out}")

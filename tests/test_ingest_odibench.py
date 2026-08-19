@@ -176,21 +176,26 @@ def test_both_direction_files_feed_the_same_type(ingest, tmp_path: Path):
 # ---------------------------------------------------------------- qualifying
 
 
-def test_an_image_needs_two_distinct_types(ingest):
+def test_two_components_of_the_same_type_qualify(ingest):
+    """Requiring two DISTINCT types rejected 174 of 259 qualifying images:
+    view_orientation and relative both feed `direction`, and two direction
+    questions on one image is the commonest shape in the set."""
     Candidate = ingest.Candidate
-    two_of_one_type = [
-        Candidate("i", "direction", "q1", "left"),
-        Candidate("i", "direction", "q2", "right"),
-    ]
-    two_types = [
-        Candidate("i", "existence", "q1", "yes"),
-        Candidate("i", "count", "q2", "3"),
+    two_directions = [
+        Candidate("i", "direction", "Where is the chair?", "left"),
+        Candidate("i", "direction", "Where is the lamp?", "right"),
     ]
 
-    assert not ingest.qualifies(two_of_one_type), (
-        "two components of the same type are not a composed question"
-    )
-    assert ingest.qualifies(two_types)
+    assert ingest.qualifies(two_directions)
+
+
+def test_two_components_of_different_types_qualify(ingest):
+    Candidate = ingest.Candidate
+
+    assert ingest.qualifies([
+        Candidate("i", "existence", "q1", "yes"),
+        Candidate("i", "count", "q2", "3"),
+    ])
 
 
 def test_a_single_component_does_not_qualify(ingest):
@@ -318,37 +323,95 @@ def test_a_non_image_file_is_skipped_and_counted(ingest, tmp_path: Path):
 # ---------------------------------------------------------------- sampling
 
 
-def test_sampling_is_deterministic_for_a_seed(ingest):
-    population = [f"indoor_{i:03d}" for i in range(100)]
+def _grouped(ingest, spec: dict[str, list[str]]) -> dict[str, list]:
+    """``{image_id: [component_type, ...]}`` -> the grouped Candidate dict."""
+    Candidate = ingest.Candidate
+    return {
+        image_id: [
+            Candidate(image_id, component_type, f"q{i}", "left")
+            for i, component_type in enumerate(types)
+        ]
+        for image_id, types in spec.items()
+    }
 
-    first = ingest.sample_images(population, limit=10, seed=7)
-    second = ingest.sample_images(population, limit=10, seed=7)
+
+def test_more_distinct_types_wins_the_quota_first(ingest):
+    """A uniform draw would spend the quota on the majority type: the set has
+    643 direction components against 90 existence ones."""
+    grouped = _grouped(ingest, {
+        "one_type": ["direction", "direction", "direction", "direction"],
+        "three_types": ["existence", "count", "direction"],
+        "two_types": ["count", "direction"],
+    })
+
+    assert ingest.select_images(grouped, limit=1, seed=0) == ["three_types"]
+    assert sorted(ingest.select_images(grouped, limit=2, seed=0)) == [
+        "three_types", "two_types",
+    ]
+
+
+def test_component_count_breaks_a_tie_between_equal_type_counts(ingest):
+    grouped = _grouped(ingest, {
+        "two_types_two_components": ["count", "direction"],
+        "two_types_four_components": ["count", "direction", "direction", "direction"],
+    })
+
+    assert ingest.select_images(grouped, limit=1, seed=0) == [
+        "two_types_four_components"
+    ]
+
+
+def test_the_priority_is_not_overridden_by_the_seed(ingest):
+    grouped = _grouped(ingest, {
+        "rich": ["existence", "count", "direction"],
+        **{f"poor_{i}": ["direction", "direction"] for i in range(20)},
+    })
+
+    for seed in range(5):
+        assert ingest.select_images(grouped, limit=1, seed=seed) == ["rich"], seed
+
+
+def test_selection_is_deterministic_for_a_seed(ingest):
+    grouped = _grouped(ingest, {
+        f"indoor_{i:03d}": ["direction", "direction"] for i in range(100)
+    })
+
+    first = ingest.select_images(grouped, limit=10, seed=7)
+    second = ingest.select_images(grouped, limit=10, seed=7)
 
     assert first == second
     assert len(first) == 10
 
 
-def test_a_different_seed_gives_a_different_subset(ingest):
-    population = [f"indoor_{i:03d}" for i in range(100)]
+def test_a_different_seed_breaks_the_remaining_ties_differently(ingest):
+    grouped = _grouped(ingest, {
+        f"indoor_{i:03d}": ["direction", "direction"] for i in range(100)
+    })
 
-    assert ingest.sample_images(population, limit=10, seed=1) != \
-        ingest.sample_images(population, limit=10, seed=2)
+    assert ingest.select_images(grouped, limit=10, seed=1) != \
+        ingest.select_images(grouped, limit=10, seed=2)
 
 
-def test_sampling_is_not_just_the_lowest_indices(ingest):
-    population = [f"indoor_{i:03d}" for i in range(100)]
+def test_the_tie_break_is_not_just_the_lowest_indices(ingest):
+    grouped = _grouped(ingest, {
+        f"indoor_{i:03d}": ["direction", "direction"] for i in range(100)
+    })
 
-    chosen = ingest.sample_images(population, limit=10, seed=7)
+    chosen = ingest.select_images(grouped, limit=10, seed=7)
 
-    assert chosen != population[:10], (
+    assert chosen != sorted(grouped)[:10], (
         "sorting and cutting biases the selection towards the low indices"
     )
 
 
 def test_no_limit_keeps_everything(ingest):
-    population = ["b", "a", "c"]
+    grouped = _grouped(ingest, {
+        "b": ["direction", "direction"],
+        "a": ["existence", "count"],
+        "c": ["count", "direction"],
+    })
 
-    assert ingest.sample_images(population, limit=None, seed=0) == ["a", "b", "c"]
+    assert ingest.select_images(grouped, limit=None, seed=0) == ["a", "b", "c"]
 
 
 # ---------------------------------------------------------------- csv
@@ -433,7 +496,7 @@ def test_emit_then_build_produces_a_usable_dataset(ingest, tmp_path: Path):
     manifest = read_manifest(out_dir / "manifest.jsonl")
     questions = read_question_annotations(out_dir / "questions.jsonl")
 
-    assert [r.image_id for r in manifest] == ["indoor_1", "indoor_2"]
+    assert [r.image_id for r in manifest] == ["indoor_1"]
     assert all(r.width == 64 and r.height == 32 for r in manifest), (
         "the manifest records the real pixel size, and nothing is resized"
     )
@@ -450,8 +513,11 @@ def test_emit_then_build_produces_a_usable_dataset(ingest, tmp_path: Path):
     ]
     assert by_id["indoor_1"].components[1].answer == 3
 
-    # indoor_2 said there is no sofa, so counting the sofas goes away.
-    assert [c.component_type for c in by_id["indoor_2"].components] == ["existence"]
+    # indoor_2 said there is no sofa, so counting the sofas went away, leaving
+    # one component -- an ordinary short question, which this track does not
+    # measure. It is discarded rather than shipped.
+    assert "indoor_2" not in by_id
+    assert (out_dir / "images" / "indoor_2.png").exists() is False
 
 
 def test_build_fails_when_a_targeted_image_has_no_file(ingest, tmp_path: Path):
@@ -510,3 +576,130 @@ def test_an_unrecognised_record_shape_fails_naming_the_keys(ingest, tmp_path: Pa
     message = str(excinfo.value)
     assert "img_file" in message, "the message must show the keys actually present"
     assert "existence.jsonl:1" in message
+
+
+# ---------------------------------------------------------------- raw keys, measured
+#
+# These two pin the corrections the audit forced: the real field name, and the
+# fact that an empty value is annotation noise rather than a fatal error.
+
+
+def test_the_real_odibench_image_key_is_recognised(ingest, tmp_path: Path):
+    """The dataset writes `imagename`, with no underscore."""
+    raw = tmp_path / "raw"
+    (raw / "QAs").mkdir(parents=True)
+    (raw / "QAs" / "existence.jsonl").write_text(
+        json.dumps({
+            "imagename": "indoor_1.png",
+            "question": "Is there a chair?",
+            "answer": "yes",
+        }) + "\n",
+        encoding="utf-8",
+    )
+
+    components = list(ingest.iter_raw_components(raw))
+
+    assert components == [("existence", "indoor_1", "Is there a chair?", "yes")]
+
+
+def test_an_empty_answer_reaches_the_filter_instead_of_raising(ingest, tmp_path: Path):
+    """relative.jsonl carries one. A single such record used to kill the run."""
+    raw = _write_raw(tmp_path, {
+        "relative.jsonl": [
+            _qa("indoor_1.png", "Where is the chair?", "left"),
+            _qa("indoor_2.png", "Where is the lamp?", ""),
+        ],
+    }, [])
+
+    candidates, tally = ingest.select_candidates(
+        ingest.iter_raw_components(raw), _DIRECTIONS
+    )
+
+    assert [c.image_id for c in candidates] == ["indoor_1"]
+    assert tally["bad_answer"] == 1, (
+        "an empty answer is noise for the answer filter to count, not a crash"
+    )
+
+
+def test_an_empty_value_does_not_produce_a_self_contradicting_message(ingest):
+    """The old message read: no answer field; this record has ['answer']."""
+    value = ingest._pick({"answer": ""}, ingest.ANSWER_KEYS, "answer", "f", 1)
+
+    assert value == ""
+
+
+def test_a_record_missing_every_candidate_key_still_raises(ingest, tmp_path: Path):
+    raw = tmp_path / "raw"
+    (raw / "QAs").mkdir(parents=True)
+    (raw / "QAs" / "existence.jsonl").write_text(
+        json.dumps({"imagename": "indoor_1.png", "question": "?"}) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        list(ingest.iter_raw_components(raw))
+
+    message = str(excinfo.value)
+    assert "no answer field" in message
+    assert "imagename" in message, "the message must list the keys actually present"
+
+
+# ---------------------------------------------------------------- short items
+
+
+def test_an_item_left_with_one_component_is_discarded(ingest, tmp_path: Path):
+    raw = _write_raw(tmp_path, {}, ["indoor_1.png", "indoor_2.png"])
+    csv_path = tmp_path / "targets.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
+        writer.writeheader()
+        # indoor_1 survives with two components.
+        writer.writerow({"image_id": "indoor_1", "component_type": "existence",
+                         "question": "Is there a chair?", "answer": "yes",
+                         "target": "chair"})
+        writer.writerow({"image_id": "indoor_1", "component_type": "count",
+                         "question": "How many chairs?", "answer": "3",
+                         "target": "chair"})
+        # indoor_2 loses its count to the negative-existence rule.
+        writer.writerow({"image_id": "indoor_2", "component_type": "existence",
+                         "question": "Is there a sofa?", "answer": "no",
+                         "target": "sofa"})
+        writer.writerow({"image_id": "indoor_2", "component_type": "count",
+                         "question": "How many sofas?", "answer": "0",
+                         "target": "sofa"})
+
+    out_dir = tmp_path / "processed"
+    args = ingest.build_parser().parse_args([
+        "--raw", str(raw), "--targets", str(csv_path), "--out", str(out_dir),
+    ])
+    assert ingest.run_build(args) == 0
+
+    questions = read_question_annotations(out_dir / "questions.jsonl")
+    manifest = read_manifest(out_dir / "manifest.jsonl")
+
+    assert [q.image_id for q in questions] == ["indoor_1"], (
+        "a one-component item is an ordinary short question, the opposite of "
+        "what this track measures"
+    )
+    assert [r.image_id for r in manifest] == ["indoor_1"], (
+        "the manifest must not list an item with no question"
+    )
+
+
+def test_a_csv_row_that_never_had_a_partner_is_discarded_too(ingest, tmp_path: Path):
+    raw = _write_raw(tmp_path, {}, ["indoor_1.png"])
+    csv_path = tmp_path / "targets.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
+        writer.writeheader()
+        writer.writerow({"image_id": "indoor_1", "component_type": "existence",
+                         "question": "Is there a chair?", "answer": "yes",
+                         "target": "chair"})
+
+    out_dir = tmp_path / "processed"
+    args = ingest.build_parser().parse_args([
+        "--raw", str(raw), "--targets", str(csv_path), "--out", str(out_dir),
+    ])
+    assert ingest.run_build(args) == 0
+
+    assert read_question_annotations(out_dir / "questions.jsonl") == []
