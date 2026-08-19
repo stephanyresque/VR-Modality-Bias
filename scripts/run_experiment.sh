@@ -23,14 +23,16 @@ Stages run in order and each one can be skipped:
   description  scripts/run_sparc_matrix.sh
   composed     scripts/run_composed_matrix.sh
 
-Required env: DATASET          short name, used for the run and log directories
-              CONFIG_PATTERN   description-track config pattern with {length}
-              COMPOSED_CONFIG  single config for the composed track
-              VOCABULARY       object vocabulary JSON
-              ANNOTATIONS      object annotations JSONL
-              QUESTIONS        question annotations JSONL
-              DIRECTION_TERMS  direction table JSON
-Optional env: STAGES        default "preflight diagnostic description composed"
+Every artefact is demanded only by the stage that consumes it, so a dataset
+that runs one track does not have to invent a path for the other:
+  always       DATASET
+  description  CONFIG_PATTERN, VOCABULARY, ANNOTATIONS
+  composed     COMPOSED_CONFIG, QUESTIONS, DIRECTION_TERMS
+  diagnostic   DIAG_CONFIG (falls back to COMPOSED_CONFIG, then to the deepest
+               regime of CONFIG_PATTERN)
+
+Optional env: LENGTHS       description regimes, default "medium long"
+              STAGES        default "preflight diagnostic description composed"
               ARMS          arm subset, passed to both matrices
               NUM_ITEMS     default 100
               DIAG_CONFIG   config for the diagnostic (default: COMPOSED_CONFIG)
@@ -57,14 +59,11 @@ cd "$REPO_ROOT" || exit 1
 
 PYTHON="${PYTHON:-python}"
 
-for required in DATASET CONFIG_PATTERN COMPOSED_CONFIG VOCABULARY ANNOTATIONS \
-                QUESTIONS DIRECTION_TERMS; do
-    if [[ -z "${!required:-}" ]]; then
-        echo "ERROR: $required is not set." >&2
-        usage
-        exit 1
-    fi
-done
+if [[ -z "${DATASET:-}" ]]; then
+    echo "ERROR: DATASET is not set." >&2
+    usage
+    exit 1
+fi
 
 STAGES="${STAGES:-preflight diagnostic description composed}"
 read -r -a SELECTED_STAGES <<< "$STAGES"
@@ -88,9 +87,51 @@ has_stage() {
     return 1
 }
 
+# Each artefact is demanded by the stage that consumes it, and by no one else.
+# Neither dataset carries all four: ADT has objects and no questions, ODI-Bench
+# has questions and no per-image object list. Demanding everything up front made
+# each of them unrunnable without inventing a path.
+#   description -> CONFIG_PATTERN, VOCABULARY, ANNOTATIONS
+#                  (scripts/run_sparc_matrix.sh reads the last two)
+#   composed    -> COMPOSED_CONFIG, QUESTIONS, DIRECTION_TERMS
+#                  (scripts/run_composed_matrix.sh reads the last two)
+#   diagnostic  -> a config to run on
+demand() {
+    local stage="$1"; shift
+    for name in "$@"; do
+        if [[ -z "${!name:-}" ]]; then
+            echo "ERROR: $name is not set, and the '$stage' stage needs it." >&2
+            echo "  Either set it, or drop '$stage' from STAGES." >&2
+            exit 1
+        fi
+    done
+}
+
+if has_stage description; then
+    demand description CONFIG_PATTERN VOCABULARY ANNOTATIONS
+fi
+if has_stage composed; then
+    demand composed COMPOSED_CONFIG QUESTIONS DIRECTION_TERMS
+fi
+
+LENGTHS="${LENGTHS:-medium long}"
 NUM_ITEMS="${NUM_ITEMS:-100}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-results/runs}"
-DIAG_CONFIG="${DIAG_CONFIG:-$COMPOSED_CONFIG}"
+
+# The diagnostic just needs some config to run on. Prefer an explicit one, then
+# the composed config, then the deepest description regime -- so a dataset that
+# runs only one of the two tracks still gets a diagnostic without extra vars.
+if [[ -z "${DIAG_CONFIG:-}" ]]; then
+    if [[ -n "${COMPOSED_CONFIG:-}" ]]; then
+        DIAG_CONFIG="$COMPOSED_CONFIG"
+    elif [[ -n "${CONFIG_PATTERN:-}" ]]; then
+        last_length="${LENGTHS##* }"
+        DIAG_CONFIG="${CONFIG_PATTERN/\{length\}/$last_length}"
+    fi
+fi
+if has_stage diagnostic; then
+    demand diagnostic DIAG_CONFIG
+fi
 SMOKE_FLAG=()
 if [[ "$SMOKE" -eq 1 ]]; then
     NUM_ITEMS=2
@@ -113,15 +154,16 @@ echo "=================================================================="
 echo "EXPERIMENT  dataset=$DATASET"
 echo "=================================================================="
 echo "  stages           : ${SELECTED_STAGES[*]}"
+echo "  lengths          : $LENGTHS"
 echo "  arms             : ${ARMS:-<matrix default>}"
 echo "  items            : $NUM_ITEMS   smoke=$SMOKE"
-echo "  config pattern   : $CONFIG_PATTERN"
-echo "  composed config  : $COMPOSED_CONFIG"
-echo "  diagnostic config: $DIAG_CONFIG"
-echo "  vocabulary       : $VOCABULARY"
-echo "  annotations      : $ANNOTATIONS"
-echo "  questions        : $QUESTIONS"
-echo "  direction terms  : $DIRECTION_TERMS"
+echo "  config pattern   : ${CONFIG_PATTERN:-<unset>}"
+echo "  composed config  : ${COMPOSED_CONFIG:-<unset>}"
+echo "  diagnostic config: ${DIAG_CONFIG:-<unset>}"
+echo "  vocabulary       : ${VOCABULARY:-<unset>}"
+echo "  annotations      : ${ANNOTATIONS:-<unset>}"
+echo "  questions        : ${QUESTIONS:-<unset>}"
+echo "  direction terms  : ${DIRECTION_TERMS:-<unset>}"
 echo "  output root      : $OUTPUT_ROOT"
 echo "  log file         : $LOG_FILE"
 echo "=================================================================="
@@ -135,11 +177,21 @@ record() { STAGE_RESULTS+=("$1"); }
 if has_stage preflight; then
     echo ""
     echo "---- STAGE preflight ----------------------------------------------"
+    # Only the configs that will actually be read: expanding all three length
+    # regimes would demand a file the run never opens.
     PREFLIGHT_CONFIGS=()
-    for length in short medium long; do
-        PREFLIGHT_CONFIGS+=("${CONFIG_PATTERN/\{length\}/$length}")
-    done
-    PREFLIGHT_CONFIGS+=("$COMPOSED_CONFIG")
+    if has_stage description; then
+        read -r -a PREFLIGHT_LENGTHS <<< "$LENGTHS"
+        for length in "${PREFLIGHT_LENGTHS[@]}"; do
+            PREFLIGHT_CONFIGS+=("${CONFIG_PATTERN/\{length\}/$length}")
+        done
+    fi
+    if has_stage composed; then
+        PREFLIGHT_CONFIGS+=("$COMPOSED_CONFIG")
+    fi
+    if [[ "${#PREFLIGHT_CONFIGS[@]}" -eq 0 && -n "${DIAG_CONFIG:-}" ]]; then
+        PREFLIGHT_CONFIGS+=("$DIAG_CONFIG")
+    fi
 
     PREFLIGHT_ARMS=()
     if [[ -n "${ARMS:-}" ]]; then
@@ -150,12 +202,12 @@ if has_stage preflight; then
         "$PYTHON" scripts/preflight.py
         --config "${PREFLIGHT_CONFIGS[@]}"
         --limit "$NUM_ITEMS"
-        --annotations "$ANNOTATIONS"
-        --vocabulary "$VOCABULARY"
-        --questions "$QUESTIONS"
-        --direction-terms "$DIRECTION_TERMS"
         --output-root "$OUTPUT_ROOT"
     )
+    [[ -n "${ANNOTATIONS:-}" ]] && preflight_cmd+=(--annotations "$ANNOTATIONS")
+    [[ -n "${VOCABULARY:-}" ]] && preflight_cmd+=(--vocabulary "$VOCABULARY")
+    [[ -n "${QUESTIONS:-}" ]] && preflight_cmd+=(--questions "$QUESTIONS")
+    [[ -n "${DIRECTION_TERMS:-}" ]] && preflight_cmd+=(--direction-terms "$DIRECTION_TERMS")
     if [[ "${#PREFLIGHT_ARMS[@]}" -gt 0 ]]; then
         preflight_cmd+=(--arms "${PREFLIGHT_ARMS[@]}")
     fi
@@ -207,6 +259,7 @@ if has_stage description; then
     echo ""
     echo "---- STAGE description --------------------------------------------"
     if LENGTH_CONFIG_PATTERN="$CONFIG_PATTERN" \
+       LENGTHS="$LENGTHS" \
        NUM_IMAGES="$NUM_ITEMS" \
        OUTPUT_ROOT="$OUTPUT_ROOT" \
        VOCABULARY="$VOCABULARY" ANNOTATIONS="$ANNOTATIONS" \

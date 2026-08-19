@@ -17,7 +17,9 @@ re-run resumes (phase3_generate.py skips done cells, the arm guard protects dirs
 Required env: DERIVED_LAYER  arm5's reference layer, from select_reference_layer.py
               VOCABULARY    JSON vocabulary (name, categories, synonyms)
               ANNOTATIONS   JSON Lines object annotations (image_id, objects)
-Optional env: ARMS          space-separated subset of
+Optional env: LENGTHS       space-separated subset of "short medium long"
+                            (default: "medium long" -- short was cut from scope)
+              ARMS          space-separated subset of
                             "baseline arm1_sparc arm2_adaptive arm3_qcond
                              arm4_conserve arm5_reflayer"
                             (default: the five arm* ones)
@@ -72,7 +74,24 @@ SELECTED_LAYER=15
 SE_LAYERS_LO=0
 SE_LAYERS_HI=24
 REPETITION_PENALTY=1.2
-LENGTHS=(short medium long)
+
+# ---- length regimes ---------------------------------------------------------
+# The short regime sat inside the noise in every condition of the previous
+# matrix and was cut from scope; keeping it costs a third of the GPU time for
+# nothing. LENGTHS overrides the default.
+KNOWN_LENGTHS=(short medium long)
+read -r -a LENGTHS <<< "${LENGTHS:-medium long}"
+for length in "${LENGTHS[@]}"; do
+    found=0
+    for known in "${KNOWN_LENGTHS[@]}"; do
+        [[ "$length" == "$known" ]] && found=1 && break
+    done
+    if [[ "$found" -eq 0 ]]; then
+        echo "ERROR: unknown length regime '$length'." >&2
+        echo "  known regimes: ${KNOWN_LENGTHS[*]}" >&2
+        exit 1
+    fi
+done
 
 # ---- arm5 needs the diagnostic-derived reference layer ----------------------
 if [[ -z "${DERIVED_LAYER:-}" ]]; then

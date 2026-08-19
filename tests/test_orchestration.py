@@ -349,3 +349,147 @@ def test_smoke_propagates_all_the_way_down(tmp_path: Path):
     gen = _gen_lines(result.stdout, "phase3_generate.py")
     assert gen and "--limit 2" in gen[0]
     assert "_smoke" in gen[0]
+
+
+# ---------------------------------------------------------------- length regimes
+#
+# The short regime sat inside the noise in every condition of the previous
+# matrix and was cut from scope; keeping it cost a third of the GPU time.
+
+
+@needs_bash
+def test_the_description_matrix_defaults_to_medium_and_long(tmp_path: Path):
+    result = _run(_MATRIX, _matrix_env(tmp_path, ARMS="arm1_sparc"))
+
+    line = _gen_lines(result.stdout, "phase3_generate.py")[0]
+    assert "--lengths medium long " in line
+    assert "short" not in line.split("--length-config-pattern")[0]
+
+
+@needs_bash
+def test_lengths_can_be_overridden(tmp_path: Path):
+    result = _run(_MATRIX, _matrix_env(tmp_path, ARMS="arm1_sparc", LENGTHS="long"))
+
+    line = _gen_lines(result.stdout, "phase3_generate.py")[0]
+    assert "--lengths long " in line
+
+
+@needs_bash
+def test_an_unknown_length_regime_aborts(tmp_path: Path):
+    result = _run(_MATRIX, _matrix_env(tmp_path, ARMS="arm1_sparc", LENGTHS="bogus"))
+
+    assert result.returncode != 0
+    assert "bogus" in result.stdout + result.stderr
+    assert "phase3_generate.py" not in result.stdout
+
+
+# ---------------------------------------------------------------- per-stage demand
+
+
+def _adt_env(tmp_path: Path, **extra) -> dict:
+    """ADT shape: objects, no questions."""
+    return {
+        "DATASET": "adt",
+        "CONFIG_PATTERN": "configs/run_smolvlm22_{length}.yaml",
+        "VOCABULARY": "vocab.json",
+        "ANNOTATIONS": "annotations.jsonl",
+        "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
+        **extra,
+    }
+
+
+def _odi_env(tmp_path: Path, **extra) -> dict:
+    """ODI-Bench shape: questions, no per-image object list."""
+    return {
+        "DATASET": "odi",
+        "COMPOSED_CONFIG": "configs/run_smolvlm22_long.yaml",
+        "QUESTIONS": "questions.jsonl",
+        "DIRECTION_TERMS": "configs/direction_terms.json",
+        "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
+        **extra,
+    }
+
+
+@needs_bash
+def test_an_object_only_dataset_runs_the_description_track(tmp_path: Path):
+    result = _run(_EXPERIMENT, _adt_env(
+        tmp_path, STAGES="preflight description", DERIVED_LAYER="9",
+        ARMS="arm1_sparc",
+    ))
+
+    assert result.returncode == 0, result.stdout[-2000:]
+    assert _gen_lines(result.stdout, "phase3_generate.py")
+
+
+@needs_bash
+def test_a_question_only_dataset_runs_the_composed_track(tmp_path: Path):
+    result = _run(_EXPERIMENT, _odi_env(
+        tmp_path, STAGES="preflight composed", DERIVED_LAYER="9",
+        ARMS="arm1_sparc",
+    ))
+
+    assert result.returncode == 0, result.stdout[-2000:]
+    assert _gen_lines(result.stdout, "composed_generate.py")
+
+
+@needs_bash
+def test_the_description_stage_still_demands_its_own_artefacts(tmp_path: Path):
+    env = _adt_env(tmp_path, STAGES="description", DERIVED_LAYER="9")
+    del env["VOCABULARY"]
+
+    result = _run(_EXPERIMENT, {**env, "VOCABULARY": ""})
+
+    assert result.returncode != 0
+    assert "VOCABULARY" in result.stdout + result.stderr
+    assert "description" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_the_composed_stage_still_demands_its_own_artefacts(tmp_path: Path):
+    result = _run(_EXPERIMENT, _odi_env(
+        tmp_path, STAGES="composed", DERIVED_LAYER="9", QUESTIONS="",
+    ))
+
+    assert result.returncode != 0
+    assert "QUESTIONS" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_preflight_receives_only_the_artefacts_the_dataset_has(tmp_path: Path):
+    adt = _run(_EXPERIMENT, _adt_env(
+        tmp_path, STAGES="preflight description", DERIVED_LAYER="9", ARMS="arm1_sparc",
+    ))
+    odi = _run(_EXPERIMENT, _odi_env(
+        tmp_path, STAGES="preflight composed", DERIVED_LAYER="9", ARMS="arm1_sparc",
+    ))
+
+    adt_line = _gen_lines(adt.stdout, "preflight.py")[0]
+    assert "--annotations" in adt_line and "--vocabulary" in adt_line
+    assert "--questions" not in adt_line and "--direction-terms" not in adt_line
+
+    odi_line = _gen_lines(odi.stdout, "preflight.py")[0]
+    assert "--questions" in odi_line and "--direction-terms" in odi_line
+    assert "--annotations" not in odi_line and "--vocabulary" not in odi_line
+
+
+@needs_bash
+def test_preflight_only_demands_the_regimes_that_will_run(tmp_path: Path):
+    result = _run(_EXPERIMENT, _adt_env(
+        tmp_path, STAGES="preflight description", DERIVED_LAYER="9", ARMS="arm1_sparc",
+    ))
+
+    line = _gen_lines(result.stdout, "preflight.py")[0]
+    assert "run_smolvlm22_medium.yaml" in line
+    assert "run_smolvlm22_long.yaml" in line
+    assert "run_smolvlm22_short.yaml" not in line, (
+        "expanding a regime the run never opens would demand a file for nothing"
+    )
+
+
+@needs_bash
+def test_the_diagnostic_falls_back_to_the_deepest_description_regime(tmp_path: Path):
+    """An object-only dataset has no COMPOSED_CONFIG to borrow."""
+    result = _run(_EXPERIMENT, _adt_env(tmp_path, STAGES="diagnostic"))
+
+    assert result.returncode == 0, result.stdout[-2000:]
+    assert "configs/run_smolvlm22_long.yaml" in result.stdout

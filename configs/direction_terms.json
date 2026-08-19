@@ -31,7 +31,8 @@
       "atop",
       "upper",
       "overhead",
-      "above of"
+      "above of",
+      "top"
     ],
     "below": [
       "under",
@@ -39,7 +40,8 @@
       "beneath",
       "lower",
       "at the bottom of",
-      "bottom of"
+      "bottom of",
+      "bottom"
     ],
     "front": [
       "in front of",
@@ -52,7 +54,8 @@
       "in the back of",
       "back of",
       "rear",
-      "background"
+      "background",
+      "back"
     ]
   }
 }

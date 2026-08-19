@@ -338,3 +338,98 @@ def test_the_question_ids_are_crossed_too(preflight, tmp_path: Path):
     findings = preflight.run_checks(args)
 
     assert any("questions" in p and "NO id" in p for p in findings.problems)
+
+
+# ---------------------------------------------------------------- one-track datasets
+#
+# Neither real dataset carries all four artefacts: ADT has objects and no
+# questions, ODI-Bench has questions and no per-image object list. Demanding
+# both made each of them unrunnable without inventing a path.
+
+
+def _adt_shaped(tmp_path: Path) -> list[str]:
+    cfg_path = _stage(tmp_path, ["a", "b"])
+    write_object_annotations(
+        [ObjectAnnotation(image_id=i, objects=("chair",)) for i in ("a", "b")],
+        tmp_path / "annotations.jsonl",
+    )
+    return [
+        "--config", str(cfg_path), "--limit", "2",
+        "--annotations", str(tmp_path / "annotations.jsonl"),
+        "--vocabulary", str(_vocab(tmp_path)),
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check",
+    ]
+
+
+def _odi_shaped(tmp_path: Path) -> list[str]:
+    cfg_path = _stage(tmp_path, ["a", "b"])
+    write_question_annotations(
+        [
+            QuestionAnnotation(
+                image_id=i, question_id=f"{i}_q1", question_text="Are there chairs?",
+                components=(QuestionComponent("existence", "chair", "yes"),),
+            )
+            for i in ("a", "b")
+        ],
+        tmp_path / "questions.jsonl",
+    )
+    return [
+        "--config", str(cfg_path), "--limit", "2",
+        "--questions", str(tmp_path / "questions.jsonl"),
+        "--direction-terms", str(_DIRECTION_TERMS),
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check",
+    ]
+
+
+def test_an_object_only_dataset_passes_without_questions(preflight, tmp_path: Path):
+    args = preflight.build_parser().parse_args(_adt_shaped(tmp_path))
+
+    findings = preflight.run_checks(args)
+
+    assert findings.ok, findings.problems
+
+
+def test_a_question_only_dataset_passes_without_a_vocabulary(preflight, tmp_path: Path):
+    args = preflight.build_parser().parse_args(_odi_shaped(tmp_path))
+
+    findings = preflight.run_checks(args)
+
+    assert findings.ok, findings.problems
+
+
+def test_neither_ground_truth_is_a_problem(preflight, tmp_path: Path):
+    cfg_path = _stage(tmp_path, ["a"])
+    args = preflight.build_parser().parse_args([
+        "--config", str(cfg_path), "--limit", "1",
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check",
+    ])
+
+    findings = preflight.run_checks(args)
+
+    assert not findings.ok
+    assert any("neither --annotations nor --questions" in p for p in findings.problems)
+
+
+def test_the_id_crossing_still_runs_for_the_side_that_was_given(preflight, tmp_path: Path):
+    cfg_path = _stage(tmp_path, ["a"])
+    write_question_annotations(
+        [QuestionAnnotation(
+            image_id="wrong_format", question_id="q1", question_text="?",
+            components=(QuestionComponent("existence", "chair", "yes"),),
+        )],
+        tmp_path / "questions.jsonl",
+    )
+    args = preflight.build_parser().parse_args([
+        "--config", str(cfg_path), "--limit", "1",
+        "--questions", str(tmp_path / "questions.jsonl"),
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check",
+    ])
+
+    findings = preflight.run_checks(args)
+
+    assert any("NO id in the manifest" in p and "questions" in p
+               for p in findings.problems)

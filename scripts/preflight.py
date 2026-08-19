@@ -303,10 +303,12 @@ def build_parser() -> argparse.ArgumentParser:
              "{length} pattern into three; the composed track uses one.")
     parser.add_argument("--limit", type=int, required=True,
         help="How many manifest items the run will use.")
-    parser.add_argument("--annotations", type=Path, required=True,
-        help="Object annotations (ground truth for the description track).")
-    parser.add_argument("--vocabulary", type=Path, required=True,
-        help="Object vocabulary JSON.")
+    parser.add_argument("--annotations", type=Path, default=None,
+        help="Object annotations. Required only if the description track runs; "
+             "a question-only dataset has none.")
+    parser.add_argument("--vocabulary", type=Path, default=None,
+        help="Object vocabulary JSON. Required only if the description track "
+             "runs, same reason.")
     parser.add_argument("--questions", type=Path, default=None,
         help="Question annotations. Required only if the composed track runs.")
     parser.add_argument("--direction-terms", type=Path, default=None,
@@ -333,12 +335,22 @@ def run_checks(args) -> Findings:
             findings.merge(check_images(configs[0], records))
             manifest_ids = {r.image_id for r in records}
 
-    ann_findings, object_ids = check_object_annotations(args.annotations)
-    findings.merge(ann_findings)
-    if manifest_ids and object_ids:
-        findings.merge(check_ids_cross(manifest_ids, object_ids, what="annotations"))
+    # Neither track selected means nothing can be scored, whatever else is in
+    # order. The two datasets each carry only one of the two ground truths, so
+    # demanding both would make each of them unrunnable.
+    if args.annotations is None and args.questions is None:
+        findings.problems.append(
+            "neither --annotations nor --questions was given: there is no "
+            "ground truth of any kind, so no stage could be scored."
+        )
 
-    findings.merge(check_vocabulary(args.vocabulary, what="vocabulary"))
+    if args.annotations is not None:
+        ann_findings, object_ids = check_object_annotations(args.annotations)
+        findings.merge(ann_findings)
+        if manifest_ids and object_ids:
+            findings.merge(check_ids_cross(manifest_ids, object_ids, what="annotations"))
+    if args.vocabulary is not None:
+        findings.merge(check_vocabulary(args.vocabulary, what="vocabulary"))
 
     if args.questions is not None:
         q_findings, question_ids = check_question_annotations(args.questions)
