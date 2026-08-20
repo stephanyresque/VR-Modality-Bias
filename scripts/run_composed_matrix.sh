@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Run the SPARC matrix on the COMPOSED-QUESTION track, sequentially and
-# unattended: per arm, composed_generate.py (answers) then composed_report.py.
+# unattended: per arm, composed_generate.py writes answers.jsonl. Scoring is a
+# separate offline stage against a judge model, so nothing here grades anything.
 # Sibling of scripts/run_sparc_matrix.sh; the difference is that this track has
 # no length regime, so it takes ONE config instead of a {length} pattern.
 # Run: DERIVED_LAYER=<layer> CONFIG=<cfg.yaml> QUESTIONS=<q.jsonl> \
-#      DIRECTION_TERMS=<d.json> bash scripts/run_composed_matrix.sh [--smoke]
+#      bash scripts/run_composed_matrix.sh [--smoke]
 
 set -euo pipefail
 
 usage() {
     cat >&2 <<'EOF'
 Usage: DERIVED_LAYER=<layer> CONFIG=<cfg.yaml> QUESTIONS=<questions.jsonl> \
-       DIRECTION_TERMS=<direction_terms.json> \
        bash scripts/run_composed_matrix.sh [--smoke]
 
 Runs the selected arms in sequence, each into its own results/runs/<arm>_q dir.
@@ -21,7 +21,6 @@ done cells, the arm guard protects dirs).
 Required env: DERIVED_LAYER    arm5's reference layer, from select_reference_layer.py
               CONFIG           family config (model block, seed, max_new_tokens)
               QUESTIONS        JSON Lines question annotations
-              DIRECTION_TERMS  JSON direction table for composed_report.py
 Optional env: ARMS             space-separated subset of
                                "baseline arm1_sparc arm2_adaptive arm3_qcond
                                 arm4_conserve arm5_reflayer"
@@ -49,7 +48,7 @@ cd "$REPO_ROOT" || exit 1
 PYTHON="${PYTHON:-python}"
 
 # ---- required env, no defaults ----------------------------------------------
-for required in DERIVED_LAYER CONFIG QUESTIONS DIRECTION_TERMS; do
+for required in DERIVED_LAYER CONFIG QUESTIONS; do
     if [[ -z "${!required:-}" ]]; then
         echo "ERROR: $required is not set; the composed matrix needs it." >&2
         usage
@@ -111,7 +110,6 @@ echo "=================================================================="
 echo "SPARC composed-question matrix"
 echo "  config           : $CONFIG"
 echo "  questions        : $QUESTIONS"
-echo "  direction terms  : $DIRECTION_TERMS"
 echo "  items/arm        : $NUM_ITEMS"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
 echo "  arms             : ${SELECTED_ARMS[*]}"
@@ -147,11 +145,6 @@ run_arm() {
         --repetition-penalty "$REPETITION_PENALTY" \
         "${extra_flags[@]}" \
         2>&1 | tee -a "$run_dir/console.log"
-
-    echo "[composed] report for $run_name -> $run_dir/composed_report.txt"
-    "$PYTHON" scripts/composed_report.py --run-dir "$run_dir" \
-        --questions "$QUESTIONS" --direction-terms "$DIRECTION_TERMS" \
-        2>&1 | tee "$run_dir/composed_report.txt"
 }
 
 dispatch_arm() {
@@ -184,18 +177,14 @@ echo "COMPOSED MATRIX SUMMARY"
 echo "=================================================================="
 for run_name in "${RUN_NAMES[@]}"; do
     run_dir="$OUTPUT_ROOT/$run_name"
-    report="$run_dir/composed_report.txt"
     answers="$run_dir/answers.jsonl"
     if [[ -f "$answers" ]]; then
         cells="$(wc -l < "$answers" | tr -d '[:space:]')"
-    else
-        cells=0
-    fi
-    if [[ -f "$report" ]]; then
         status="done"
     else
-        status="NO_REPORT"
+        cells=0
+        status="NO_ANSWERS"
     fi
-    printf '  %-22s %-10s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$report"
+    printf '  %-22s %-10s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$answers"
 done
 echo "=================================================================="

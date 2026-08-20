@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Run the incremental SPARC evaluation matrix (5 arms) sequentially and
-# unattended: per arm, phase3_generate.py (captions) then chair_report.py.
+# Run the incremental SPARC matrix (5 arms) sequentially and unattended: per
+# arm, phase3_generate.py writes captions.jsonl. Scoring is a separate offline
+# stage against a judge model, so nothing here grades anything.
 # Run: DERIVED_LAYER=<layer> bash scripts/run_sparc_matrix.sh          # full, 100 imgs
 #      DERIVED_LAYER=<layer> bash scripts/run_sparc_matrix.sh --smoke  # 2 imgs, e2e
 
@@ -15,8 +16,6 @@ each into its own results/runs/<arm> dir. A failing arm stops the script; a
 re-run resumes (phase3_generate.py skips done cells, the arm guard protects dirs).
 
 Required env: DERIVED_LAYER  arm5's reference layer, from select_reference_layer.py
-              VOCABULARY    JSON vocabulary (name, categories, synonyms)
-              ANNOTATIONS   JSON Lines object annotations (image_id, objects)
 Optional env: LENGTHS       space-separated subset of "short medium long"
                             (default: "medium long" -- short was cut from scope)
               ARMS          space-separated subset of
@@ -101,19 +100,6 @@ if [[ -z "${DERIVED_LAYER:-}" ]]; then
     exit 1
 fi
 
-# No defaults on purpose: the vocabulary and the ground truth belong to the
-# dataset, not to the matrix. Same contract as DERIVED_LAYER above.
-if [[ -z "${VOCABULARY:-}" ]]; then
-    echo "ERROR: VOCABULARY is not set; chair_report.py needs it." >&2
-    echo "  export VOCABULARY=<vocab.json>  and re-run." >&2
-    exit 1
-fi
-if [[ -z "${ANNOTATIONS:-}" ]]; then
-    echo "ERROR: ANNOTATIONS is not set; chair_report.py needs it." >&2
-    echo "  export ANNOTATIONS=<annotations.jsonl>  and re-run." >&2
-    exit 1
-fi
-
 if [[ "$SMOKE" -eq 1 ]]; then
     NUM_IMAGES=2
     SUFFIX="_smoke"
@@ -159,8 +145,6 @@ echo "  images/arm       : $NUM_IMAGES   lengths: ${LENGTHS[*]}"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
 echo "  arms             : ${SELECTED_ARMS[*]}"
 echo "  arm5 ref layer   : $DERIVED_LAYER"
-echo "  vocabulary       : $VOCABULARY"
-echo "  annotations      : $ANNOTATIONS"
 echo "  seed (provenance): $SEED"
 echo "  output root      : $OUTPUT_ROOT"
 echo "  smoke            : $SMOKE"
@@ -192,11 +176,6 @@ run_arm() {
         --repetition-penalty "$REPETITION_PENALTY" \
         "${extra_flags[@]}" \
         2>&1 | tee -a "$run_dir/console.log"
-
-    echo "[matrix] CHAIR report for $run_name -> $run_dir/chair_report.txt"
-    "$PYTHON" scripts/chair_report.py --run-dir "$run_dir" \
-        --vocabulary "$VOCABULARY" --annotations "$ANNOTATIONS" \
-        2>&1 | tee "$run_dir/chair_report.txt"
 }
 
 dispatch_arm() {
@@ -229,18 +208,14 @@ echo "MATRIX SUMMARY"
 echo "=================================================================="
 for run_name in "${RUN_NAMES[@]}"; do
     run_dir="$OUTPUT_ROOT/$run_name"
-    report="$run_dir/chair_report.txt"
     captions="$run_dir/captions.jsonl"
     if [[ -f "$captions" ]]; then
         cells="$(wc -l < "$captions" | tr -d '[:space:]')"
-    else
-        cells=0
-    fi
-    if [[ -f "$report" ]]; then
         status="done"
     else
-        status="NO_REPORT"
+        cells=0
+        status="NO_CAPTIONS"
     fi
-    printf '  %-22s %-10s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$report"
+    printf '  %-22s %-10s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$captions"
 done
 echo "=================================================================="

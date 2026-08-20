@@ -1,10 +1,9 @@
 """Tests for :mod:`vr_modality_bias.data.vocabulary`.
 
-The synonym index used to be a module-level cache in ``metrics/chair.py``,
-which was fine with one vocabulary and a bug source with several. It now
-belongs to the vocabulary object. The two load-time validations exist because
-the next vocabulary to be written is hand-curated: a synonym listed under two
-categories would otherwise pick one silently.
+The one surviving consumer is the ODI-Bench ingestion, which loads
+``configs/direction_terms.json`` through here to reject direction answers that
+are not a single axis. The two load-time validations matter because that table
+is hand-curated: a synonym listed under two categories would pick one silently.
 """
 
 from __future__ import annotations
@@ -15,8 +14,6 @@ from pathlib import Path
 import pytest
 
 from vr_modality_bias.data.vocabulary import Vocabulary, load_vocabulary
-
-_FIXTURE = Path(__file__).parent / "fixtures" / "vocab_coco80.json"
 
 
 def _write(tmp_path: Path, payload: dict) -> Path:
@@ -150,16 +147,3 @@ def test_the_validations_run_on_direct_construction_too():
             categories=("cat", "dog"),
             synonyms={"cat": ("mesa",), "dog": ("mesa",)},
         )
-
-
-# ---------------------------------------------------------------- fixture
-
-
-def test_the_coco80_fixture_loads_and_has_eighty_categories():
-    vocab = load_vocabulary(_FIXTURE)
-
-    assert vocab.name == "coco80"
-    assert len(vocab.categories) == 80
-    assert len(vocab.synonym_to_category) == 359
-    assert vocab.synonym_to_category["bike"] == "bicycle"
-    assert vocab.synonym_to_category["children"] == "person"

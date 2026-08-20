@@ -24,7 +24,6 @@ COMPONENT_TYPES: tuple[str, ...] = ("existence", "count", "direction")
 @dataclass(frozen=True)
 class QuestionComponent:
     component_type: str
-    target: str
     answer: str | int
 
     def __post_init__(self) -> None:
@@ -39,7 +38,6 @@ class QuestionComponent:
 class ObjectAnnotation:
     image_id: str
     objects: tuple[str, ...]
-    counts: dict[str, int] | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "objects", tuple(self.objects))

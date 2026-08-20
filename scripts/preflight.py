@@ -8,8 +8,8 @@ possible outcome, so this is deliberately cheap: it loads no model and reads no
 image pixels.
 
 Run: python scripts/preflight.py --config CFG [CFG ...] --limit N \\
-         --annotations A.jsonl --vocabulary V.json [--questions Q.jsonl] \\
-         [--direction-terms D.json] [--arms NAME ...]
+         [--annotations A.jsonl] [--questions Q.jsonl] [--no-scoring] \\
+         [--arms NAME ...]
 """
 
 from __future__ import annotations
@@ -28,7 +28,6 @@ try:
         read_question_annotations,
     )
     from vr_modality_bias.data.manifests import read_manifest
-    from vr_modality_bias.data.vocabulary import load_vocabulary
     from vr_modality_bias.utils.config import load_config
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
@@ -38,7 +37,6 @@ except ModuleNotFoundError:
         read_question_annotations,
     )
     from src.vr_modality_bias.data.manifests import read_manifest
-    from src.vr_modality_bias.data.vocabulary import load_vocabulary
     from src.vr_modality_bias.utils.config import load_config
 
 
@@ -223,23 +221,6 @@ def check_ids_cross(
     return findings
 
 
-def check_vocabulary(path: Path, *, what: str) -> Findings:
-    findings = Findings()
-    if not path.is_file():
-        findings.problems.append(f"{what} not found: {path}")
-        return findings
-    try:
-        vocab = load_vocabulary(path)
-    except Exception as exc:
-        findings.problems.append(f"{what} rejected: {exc}")
-        return findings
-    findings.notes.append(
-        f"{what} OK: {path} ({vocab.name}, {len(vocab.categories)} categories, "
-        f"{len(vocab.synonym_to_category)} index entries)"
-    )
-    return findings
-
-
 def check_output_root(path: Path, *, min_free_gb: float) -> Findings:
     findings = Findings()
     try:
@@ -304,15 +285,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--limit", type=int, required=True,
         help="How many manifest items the run will use.")
     parser.add_argument("--annotations", type=Path, default=None,
-        help="Object annotations. Required only if the description track runs; "
+        help="Object annotations. Required only if a description track runs; "
              "a question-only dataset has none.")
-    parser.add_argument("--vocabulary", type=Path, default=None,
-        help="Object vocabulary JSON. Required only if the description track "
-             "runs, same reason.")
     parser.add_argument("--questions", type=Path, default=None,
         help="Question annotations. Required only if the composed track runs.")
-    parser.add_argument("--direction-terms", type=Path, default=None,
-        help="Direction table. Required only if the composed track runs.")
+    parser.add_argument("--no-scoring", action="store_true",
+        help="This run generates but scores nothing, so no ground truth of any "
+             "kind is expected. A diagnostic-only run needs it.")
     parser.add_argument("--output-root", type=Path, default=Path("results/runs"))
     parser.add_argument("--min-free-gb", type=float, default=5.0)
     parser.add_argument("--arms", type=str, nargs="+", default=list(KNOWN_ARMS))
@@ -335,30 +314,31 @@ def run_checks(args) -> Findings:
             findings.merge(check_images(configs[0], records))
             manifest_ids = {r.image_id for r in records}
 
-    # Neither track selected means nothing can be scored, whatever else is in
-    # order. The two datasets each carry only one of the two ground truths, so
-    # demanding both would make each of them unrunnable.
+    # No ground truth at all means nothing can be scored, whatever else is in
+    # order -- unless the caller says so with --no-scoring, which is what a
+    # diagnostic-only run is: it generates and measures attention, and there is
+    # nothing for it to grade.
     if args.annotations is None and args.questions is None:
-        findings.problems.append(
+        message = (
             "neither --annotations nor --questions was given: there is no "
             "ground truth of any kind, so no stage could be scored."
         )
+        if args.no_scoring:
+            findings.notes.append(f"no scoring stage selected, so {message}")
+        else:
+            findings.problems.append(message)
 
     if args.annotations is not None:
         ann_findings, object_ids = check_object_annotations(args.annotations)
         findings.merge(ann_findings)
         if manifest_ids and object_ids:
             findings.merge(check_ids_cross(manifest_ids, object_ids, what="annotations"))
-    if args.vocabulary is not None:
-        findings.merge(check_vocabulary(args.vocabulary, what="vocabulary"))
 
     if args.questions is not None:
         q_findings, question_ids = check_question_annotations(args.questions)
         findings.merge(q_findings)
         if manifest_ids and question_ids:
             findings.merge(check_ids_cross(manifest_ids, question_ids, what="questions"))
-    if args.direction_terms is not None:
-        findings.merge(check_vocabulary(args.direction_terms, what="direction terms"))
 
     findings.merge(check_output_root(args.output_root, min_free_gb=args.min_free_gb))
     if not args.skip_gpu_check:

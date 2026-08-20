@@ -27,7 +27,6 @@ from vr_modality_bias.data.annotations import (
 from vr_modality_bias.data.manifests import ImageRecord, write_manifest
 
 _SCRIPTS = Path(__file__).parent.parent / "scripts"
-_DIRECTION_TERMS = Path(__file__).parent.parent / "configs" / "direction_terms.json"
 
 
 def _load_script(name: str):
@@ -72,14 +71,6 @@ def _stage(tmp_path: Path, ids: list[str], *, on_disk: list[str] | None = None) 
     }
     path = tmp_path / "cfg.yaml"
     path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return path
-
-
-def _vocab(tmp_path: Path) -> Path:
-    path = tmp_path / "vocab.json"
-    path.write_text(json.dumps({
-        "name": "tiny", "categories": ["chair"], "synonyms": {"chair": ["chairs"]},
-    }), encoding="utf-8")
     return path
 
 
@@ -193,28 +184,6 @@ def test_an_annotation_without_a_manifest_item_is_only_a_note(preflight):
     assert any("no manifest item" in n for n in findings.notes)
 
 
-# ---------------------------------------------------------------- vocabularies
-
-
-def test_a_broken_vocabulary_is_reported_with_its_own_validation(preflight, tmp_path: Path):
-    path = tmp_path / "v.json"
-    path.write_text(json.dumps({
-        "name": "bad", "categories": ["cat", "dog"],
-        "synonyms": {"cat": ["mesa"], "dog": ["mesa"]},
-    }), encoding="utf-8")
-
-    findings = preflight.check_vocabulary(path, what="vocabulary")
-
-    assert not findings.ok
-    assert "mesa" in findings.problems[0], (
-        "the vocabulary loader's own validation should surface here"
-    )
-
-
-def test_the_shipped_direction_table_passes(preflight):
-    assert preflight.check_vocabulary(_DIRECTION_TERMS, what="direction terms").ok
-
-
 # ---------------------------------------------------------------- output root
 
 
@@ -262,7 +231,6 @@ def test_every_problem_is_reported_in_one_pass(preflight, tmp_path: Path):
         "--config", str(cfg_path),
         "--limit", "5",
         "--annotations", str(tmp_path / "annotations.jsonl"),
-        "--vocabulary", str(tmp_path / "missing_vocab.json"),
         "--output-root", str(tmp_path / "runs"),
         "--arms", "arm1_sparc", "arm9_bogus",
         "--skip-gpu-check",
@@ -271,7 +239,7 @@ def test_every_problem_is_reported_in_one_pass(preflight, tmp_path: Path):
 
     joined = "\n".join(findings.problems)
     assert "asks for 5" in joined, "manifest too small"
-    assert "missing_vocab.json" in joined, "vocabulary missing"
+    assert "not on disk" in joined, "missing image file"
     assert "arm9_bogus" in joined, "unknown arm"
     assert len(findings.problems) >= 3, (
         "preflight must not stop at the first problem; each re-run costs a "
@@ -289,7 +257,7 @@ def test_a_clean_setup_passes_end_to_end(preflight, tmp_path: Path):
         [
             QuestionAnnotation(
                 image_id=i, question_id=f"{i}_q1", question_text="Are there chairs?",
-                components=(QuestionComponent("existence", "chair", "yes"),),
+                components=(QuestionComponent("existence", "yes"),),
             )
             for i in ("a", "b")
         ],
@@ -300,9 +268,7 @@ def test_a_clean_setup_passes_end_to_end(preflight, tmp_path: Path):
         "--config", str(cfg_path),
         "--limit", "2",
         "--annotations", str(tmp_path / "annotations.jsonl"),
-        "--vocabulary", str(_vocab(tmp_path)),
         "--questions", str(tmp_path / "questions.jsonl"),
-        "--direction-terms", str(_DIRECTION_TERMS),
         "--output-root", str(tmp_path / "runs"),
         "--min-free-gb", "0",
         "--arms", "baseline", "arm1_sparc", "arm5_reflayer",
@@ -322,7 +288,7 @@ def test_the_question_ids_are_crossed_too(preflight, tmp_path: Path):
     write_question_annotations(
         [QuestionAnnotation(
             image_id="wrong_format", question_id="q1", question_text="?",
-            components=(QuestionComponent("existence", "chair", "yes"),),
+            components=(QuestionComponent("existence", "yes"),),
         )],
         tmp_path / "questions.jsonl",
     )
@@ -330,7 +296,6 @@ def test_the_question_ids_are_crossed_too(preflight, tmp_path: Path):
     args = preflight.build_parser().parse_args([
         "--config", str(cfg_path), "--limit", "1",
         "--annotations", str(tmp_path / "annotations.jsonl"),
-        "--vocabulary", str(_vocab(tmp_path)),
         "--questions", str(tmp_path / "questions.jsonl"),
         "--output-root", str(tmp_path / "runs"),
         "--min-free-gb", "0", "--skip-gpu-check",
@@ -356,7 +321,6 @@ def _adt_shaped(tmp_path: Path) -> list[str]:
     return [
         "--config", str(cfg_path), "--limit", "2",
         "--annotations", str(tmp_path / "annotations.jsonl"),
-        "--vocabulary", str(_vocab(tmp_path)),
         "--output-root", str(tmp_path / "runs"),
         "--min-free-gb", "0", "--skip-gpu-check",
     ]
@@ -368,7 +332,7 @@ def _odi_shaped(tmp_path: Path) -> list[str]:
         [
             QuestionAnnotation(
                 image_id=i, question_id=f"{i}_q1", question_text="Are there chairs?",
-                components=(QuestionComponent("existence", "chair", "yes"),),
+                components=(QuestionComponent("existence", "yes"),),
             )
             for i in ("a", "b")
         ],
@@ -377,7 +341,6 @@ def _odi_shaped(tmp_path: Path) -> list[str]:
     return [
         "--config", str(cfg_path), "--limit", "2",
         "--questions", str(tmp_path / "questions.jsonl"),
-        "--direction-terms", str(_DIRECTION_TERMS),
         "--output-root", str(tmp_path / "runs"),
         "--min-free-gb", "0", "--skip-gpu-check",
     ]
@@ -391,7 +354,7 @@ def test_an_object_only_dataset_passes_without_questions(preflight, tmp_path: Pa
     assert findings.ok, findings.problems
 
 
-def test_a_question_only_dataset_passes_without_a_vocabulary(preflight, tmp_path: Path):
+def test_a_question_only_dataset_passes(preflight, tmp_path: Path):
     args = preflight.build_parser().parse_args(_odi_shaped(tmp_path))
 
     findings = preflight.run_checks(args)
@@ -413,12 +376,50 @@ def test_neither_ground_truth_is_a_problem(preflight, tmp_path: Path):
     assert any("neither --annotations nor --questions" in p for p in findings.problems)
 
 
+# ---------------------------------------------------------------- no scoring
+#
+# A diagnostic-only run generates and measures attention; there is nothing for
+# it to grade, so demanding a ground truth would make that run impossible.
+
+
+def test_no_scoring_turns_the_missing_ground_truth_into_a_note(preflight, tmp_path: Path):
+    cfg_path = _stage(tmp_path, ["a"])
+    args = preflight.build_parser().parse_args([
+        "--config", str(cfg_path), "--limit", "1",
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check", "--no-scoring",
+    ])
+
+    findings = preflight.run_checks(args)
+
+    assert findings.ok, findings.problems
+    assert any("no scoring stage selected" in n for n in findings.notes), (
+        "the absence still has to be visible in the report, just not fatal"
+    )
+
+
+def test_no_scoring_does_not_silence_a_real_problem(preflight, tmp_path: Path):
+    cfg_path = _stage(tmp_path, ["a", "b"], on_disk=["a"])
+    args = preflight.build_parser().parse_args([
+        "--config", str(cfg_path), "--limit", "2",
+        "--output-root", str(tmp_path / "runs"),
+        "--min-free-gb", "0", "--skip-gpu-check", "--no-scoring",
+    ])
+
+    findings = preflight.run_checks(args)
+
+    assert not findings.ok
+    assert any("not on disk" in p for p in findings.problems), (
+        "--no-scoring waives the ground truth, nothing else"
+    )
+
+
 def test_the_id_crossing_still_runs_for_the_side_that_was_given(preflight, tmp_path: Path):
     cfg_path = _stage(tmp_path, ["a"])
     write_question_annotations(
         [QuestionAnnotation(
             image_id="wrong_format", question_id="q1", question_text="?",
-            components=(QuestionComponent("existence", "chair", "yes"),),
+            components=(QuestionComponent("existence", "yes"),),
         )],
         tmp_path / "questions.jsonl",
     )

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 CONFIG ?= configs/baseline.yaml
 
-.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence chair-report phase4-smolvlm-smoke run-all run-all-smoke clean
+.PHONY: help install dev-install test lint format docker-build docker-run smoke baseline phase2 phase2-smoke phase3 phase3-smoke phase3-coherence phase4-smolvlm-smoke clean
 
 help:
 	@echo "Targets:"
@@ -20,7 +20,6 @@ help:
 	@echo "  phase3-smoke   quick Phase-3 smoke (1 img, short, OFF + SPARC alpha=1.1) — confirms entrypoint + IO"
 	@echo "  phase3-coherence Phase-3 coherence smoke (2 imgs, long, prints captions to stdout for eyeball check)"
 	@echo "  phase3         full Phase-3 generation. Needs SELECTED_LAYER= and SE_LAYERS="
-	@echo "  chair-report   CHAIR + degeneration + pair samples. Needs VOCABULARY= and ANNOTATIONS="
 	@echo "  phase4-smolvlm-smoke  Phase-4 coherence smoke for SmolVLM-2.2B + SPARC (Llama variant of attn forward)"
 	@echo "  clean          remove caches (does NOT touch results/ or data/)"
 
@@ -125,25 +124,6 @@ phase3:
 	$(PYTHON) scripts/phase3_generate.py --run-name $(PHASE3_RUN_NAME) $(PHASE3_FLAGS) \
 		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
 
-# VOCABULARY and ANNOTATIONS deliberately have no defaults: the category list
-# and the ground truth are properties of the dataset, not of the pipeline.
-# Every target that reaches scripts/chair_report.py demands both up front.
-define require_dataset_paths
-	@if [ -z "$(VOCABULARY)" ] || [ -z "$(ANNOTATIONS)" ]; then \
-		echo "ERROR: VOCABULARY and ANNOTATIONS are required and have no defaults." >&2; \
-		echo "  VOCABULARY  JSON vocabulary (name, categories, synonyms)" >&2; \
-		echo "  ANNOTATIONS JSON Lines object annotations (image_id, objects)" >&2; \
-		echo "  e.g. make $@ VOCABULARY=path/vocab.json ANNOTATIONS=path/annotations.jsonl" >&2; \
-		exit 1; \
-	fi
-endef
-
-# CHAIR report over a phase3 run.
-chair-report:
-	$(require_dataset_paths)
-	$(PYTHON) scripts/chair_report.py --run-dir results/runs/$(PHASE3_RUN_NAME) \
-		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
-
 # Phase 4 — SmolVLM-2.2B coherence smoke. Confirms the Llama variant of
 # add_custom_attention_layers (and the SmolVLM decoder-path lookup) work
 # before committing to a full Phase-1/2/3 run on SmolVLM.
@@ -154,33 +134,6 @@ phase4-smolvlm-smoke:
 		--coherence-smoke \
 		--length-config-pattern configs/run_smolvlm22_{length}.yaml \
 		--selected-layer $(SELECTED_LAYER) --se-layers $(SE_LAYERS)
-
-# Bloco-2: single resumable orchestrator
-#   * Stage A — diagnostic (SmolVLM only) via scripts generate_refs.py→summarize.py
-#   * Stage B — CHAIR evaluation (3 families: smolvlm / llava / qwen) via
-#               scripts/phase3_generate.py + scripts/chair_report.py
-# Resume by relaunching the same RUN_ALL_NAME — done cells skipped.
-# Override RUN_ALL_NAME, set OVERWRITE=1 to force, or RUN_ALL_FLAGS=...
-# for ad-hoc flags (e.g. --skip-diagnostico).
-RUN_ALL_NAME ?= run_all_v1
-RUN_ALL_FLAGS ?=
-ifeq ($(OVERWRITE),1)
-    RUN_ALL_FLAGS += --overwrite
-endif
-
-run-all:
-	$(require_dataset_paths)
-	$(PYTHON) scripts/run_all.py --run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS) \
-		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
-
-# Smoke per the Bloco-2 spec: 1 image, only Qwen evaluation, no diagnostic.
-# Confirms the generation → CHAIR plumbing without burning a full run.
-run-all-smoke:
-	$(require_dataset_paths)
-	$(PYTHON) scripts/run_all.py \
-		--smoke --skip-diagnostico --families qwen2.5-vl-7b \
-		--run-name $(RUN_ALL_NAME) $(RUN_ALL_FLAGS) \
-		--vocabulary $(VOCABULARY) --annotations $(ANNOTATIONS)
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info

@@ -38,8 +38,6 @@ def _run(script: Path, env_extra: dict, *args) -> subprocess.CompletedProcess:
 def _matrix_env(tmp_path: Path, **extra) -> dict:
     return {
         "DERIVED_LAYER": "12",
-        "VOCABULARY": "vocab.json",
-        "ANNOTATIONS": "annotations.jsonl",
         "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
         **extra,
     }
@@ -50,7 +48,6 @@ def _composed_env(tmp_path: Path, **extra) -> dict:
         "DERIVED_LAYER": "12",
         "CONFIG": "cfg.yaml",
         "QUESTIONS": "questions.jsonl",
-        "DIRECTION_TERMS": "direction_terms.json",
         "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
         **extra,
     }
@@ -178,8 +175,18 @@ def test_the_composed_track_passes_its_config_and_questions(tmp_path: Path):
     assert "--questions questions.jsonl" in gen
     assert "--lengths" not in gen, "the composed track has no length regime"
 
-    report = _gen_lines(result.stdout, "composed_report.py")[0]
-    assert "--direction-terms direction_terms.json" in report
+
+@needs_bash
+@pytest.mark.parametrize("script,env_fn,report", [
+    (_MATRIX, _matrix_env, "chair_report.py"),
+    (_COMPOSED, _composed_env, "composed_report.py"),
+])
+def test_neither_matrix_scores_anything(tmp_path, script, env_fn, report):
+    """Scoring moved to an offline judge stage; the matrices only generate."""
+    result = _run(script, env_fn(tmp_path, ARMS="arm1_sparc"))
+
+    assert result.returncode == 0, result.stderr
+    assert report not in result.stdout
 
 
 @needs_bash
@@ -221,10 +228,7 @@ def _experiment_env(tmp_path: Path, **extra) -> dict:
         "DATASET": "demo",
         "CONFIG_PATTERN": "configs/run_smolvlm22_{length}.yaml",
         "COMPOSED_CONFIG": "configs/run_smolvlm22_long.yaml",
-        "VOCABULARY": "vocab.json",
-        "ANNOTATIONS": "annotations.jsonl",
         "QUESTIONS": "questions.jsonl",
-        "DIRECTION_TERMS": "configs/direction_terms.json",
         "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
         **extra,
     }
@@ -386,33 +390,30 @@ def test_an_unknown_length_regime_aborts(tmp_path: Path):
 # ---------------------------------------------------------------- per-stage demand
 
 
-def _adt_env(tmp_path: Path, **extra) -> dict:
-    """ADT shape: objects, no questions."""
+def _description_env(tmp_path: Path, **extra) -> dict:
+    """Description shape: generates captions, and today grades nothing."""
     return {
-        "DATASET": "adt",
+        "DATASET": "desc",
         "CONFIG_PATTERN": "configs/run_smolvlm22_{length}.yaml",
-        "VOCABULARY": "vocab.json",
-        "ANNOTATIONS": "annotations.jsonl",
         "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
         **extra,
     }
 
 
 def _odi_env(tmp_path: Path, **extra) -> dict:
-    """ODI-Bench shape: questions, no per-image object list."""
+    """ODI-Bench shape: composed questions, no per-image object list."""
     return {
         "DATASET": "odi",
         "COMPOSED_CONFIG": "configs/run_smolvlm22_long.yaml",
         "QUESTIONS": "questions.jsonl",
-        "DIRECTION_TERMS": "configs/direction_terms.json",
         "OUTPUT_ROOT": str(tmp_path / "runs").replace("\\", "/"),
         **extra,
     }
 
 
 @needs_bash
-def test_an_object_only_dataset_runs_the_description_track(tmp_path: Path):
-    result = _run(_EXPERIMENT, _adt_env(
+def test_a_dataset_without_questions_still_runs_the_description_track(tmp_path: Path):
+    result = _run(_EXPERIMENT, _description_env(
         tmp_path, STAGES="preflight description", DERIVED_LAYER="9",
         ARMS="arm1_sparc",
     ))
@@ -433,14 +434,14 @@ def test_a_question_only_dataset_runs_the_composed_track(tmp_path: Path):
 
 
 @needs_bash
-def test_the_description_stage_still_demands_its_own_artefacts(tmp_path: Path):
-    env = _adt_env(tmp_path, STAGES="description", DERIVED_LAYER="9")
-    del env["VOCABULARY"]
+def test_the_description_stage_still_demands_its_own_config(tmp_path: Path):
+    env = _description_env(tmp_path, STAGES="description", DERIVED_LAYER="9")
+    del env["CONFIG_PATTERN"]
 
-    result = _run(_EXPERIMENT, {**env, "VOCABULARY": ""})
+    result = _run(_EXPERIMENT, {**env, "CONFIG_PATTERN": ""})
 
     assert result.returncode != 0
-    assert "VOCABULARY" in result.stdout + result.stderr
+    assert "CONFIG_PATTERN" in result.stdout + result.stderr
     assert "description" in result.stdout + result.stderr
 
 
@@ -456,25 +457,46 @@ def test_the_composed_stage_still_demands_its_own_artefacts(tmp_path: Path):
 
 @needs_bash
 def test_preflight_receives_only_the_artefacts_the_dataset_has(tmp_path: Path):
-    adt = _run(_EXPERIMENT, _adt_env(
+    description = _run(_EXPERIMENT, _description_env(
         tmp_path, STAGES="preflight description", DERIVED_LAYER="9", ARMS="arm1_sparc",
     ))
     odi = _run(_EXPERIMENT, _odi_env(
         tmp_path, STAGES="preflight composed", DERIVED_LAYER="9", ARMS="arm1_sparc",
     ))
 
-    adt_line = _gen_lines(adt.stdout, "preflight.py")[0]
-    assert "--annotations" in adt_line and "--vocabulary" in adt_line
-    assert "--questions" not in adt_line and "--direction-terms" not in adt_line
+    description_line = _gen_lines(description.stdout, "preflight.py")[0]
+    assert "--questions" not in description_line
+    assert "--no-scoring" in description_line, (
+        "the description track has no ground truth left, so preflight must be "
+        "told that nothing is going to be graded"
+    )
 
     odi_line = _gen_lines(odi.stdout, "preflight.py")[0]
-    assert "--questions" in odi_line and "--direction-terms" in odi_line
-    assert "--annotations" not in odi_line and "--vocabulary" not in odi_line
+    assert "--questions questions.jsonl" in odi_line
+    assert "--no-scoring" not in odi_line
+
+
+@needs_bash
+def test_a_diagnostic_only_run_passes_preflight(tmp_path: Path):
+    """The case that used to be impossible: no track, so no ground truth.
+
+    preflight turned the absence into a problem and run_experiment.sh aborts
+    the whole run on a failed preflight, so STAGES="preflight diagnostic" could
+    not be run at all.
+    """
+    result = _run(_EXPERIMENT, _description_env(
+        tmp_path, STAGES="preflight diagnostic",
+    ))
+
+    assert result.returncode == 0, result.stdout[-2000:]
+    line = _gen_lines(result.stdout, "preflight.py")[0]
+    assert "--no-scoring" in line
+    assert _gen_lines(result.stdout, "generate_refs.py"), "the diagnostic must run"
 
 
 @needs_bash
 def test_preflight_only_demands_the_regimes_that_will_run(tmp_path: Path):
-    result = _run(_EXPERIMENT, _adt_env(
+    result = _run(_EXPERIMENT, _description_env(
         tmp_path, STAGES="preflight description", DERIVED_LAYER="9", ARMS="arm1_sparc",
     ))
 
@@ -489,7 +511,7 @@ def test_preflight_only_demands_the_regimes_that_will_run(tmp_path: Path):
 @needs_bash
 def test_the_diagnostic_falls_back_to_the_deepest_description_regime(tmp_path: Path):
     """An object-only dataset has no COMPOSED_CONFIG to borrow."""
-    result = _run(_EXPERIMENT, _adt_env(tmp_path, STAGES="diagnostic"))
+    result = _run(_EXPERIMENT, _description_env(tmp_path, STAGES="diagnostic"))
 
     assert result.returncode == 0, result.stdout[-2000:]
     assert "configs/run_smolvlm22_long.yaml" in result.stdout

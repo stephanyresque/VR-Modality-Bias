@@ -75,34 +75,11 @@ def test_aborts_when_derived_layer_is_unset():
     assert "select_reference_layer" in (result.stdout + result.stderr)
 
 
-@needs_bash
-@pytest.mark.parametrize("missing", ["VOCABULARY", "ANNOTATIONS"])
-def test_aborts_when_a_dataset_path_is_unset(missing):
-    """Same contract as DERIVED_LAYER: no default, abort naming the variable."""
-    env = {
-        **os.environ,
-        "DERIVED_LAYER": "12",
-        "VOCABULARY": "vocab.json",
-        "ANNOTATIONS": "annotations.jsonl",
-        "PYTHON": "echo",
-    }
-    del env[missing]
-
-    result = subprocess.run(
-        [_bash, str(_SCRIPT)], capture_output=True, text=True, env=env
-    )
-
-    assert result.returncode != 0
-    assert missing in (result.stdout + result.stderr)
-
-
 def _expanded_commands(tmp_path, extra_env=None):
     out_root = str(tmp_path / "runs").replace("\\", "/")
     env = {
         **os.environ,
         "DERIVED_LAYER": "12",
-        "VOCABULARY": "vocab.json",
-        "ANNOTATIONS": "annotations.jsonl",
         "PYTHON": "echo",  # print each command instead of running it
         "OUTPUT_ROOT": out_root,
     }
@@ -114,9 +91,7 @@ def _expanded_commands(tmp_path, extra_env=None):
         del env["_SMOKE"]
     result = subprocess.run(args, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stderr
-    gen = [ln for ln in result.stdout.splitlines() if "phase3_generate.py" in ln]
-    chair = [ln for ln in result.stdout.splitlines() if "chair_report.py" in ln]
-    return gen, chair
+    return [ln for ln in result.stdout.splitlines() if "phase3_generate.py" in ln]
 
 
 def _arm_line(lines: list[str], run_name: str) -> str:
@@ -124,17 +99,14 @@ def _arm_line(lines: list[str], run_name: str) -> str:
 
 
 @needs_bash
-def test_expands_five_generation_and_five_chair_commands(tmp_path):
-    gen, chair = _expanded_commands(tmp_path)
+def test_expands_one_generation_command_per_arm(tmp_path):
+    gen = _expanded_commands(tmp_path)
     assert len(gen) == 5
-    assert len(chair) == 5
-    assert all("--vocabulary vocab.json" in ln for ln in chair)
-    assert all("--annotations annotations.jsonl" in ln for ln in chair)
 
 
 @needs_bash
 def test_common_hparams_and_config_pattern_on_every_arm(tmp_path):
-    gen, _ = _expanded_commands(tmp_path)
+    gen = _expanded_commands(tmp_path)
     for ln in gen:
         assert "--alpha 1.05 --beta 0.1 --tau 3.0" in ln
         assert "--se-layers 0 24" in ln
@@ -146,7 +118,7 @@ def test_common_hparams_and_config_pattern_on_every_arm(tmp_path):
 
 @needs_bash
 def test_each_arm_adds_exactly_its_improvement_flags(tmp_path):
-    gen, _ = _expanded_commands(tmp_path)
+    gen = _expanded_commands(tmp_path)
 
     arm1 = _arm_line(gen, "arm1_sparc")
     assert "--adaptive" not in arm1
@@ -167,7 +139,7 @@ def test_each_arm_adds_exactly_its_improvement_flags(tmp_path):
 
 @needs_bash
 def test_only_arm5_uses_the_derived_layer(tmp_path):
-    gen, _ = _expanded_commands(tmp_path)
+    gen = _expanded_commands(tmp_path)
     for name in ("arm1_sparc", "arm2_adaptive", "arm3_qcond", "arm4_conserve"):
         assert "--selected-layer 15" in _arm_line(gen, name)
     arm5 = _arm_line(gen, "arm5_reflayer")
@@ -177,7 +149,7 @@ def test_only_arm5_uses_the_derived_layer(tmp_path):
 
 @needs_bash
 def test_smoke_uses_two_images_and_suffixed_run_names(tmp_path):
-    gen, _ = _expanded_commands(tmp_path, extra_env={"_SMOKE": "1"})
+    gen = _expanded_commands(tmp_path, extra_env={"_SMOKE": "1"})
     assert len(gen) == 5
     for ln in gen:
         assert "--limit 2" in ln

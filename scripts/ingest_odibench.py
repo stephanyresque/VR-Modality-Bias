@@ -1,29 +1,12 @@
 #!/usr/bin/env python
-"""ODI-Bench ingestion, in two passes because the component target is curation.
-
-ODI-Bench records carry a question and an answer and nothing else; the
-``target`` a component talks about is not in the data and cannot be extracted by
-rule (the first existence question is "Is there anyone in the room?", whose
-target is "anyone" -- not an object, and it would match nothing in a
-description). So:
-
-    --mode emit   scan the raw data, apply the filters, write a CSV with one
-                  row per candidate component and an empty ``target`` column
-    --mode build  read the filled CSV and write manifest.jsonl + questions.jsonl
-                  (the default)
-
-Run: python scripts/ingest_odibench.py --mode emit --raw data/raw/odibench \\
-         --direction-terms configs/direction_terms.json --out targets.csv
-     python scripts/ingest_odibench.py --raw data/raw/odibench \\
-         --targets targets.csv --out data/processed/odibench
-"""
+# Run: python scripts/ingest_odibench.py --raw data/raw/odibench --out data/processed/odibench
 
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import random
+import re
 import shutil
 import sys
 from collections import defaultdict
@@ -56,7 +39,6 @@ except ModuleNotFoundError:
 DATASET_NAME = "odibench"
 IMAGE_PREFIX = "indoor"
 
-# QA file -> component type. Two different files both annotate orientation.
 QA_FILES: dict[str, str] = {
     "existence.jsonl": "existence",
     "counting.jsonl": "count",
@@ -64,14 +46,8 @@ QA_FILES: dict[str, str] = {
     "relative.jsonl": "direction",
 }
 
-# Fixed order for the composed statement, so two runs over the same data
-# produce the same question text.
 TYPE_ORDER: tuple[str, ...] = ("existence", "count", "direction")
 
-# The raw record's field names are the one thing here that was not verified
-# against the real file (the raw data lives on the DGX, not in the repo). Each
-# lookup tries these in order and raises naming the keys actually present, so a
-# wrong guess fails on the first record instead of mis-parsing silently.
 IMAGE_KEYS: tuple[str, ...] = (
     "image", "imagename", "image_id", "image_name", "image_path", "img",
     "file_name", "filename",
@@ -87,7 +63,18 @@ _GENERIC_NOUNS = {
     "side", "sides", "part", "parts", "direction", "directions", "area", "region",
 }
 
-CSV_COLUMNS = ("image_id", "component_type", "question", "answer", "target")
+_QUESTION_STEMS = (
+    "can you see", "how many", "are there", "is there", "where are", "where is",
+    "what are", "what is", "do you see", "are the", "is the",
+)
+_DETERMINERS = ("the ", "a ", "an ", "any ", "some ", "this ", "these ", "those ")
+_HEAD_STOP = {
+    "in", "on", "at", "of", "to", "from", "near", "beside", "under", "over",
+    "above", "below", "behind", "between", "with", "and", "or", "that", "which",
+    "is", "are", "there", "do", "you", "see", "the", "a", "an", "this", "these",
+    "it", "its",
+}
+_PUNCTUATION = re.compile(r"[^\w\s-]")
 
 
 @dataclass(frozen=True)
@@ -106,8 +93,7 @@ def _pick(record: dict, keys: tuple[str, ...], what: str, source: str, lineno: i
 
     Presence, not truthiness: an empty answer is annotation noise and belongs in
     the answer filter alongside the rest of it, not as a fatal error that stops
-    the whole ingestion. Testing for a non-empty value also produced the
-    self-contradicting message "no answer field; this record has ['answer']".
+    the whole ingestion.
     """
     for key in keys:
         if key in record:
@@ -168,7 +154,9 @@ def normalize_direction(answer, directions) -> str | None:
     """Return the canonical direction, or None when it is not a single axis.
 
     Drops composites (``front-left``), whole-sentence answers, and the values
-    that are not directions at all -- the annotation carries all three.
+    that are not directions at all -- the annotation carries all three. The
+    judge does not replace this filter: it decides whether an answer is right,
+    not whether the reference was a direction in the first place.
     """
     text = str(answer).strip().lower().rstrip(".").strip()
     for article in _ARTICLES:
@@ -226,7 +214,6 @@ def qualifies(components: list[Candidate]) -> bool:
     Requiring two DISTINCT types rejected 174 of the 259 qualifying images,
     because view_orientation.jsonl and relative.jsonl both feed `direction` and
     two direction questions on one image is the commonest shape in the set.
-    Two directions about different targets are a valid composed question.
     """
     return len(components) >= 2
 
@@ -239,12 +226,9 @@ def select_images(
     A uniform draw would spend the quota on the majority type: the set holds 643
     direction components against 90 existence ones, so half the items would end
     up direction-only and the scarce types would land too thin to mean anything.
-    The order is: more distinct types first, then more components, then a
-    seeded shuffle to break the remaining ties reproducibly.
     """
     population = sorted(grouped)
     random.Random(seed).shuffle(population)
-    # Stable sort, so equal-priority images keep the shuffled order.
     population.sort(key=lambda image_id: (
         -len({c.component_type for c in grouped[image_id]}),
         -len(grouped[image_id]),
@@ -302,61 +286,115 @@ def compose_question(components: list[Candidate]) -> str:
     return " ".join(c.question for c in components)
 
 
+def _singular(word: str) -> str:
+    if word.endswith("ies") and len(word) > 4:
+        return word[:-3] + "y"
+    if word.endswith(("ses", "xes", "zes", "ches", "shes")):
+        return word[:-2]
+    if word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+def heuristic_target(question: str) -> str:
+    """The noun a question is about, guessed from its wording.
+
+    Only ``apply_negative_existence_rule`` uses this, and it is never written to
+    disk. It replaces the hand-curated target column, so it is allowed to be
+    wrong: a wrong target used to mean a wrong verdict, and now the worst case
+    is one slightly awkward composed question surviving the filter.
+    """
+    text = _PUNCTUATION.sub(" ", question.lower())
+    text = re.sub(r"\s+", " ", text).strip()
+
+    for stem in _QUESTION_STEMS:
+        if text.startswith(stem + " "):
+            text = text[len(stem) + 1:]
+            break
+    while True:
+        for determiner in _DETERMINERS:
+            if text.startswith(determiner):
+                text = text[len(determiner):].strip()
+                break
+        else:
+            break
+
+    words: list[str] = []
+    for word in text.split():
+        if word in _HEAD_STOP:
+            break
+        words.append(word)
+    while len(words) > 1 and words[-1] in _GENERIC_NOUNS:
+        words = words[:-1]
+    if not words:
+        return ""
+    return _singular(words[-1])
+
+
 def apply_negative_existence_rule(
-    ordered: list[tuple[Candidate, str]]
-) -> tuple[list[tuple[Candidate, str]], int]:
+    ordered: list[Candidate],
+) -> tuple[list[Candidate], int]:
     """Drop a component that asks about a target a negative existence just denied.
 
     Counting or locating something the answer already said is absent is a
-    degenerate sub-question. Needs the curated targets, so it only runs in build
-    mode. Returns the kept pairs and how many were dropped.
+    degenerate sub-question, and no judge repairs a degenerate question.
+    Returns the kept candidates and how many were dropped.
     """
     denied = {
-        target for candidate, target in ordered
+        heuristic_target(candidate.question)
+        for candidate in ordered
         if candidate.component_type == "existence" and candidate.answer == "no"
     }
+    denied.discard("")
     if not denied:
         return ordered, 0
     kept = [
-        (candidate, target) for candidate, target in ordered
-        if candidate.component_type == "existence" or target not in denied
+        candidate for candidate in ordered
+        if candidate.component_type == "existence"
+        or heuristic_target(candidate.question) not in denied
     ]
     return kept, len(ordered) - len(kept)
 
 
-# ---------------------------------------------------------------- emit mode
+def build_component(candidate: Candidate) -> QuestionComponent:
+    answer: str | int = candidate.answer
+    if candidate.component_type == "count":
+        answer = int(candidate.answer)
+    return QuestionComponent(component_type=candidate.component_type, answer=answer)
 
 
-def write_targets_csv(candidates: list[Candidate], path: Path) -> int:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(CSV_COLUMNS))
-        writer.writeheader()
-        for candidate in candidates:
-            writer.writerow({
-                "image_id": candidate.image_id,
-                "component_type": candidate.component_type,
-                "question": candidate.question,
-                "answer": candidate.answer,
-                "target": "",
-            })
-    return len(candidates)
+# ---------------------------------------------------------------- run
 
 
-def run_emit(args) -> int:
-    directions = load_vocabulary(args.direction_terms)
+def plan(args, directions):
     candidates, tally = select_candidates(iter_raw_components(args.raw), directions)
-
     grouped = group_by_image(candidates)
     qualified = {
         image_id: comps for image_id, comps in grouped.items() if qualifies(comps)
     }
     chosen = select_images(qualified, limit=args.limit, seed=args.seed)
-    chosen_set = set(chosen)
+    index, skipped_files = index_images(args.raw)
 
-    selected = [c for c in candidates if c.image_id in chosen_set]
-    selected.sort(key=lambda c: (c.image_id, TYPE_ORDER.index(c.component_type)))
-    n = write_targets_csv(selected, args.out)
+    kept: list[tuple[str, list[Candidate]]] = []
+    missing_images: list[str] = []
+    n_dropped_by_negative = 0
+    n_discarded_single_component = 0
+
+    for image_id in chosen:
+        if image_id not in index:
+            missing_images.append(image_id)
+            continue
+        ordered, dropped = apply_negative_existence_rule(
+            order_components(qualified[image_id])
+        )
+        n_dropped_by_negative += dropped
+        # A one-component item is an ordinary short question, which is the
+        # opposite of what this track measures: the answer has to be long
+        # because the question asks for several things.
+        if len(ordered) < 2:
+            n_discarded_single_component += 1
+            continue
+        kept.append((image_id, ordered))
 
     meta = {
         "dataset": DATASET_NAME,
@@ -371,108 +409,66 @@ def run_emit(args) -> int:
         "images_with_any_component": len(grouped),
         "images_qualified": len(qualified),
         "images_selected": len(chosen),
-        "rows_written": n,
+        "files_skipped_in_images_final": skipped_files,
+        "components_dropped_by_negative_existence": n_dropped_by_negative,
+        "items_discarded_single_component": n_discarded_single_component,
+        "items_written": len(kept),
     }
-    meta_path = args.out.with_suffix(args.out.suffix + ".meta.json")
-    meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    return kept, meta, missing_images, index
 
+
+def _report(meta: dict, *, out_dir: Path, dry_run: bool) -> None:
     print("=" * 78)
-    print("ODI-BENCH INGESTION -- emit")
+    print(f"ODI-BENCH INGESTION{'  -- dry run, nothing written' if dry_run else ''}")
     print("=" * 78)
-    print(f"  components seen        : {tally['seen']}")
-    print(f"  dropped, wrong prefix  : {tally['wrong_prefix']}")
-    print(f"  dropped, bad answer    : {tally['bad_answer']}")
+    print(f"  components seen        : {meta['components_seen']}")
+    print(f"  dropped, wrong prefix  : {meta['dropped_wrong_prefix']}")
+    print(f"  dropped, bad answer    : {meta['dropped_bad_answer']}")
     for component_type in TYPE_ORDER:
-        print(f"  kept, {component_type:<10}       : {tally['kept_by_type'][component_type]}")
-    print(f"  images with a component: {len(grouped)}")
-    print(f"  images qualified (>=2 distinct types): {len(qualified)}")
-    print(f"  images selected (limit={args.limit}, seed={args.seed}): {len(chosen)}")
-    print(f"  rows written           : {n} -> {args.out}")
-    print(f"  provenance             : {meta_path}")
-    print()
-    print("  Fill the 'target' column by hand, then re-run with --mode build.")
+        kept = meta["kept_by_type"].get(component_type, 0)
+        print(f"  kept, {component_type:<10}       : {kept}")
+    print(f"  images with a component: {meta['images_with_any_component']}")
+    print(f"  images qualified (>=2) : {meta['images_qualified']}")
+    print(f"  images selected (limit={meta['limit']}, seed={meta['seed']}): "
+          f"{meta['images_selected']}")
+    print(f"  files skipped in images_final (not an image): "
+          f"{meta['files_skipped_in_images_final']}")
+    print(f"  components dropped by the negative-existence rule: "
+          f"{meta['components_dropped_by_negative_existence']}")
+    print(f"  items discarded, fewer than 2 components left: "
+          f"{meta['items_discarded_single_component']}")
+    print(f"  items written          : {meta['items_written']}")
+    if not dry_run:
+        print(f"  manifest               : {out_dir / 'manifest.jsonl'}")
+        print(f"  questions              : {out_dir / 'questions.jsonl'}")
+        print(f"  images copied to       : {out_dir / 'images'}")
+        print(f"  provenance             : {out_dir / 'meta.json'}")
     print("=" * 78)
-    return 0
 
 
-# ---------------------------------------------------------------- build mode
+def run(args) -> int:
+    directions = load_vocabulary(args.direction_terms)
+    kept, meta, missing_images, index = plan(args, directions)
 
-
-def read_targets_csv(path: Path) -> tuple[list[tuple[Candidate, str]], int]:
-    rows: list[tuple[Candidate, str]] = []
-    untargeted = 0
-    with path.open("r", encoding="utf-8", newline="") as fh:
-        reader = csv.DictReader(fh)
-        missing = [c for c in CSV_COLUMNS if c not in (reader.fieldnames or [])]
-        if missing:
-            raise ValueError(f"{path}: missing column(s) {missing}.")
-        for row in reader:
-            target = (row.get("target") or "").strip()
-            if not target:
-                untargeted += 1
-                continue
-            rows.append((
-                Candidate(
-                    image_id=(row["image_id"] or "").strip(),
-                    component_type=(row["component_type"] or "").strip(),
-                    question=(row["question"] or "").strip(),
-                    answer=(row["answer"] or "").strip(),
-                ),
-                target,
-            ))
-    return rows, untargeted
-
-
-def build_components(candidate: Candidate, target: str) -> QuestionComponent:
-    answer: str | int = candidate.answer
-    if candidate.component_type == "count":
-        answer = int(candidate.answer)
-    return QuestionComponent(
-        component_type=candidate.component_type, target=target, answer=answer,
-    )
-
-
-def run_build(args) -> int:
-    rows, untargeted = read_targets_csv(args.targets)
-    if not rows:
+    if missing_images:
         print(
-            f"ERROR: {args.targets} has no row with a filled 'target'.",
+            f"ERROR: {len(missing_images)} selected image_id(s) have no file "
+            f"under {args.raw}/images_final: {missing_images[:5]}",
             file=sys.stderr,
         )
         return 1
 
-    index, skipped_files = index_images(args.raw)
-
-    grouped: dict[str, list[tuple[Candidate, str]]] = defaultdict(list)
-    for candidate, target in rows:
-        grouped[candidate.image_id].append((candidate, target))
-
     out_dir = Path(args.out)
+    if args.dry_run:
+        _report(meta, out_dir=out_dir, dry_run=True)
+        return 0
+
     images_out = out_dir / "images"
     images_out.mkdir(parents=True, exist_ok=True)
 
     manifest: list[ImageRecord] = []
     questions: list[QuestionAnnotation] = []
-    n_dropped_by_negative = 0
-    n_discarded_single_component = 0
-    missing_images: list[str] = []
-
-    for image_id in sorted(grouped):
-        if image_id not in index:
-            missing_images.append(image_id)
-            continue
-        ordered = sorted(
-            grouped[image_id], key=lambda pair: TYPE_ORDER.index(pair[0].component_type)
-        )
-        ordered, dropped = apply_negative_existence_rule(ordered)
-        n_dropped_by_negative += dropped
-        # A one-component item is an ordinary short question, which is the
-        # opposite of what this track measures: the answer has to be long
-        # because the question asks for several things.
-        if len(ordered) < 2:
-            n_discarded_single_component += 1
-            continue
-
+    for image_id, ordered in kept:
         source = index[image_id]
         destination = images_out / source.name
         # Copied, never moved: the raw data stays exactly as delivered.
@@ -493,35 +489,17 @@ def run_build(args) -> int:
         questions.append(QuestionAnnotation(
             image_id=image_id,
             question_id=f"{image_id}_q1",
-            question_text=compose_question([c for c, _ in ordered]),
-            components=tuple(build_components(c, t) for c, t in ordered),
+            question_text=compose_question(ordered),
+            components=tuple(build_component(c) for c in ordered),
         ))
 
-    if missing_images:
-        print(
-            f"ERROR: {len(missing_images)} image_id(s) in {args.targets} have no "
-            f"file under {args.raw}/images_final: {missing_images[:5]}",
-            file=sys.stderr,
-        )
-        return 1
+    write_manifest(manifest, out_dir / "manifest.jsonl")
+    write_question_annotations(questions, out_dir / "questions.jsonl")
+    (out_dir / "meta.json").write_text(
+        json.dumps(meta, indent=2) + "\n", encoding="utf-8"
+    )
 
-    manifest_path = out_dir / "manifest.jsonl"
-    questions_path = out_dir / "questions.jsonl"
-    write_manifest(manifest, manifest_path)
-    write_question_annotations(questions, questions_path)
-
-    print("=" * 78)
-    print("ODI-BENCH INGESTION -- build")
-    print("=" * 78)
-    print(f"  rows with a target     : {len(rows)}")
-    print(f"  rows without a target  : {untargeted} (ignored)")
-    print(f"  files skipped in images_final (not an image): {skipped_files}")
-    print(f"  components dropped by the negative-existence rule: {n_dropped_by_negative}")
-    print(f"  items discarded, fewer than 2 components left: {n_discarded_single_component}")
-    print(f"  manifest               : {len(manifest)} item(s) -> {manifest_path}")
-    print(f"  questions              : {len(questions)} item(s) -> {questions_path}")
-    print(f"  images copied to       : {images_out}")
-    print("=" * 78)
+    _report(meta, out_dir=out_dir, dry_run=False)
     return 0
 
 
@@ -529,38 +507,28 @@ def run_build(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("emit", "build"), default="build",
-        help="'emit' writes the candidate CSV for manual targeting; 'build' "
-             "(the default) turns the filled CSV into manifest + questions.")
+    parser = argparse.ArgumentParser(
+        description="Turn raw ODI-Bench into manifest.jsonl + questions.jsonl."
+    )
     parser.add_argument("--raw", type=Path, default=Path("data/raw/odibench"),
         help="Raw ODI-Bench root, holding QAs/ and images_final/.")
+    parser.add_argument("--out", type=Path, default=Path("data/processed/odibench"),
+        help="Output dataset directory.")
     parser.add_argument("--direction-terms", type=Path,
         default=Path("configs/direction_terms.json"),
-        help="Direction table; a direction answer is kept only if it resolves "
-             "here, which is what rejects composites and noise. Emit mode only.")
-    parser.add_argument("--out", type=Path, default=None,
-        help="emit: the CSV to write. build: the output dataset directory.")
-    parser.add_argument("--targets", type=Path, default=None,
-        help="build: the CSV with the 'target' column filled in.")
+        help="Direction table. A direction answer is kept only if it resolves "
+             "here, which is what rejects composites and noise.")
     parser.add_argument("--limit", type=int, default=None,
-        help="emit: keep this many qualified images, sampled with --seed.")
+        help="Keep this many qualified images, sampled with --seed.")
     parser.add_argument("--seed", type=int, default=0,
-        help="emit: sampling seed, recorded alongside the CSV.")
+        help="Sampling seed, recorded in meta.json.")
+    parser.add_argument("--dry-run", action="store_true",
+        help="Print the tally and write nothing.")
     return parser
 
 
 def main() -> int:
-    args = build_parser().parse_args()
-    if args.mode == "emit":
-        if args.out is None:
-            print("ERROR: --out is required in emit mode.", file=sys.stderr)
-            return 1
-        return run_emit(args)
-    if args.targets is None or args.out is None:
-        print("ERROR: --targets and --out are required in build mode.", file=sys.stderr)
-        return 1
-    return run_build(args)
+    return run(build_parser().parse_args())
 
 
 if __name__ == "__main__":

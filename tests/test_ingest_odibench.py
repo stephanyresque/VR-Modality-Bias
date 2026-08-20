@@ -7,7 +7,6 @@ first; the real raw file lives on the DGX and its keys were not verified.
 
 from __future__ import annotations
 
-import csv
 import importlib.util
 import json
 import sys
@@ -239,28 +238,74 @@ def test_the_composed_text_carries_no_verbosity_instruction(ingest):
         assert banned not in text, banned
 
 
+# ---------------------------------------------------------------- heuristic target
+#
+# The curated target column is gone, so the negative-existence rule guesses the
+# noun from the wording. It is allowed to be wrong: a wrong target used to mean
+# a wrong verdict, and now the worst case is one awkward composed question
+# surviving the filter.
+
+
+@pytest.mark.parametrize("question,expected", [
+    ("Is there a chair?", "chair"),
+    ("Is there a chair in the room?", "chair"),
+    ("Are there any chairs?", "chair"),
+    ("How many chairs?", "chair"),
+    ("How many chairs are there?", "chair"),
+    ("How many boxes are there?", "box"),
+    ("Where is the table?", "table"),
+    ("Where are the lamps?", "lamp"),
+    ("Is the window to the left of the door?", "window"),
+    ("Is there anyone in the room?", "anyone"),
+])
+def test_the_target_is_guessed_from_the_wording(ingest, question, expected):
+    assert ingest.heuristic_target(question) == expected
+
+
+def test_an_unparseable_question_yields_no_target(ingest):
+    assert ingest.heuristic_target("?") == ""
+
+
+def test_a_question_leading_with_a_modifier_is_a_known_miss(ingest):
+    """Pinned as a limitation, not as correct behaviour.
+
+    The guess takes the head of the first noun phrase, so a question that opens
+    on a modifier picks the modifier. It is left wrong on purpose: the fix is
+    syntactic parsing, and the cost of the error is one composed question that
+    reads a little awkwardly, not a wrong verdict.
+    """
+    assert ingest.heuristic_target("Where is the left side of the sofa?") == "left"
+
+
+def test_the_singular_and_plural_wordings_agree(ingest):
+    assert (
+        ingest.heuristic_target("Is there a sofa?")
+        == ingest.heuristic_target("How many sofas are there?")
+    ), "the rule only fires when the two wordings resolve to the same noun"
+
+
 # ---------------------------------------------------------------- negative rule
 
 
 def test_a_negative_existence_drops_a_later_component_on_the_same_target(ingest):
     Candidate = ingest.Candidate
     ordered = [
-        (Candidate("i", "existence", "Is there a chair?", "no"), "chair"),
-        (Candidate("i", "count", "How many chairs?", "0"), "chair"),
-        (Candidate("i", "direction", "Where is the table?", "left"), "table"),
+        Candidate("i", "existence", "Is there a chair?", "no"),
+        Candidate("i", "count", "How many chairs are there?", "0"),
+        Candidate("i", "direction", "Where is the table?", "left"),
     ]
 
     kept, dropped = ingest.apply_negative_existence_rule(ordered)
 
     assert dropped == 1
-    assert [c.component_type for c, _ in kept] == ["existence", "direction"]
+    assert [c.component_type for c in kept] == ["existence", "direction"]
 
 
 def test_a_positive_existence_drops_nothing(ingest):
     Candidate = ingest.Candidate
     ordered = [
-        (Candidate("i", "existence", "Is there a chair?", "yes"), "chair"),
-        (Candidate("i", "count", "How many chairs?", "3"), "chair"),
+        Candidate("i", "existence", "Is there a chair?", "yes"),
+        Candidate("i", "count", "How many chairs are there?", "3"),
     ]
 
     kept, dropped = ingest.apply_negative_existence_rule(ordered)
@@ -272,13 +317,28 @@ def test_a_positive_existence_drops_nothing(ingest):
 def test_a_negative_existence_keeps_components_about_other_targets(ingest):
     Candidate = ingest.Candidate
     ordered = [
-        (Candidate("i", "existence", "Is there a sofa?", "no"), "sofa"),
-        (Candidate("i", "count", "How many chairs?", "3"), "chair"),
+        Candidate("i", "existence", "Is there a sofa?", "no"),
+        Candidate("i", "count", "How many chairs are there?", "3"),
     ]
 
     kept, dropped = ingest.apply_negative_existence_rule(ordered)
 
     assert dropped == 0
+    assert len(kept) == 2
+
+
+def test_a_question_with_no_guessable_target_is_never_denied(ingest):
+    Candidate = ingest.Candidate
+    ordered = [
+        Candidate("i", "existence", "?", "no"),
+        Candidate("i", "count", "?", "3"),
+    ]
+
+    kept, dropped = ingest.apply_negative_existence_rule(ordered)
+
+    assert dropped == 0, (
+        "an empty guess must not match every other empty guess and wipe the item"
+    )
     assert len(kept) == 2
 
 
@@ -414,41 +474,11 @@ def test_no_limit_keeps_everything(ingest):
     assert ingest.select_images(grouped, limit=None, seed=0) == ["a", "b", "c"]
 
 
-# ---------------------------------------------------------------- csv
-
-
-def test_a_row_without_a_target_is_ignored_and_counted(ingest, tmp_path: Path):
-    path = tmp_path / "targets.csv"
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
-        writer.writeheader()
-        writer.writerow({"image_id": "indoor_1", "component_type": "existence",
-                         "question": "Is there a chair?", "answer": "yes",
-                         "target": "chair"})
-        writer.writerow({"image_id": "indoor_1", "component_type": "count",
-                         "question": "How many?", "answer": "3", "target": ""})
-        writer.writerow({"image_id": "indoor_1", "component_type": "direction",
-                         "question": "Where?", "answer": "left", "target": "   "})
-
-    rows, untargeted = ingest.read_targets_csv(path)
-
-    assert len(rows) == 1
-    assert untargeted == 2
-
-
-def test_a_csv_missing_a_column_is_rejected(ingest, tmp_path: Path):
-    path = tmp_path / "targets.csv"
-    path.write_text("image_id,question\nindoor_1,q\n", encoding="utf-8")
-
-    with pytest.raises(ValueError, match="missing column"):
-        ingest.read_targets_csv(path)
-
-
 # ---------------------------------------------------------------- end to end
 
 
-def test_emit_then_build_produces_a_usable_dataset(ingest, tmp_path: Path):
-    raw = _write_raw(tmp_path, {
+def _full_raw(tmp_path: Path) -> Path:
+    return _write_raw(tmp_path, {
         "existence.jsonl": [
             _qa("indoor_1.png", "Is there a chair?", "yes"),
             _qa("indoor_2.png", "Is there a sofa?", "no"),
@@ -464,34 +494,22 @@ def test_emit_then_build_produces_a_usable_dataset(ingest, tmp_path: Path):
         ],
     }, ["indoor_1.png", "indoor_2.png", "outdoor_9.png"])
 
-    csv_path = tmp_path / "targets.csv"
+
+def _run_ingest(ingest, raw: Path, out_dir: Path, *extra) -> int:
     args = ingest.build_parser().parse_args([
-        "--mode", "emit", "--raw", str(raw), "--out", str(csv_path),
+        "--raw", str(raw), "--out", str(out_dir),
         "--direction-terms",
         str(Path(__file__).parent.parent / "configs" / "direction_terms.json"),
+        *extra,
     ])
-    assert ingest.run_emit(args) == 0
+    return ingest.run(args)
 
-    with csv_path.open(encoding="utf-8", newline="") as fh:
-        rows = list(csv.DictReader(fh))
-    # front-left was dropped by the direction filter; outdoor was dropped by the
-    # prefix filter. indoor_1 keeps 3 components, indoor_2 keeps 2.
-    assert {r["image_id"] for r in rows} == {"indoor_1", "indoor_2"}
-    assert len(rows) == 5
 
-    targets = {"indoor_1": "chair", "indoor_2": "sofa"}
-    for row in rows:
-        row["target"] = targets[row["image_id"]]
-    with csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
-        writer.writeheader()
-        writer.writerows(rows)
-
+def test_one_pass_produces_a_usable_dataset(ingest, tmp_path: Path):
+    raw = _full_raw(tmp_path)
     out_dir = tmp_path / "processed"
-    args = ingest.build_parser().parse_args([
-        "--raw", str(raw), "--targets", str(csv_path), "--out", str(out_dir),
-    ])
-    assert ingest.run_build(args) == 0
+
+    assert _run_ingest(ingest, raw, out_dir) == 0
 
     manifest = read_manifest(out_dir / "manifest.jsonl")
     questions = read_question_annotations(out_dir / "questions.jsonl")
@@ -520,46 +538,83 @@ def test_emit_then_build_produces_a_usable_dataset(ingest, tmp_path: Path):
     assert (out_dir / "images" / "indoor_2.png").exists() is False
 
 
-def test_build_fails_when_a_targeted_image_has_no_file(ingest, tmp_path: Path):
-    raw = _write_raw(tmp_path, {}, ["indoor_1.png"])
-    csv_path = tmp_path / "targets.csv"
-    with csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
-        writer.writeheader()
-        writer.writerow({"image_id": "indoor_missing", "component_type": "existence",
-                         "question": "Is there a chair?", "answer": "yes",
-                         "target": "chair"})
+def test_no_curated_csv_is_read_or_written(ingest, tmp_path: Path):
+    raw = _full_raw(tmp_path)
+    out_dir = tmp_path / "processed"
 
-    args = ingest.build_parser().parse_args([
-        "--raw", str(raw), "--targets", str(csv_path),
-        "--out", str(tmp_path / "processed"),
-    ])
+    _run_ingest(ingest, raw, out_dir)
 
-    assert ingest.run_build(args) == 1
+    assert list(out_dir.glob("*.csv")) == [], (
+        "the target CSV existed only for manual curation, which is gone"
+    )
 
 
-def test_the_emit_run_records_its_seed_and_counts(ingest, tmp_path: Path):
+def test_a_selected_image_without_a_file_is_fatal(ingest, tmp_path: Path):
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [_qa("indoor_missing.png", "Is there a chair?", "yes")],
+        "counting.jsonl": [_qa("indoor_missing.png", "How many lamps are there?", "3")],
+    }, ["indoor_1.png"])
+
+    assert _run_ingest(ingest, raw, tmp_path / "processed") == 1
+
+
+def test_the_run_records_its_seed_and_counts(ingest, tmp_path: Path):
     raw = _write_raw(tmp_path, {
         "existence.jsonl": [_qa("indoor_1.png", "Is there a chair?", "yes")],
-        "counting.jsonl": [_qa("indoor_1.png", "How many?", "3")],
-    }, [])
-    csv_path = tmp_path / "targets.csv"
+        "counting.jsonl": [_qa("indoor_1.png", "How many lamps are there?", "3")],
+    }, ["indoor_1.png"])
+    out_dir = tmp_path / "processed"
 
-    args = ingest.build_parser().parse_args([
-        "--mode", "emit", "--raw", str(raw), "--out", str(csv_path),
-        "--seed", "42", "--limit", "1",
-        "--direction-terms",
-        str(Path(__file__).parent.parent / "configs" / "direction_terms.json"),
-    ])
-    ingest.run_emit(args)
+    assert _run_ingest(ingest, raw, out_dir, "--seed", "42", "--limit", "1") == 0
 
-    meta = json.loads(
-        (tmp_path / "targets.csv.meta.json").read_text(encoding="utf-8")
-    )
+    meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
+
     assert meta["seed"] == 42
     assert meta["limit"] == 1
     assert meta["images_qualified"] == 1
     assert meta["kept_by_type"] == {"existence": 1, "count": 1}
+    assert meta["items_written"] == 1
+
+
+def test_the_meta_counts_what_the_negative_rule_dropped(ingest, tmp_path: Path):
+    raw = _full_raw(tmp_path)
+    out_dir = tmp_path / "processed"
+
+    _run_ingest(ingest, raw, out_dir)
+    meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
+
+    assert meta["components_dropped_by_negative_existence"] == 1, (
+        "indoor_2 denies the sofa, so counting the sofas goes"
+    )
+    assert meta["items_discarded_single_component"] == 1
+
+
+# ---------------------------------------------------------------- dry run
+
+
+def test_a_dry_run_writes_nothing(ingest, tmp_path: Path):
+    raw = _full_raw(tmp_path)
+    out_dir = tmp_path / "processed"
+
+    assert _run_ingest(ingest, raw, out_dir, "--dry-run") == 0
+
+    assert not out_dir.exists(), "a dry run must not even create the directory"
+
+
+def test_a_dry_run_reports_the_same_tally(ingest, tmp_path: Path, capsys):
+    raw = _full_raw(tmp_path)
+
+    _run_ingest(ingest, raw, tmp_path / "processed", "--dry-run")
+    dry = capsys.readouterr().out
+
+    _run_ingest(ingest, raw, tmp_path / "processed")
+    wet = capsys.readouterr().out
+
+    for line in ("components seen", "items written", "negative-existence"):
+        assert line in dry, line
+        assert line in wet, line
+    assert "dry run, nothing written" in dry
+    assert "dry run" not in wet
 
 
 # ---------------------------------------------------------------- raw keys
@@ -648,31 +703,21 @@ def test_a_record_missing_every_candidate_key_still_raises(ingest, tmp_path: Pat
 
 
 def test_an_item_left_with_one_component_is_discarded(ingest, tmp_path: Path):
-    raw = _write_raw(tmp_path, {}, ["indoor_1.png", "indoor_2.png"])
-    csv_path = tmp_path / "targets.csv"
-    with csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
-        writer.writeheader()
+    raw = _write_raw(tmp_path, {
         # indoor_1 survives with two components.
-        writer.writerow({"image_id": "indoor_1", "component_type": "existence",
-                         "question": "Is there a chair?", "answer": "yes",
-                         "target": "chair"})
-        writer.writerow({"image_id": "indoor_1", "component_type": "count",
-                         "question": "How many chairs?", "answer": "3",
-                         "target": "chair"})
+        "existence.jsonl": [
+            _qa("indoor_1.png", "Is there a chair?", "yes"),
+            _qa("indoor_2.png", "Is there a sofa?", "no"),
+        ],
         # indoor_2 loses its count to the negative-existence rule.
-        writer.writerow({"image_id": "indoor_2", "component_type": "existence",
-                         "question": "Is there a sofa?", "answer": "no",
-                         "target": "sofa"})
-        writer.writerow({"image_id": "indoor_2", "component_type": "count",
-                         "question": "How many sofas?", "answer": "0",
-                         "target": "sofa"})
-
+        "counting.jsonl": [
+            _qa("indoor_1.png", "How many chairs are there?", "3"),
+            _qa("indoor_2.png", "How many sofas are there?", "0"),
+        ],
+    }, ["indoor_1.png", "indoor_2.png"])
     out_dir = tmp_path / "processed"
-    args = ingest.build_parser().parse_args([
-        "--raw", str(raw), "--targets", str(csv_path), "--out", str(out_dir),
-    ])
-    assert ingest.run_build(args) == 0
+
+    assert _run_ingest(ingest, raw, out_dir) == 0
 
     questions = read_question_annotations(out_dir / "questions.jsonl")
     manifest = read_manifest(out_dir / "manifest.jsonl")
@@ -686,20 +731,14 @@ def test_an_item_left_with_one_component_is_discarded(ingest, tmp_path: Path):
     )
 
 
-def test_a_csv_row_that_never_had_a_partner_is_discarded_too(ingest, tmp_path: Path):
-    raw = _write_raw(tmp_path, {}, ["indoor_1.png"])
-    csv_path = tmp_path / "targets.csv"
-    with csv_path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(ingest.CSV_COLUMNS))
-        writer.writeheader()
-        writer.writerow({"image_id": "indoor_1", "component_type": "existence",
-                         "question": "Is there a chair?", "answer": "yes",
-                         "target": "chair"})
-
+def test_an_image_with_a_single_component_never_reaches_the_output(
+    ingest, tmp_path: Path
+):
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [_qa("indoor_1.png", "Is there a chair?", "yes")],
+    }, ["indoor_1.png"])
     out_dir = tmp_path / "processed"
-    args = ingest.build_parser().parse_args([
-        "--raw", str(raw), "--targets", str(csv_path), "--out", str(out_dir),
-    ])
-    assert ingest.run_build(args) == 0
+
+    assert _run_ingest(ingest, raw, out_dir) == 0
 
     assert read_question_annotations(out_dir / "questions.jsonl") == []

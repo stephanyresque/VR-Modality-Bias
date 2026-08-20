@@ -33,20 +33,12 @@ def test_object_annotation_round_trip(tmp_path: Path):
         ObjectAnnotation(
             image_id="adt_seq07_000123",
             objects=("mug", "keyboard", "chair"),
-            counts={"mug": 2, "keyboard": 1, "chair": 4},
         ),
         ObjectAnnotation(image_id="adt_seq07_000124", objects=("desk",)),
     ]
 
     assert write_object_annotations(records, path) == 2
     assert read_object_annotations(path) == records
-
-
-def test_object_annotation_counts_are_optional(tmp_path: Path):
-    path = tmp_path / "objects.jsonl"
-    write_object_annotations([ObjectAnnotation("x", ("lamp",))], path)
-
-    assert read_object_annotations(path)[0].counts is None
 
 
 def test_objects_are_normalised_to_a_tuple():
@@ -111,9 +103,9 @@ def test_question_annotation_round_trip(tmp_path: Path):
                 "the window to the left of the door?"
             ),
             components=(
-                QuestionComponent("existence", "sofa", "yes"),
-                QuestionComponent("count", "lamp", 2),
-                QuestionComponent("direction", "window|door", "left"),
+                QuestionComponent("existence", "yes"),
+                QuestionComponent("count", 2),
+                QuestionComponent("direction", "left"),
             ),
         ),
     ]
@@ -130,7 +122,7 @@ def test_components_are_rebuilt_as_dataclasses_on_read(tmp_path: Path):
                 image_id="x",
                 question_id="x_q1",
                 question_text="Is there a sofa?",
-                components=(QuestionComponent("existence", "sofa", "yes"),),
+                components=(QuestionComponent("existence", "yes"),),
             )
         ],
         path,
@@ -146,13 +138,13 @@ def test_components_are_rebuilt_as_dataclasses_on_read(tmp_path: Path):
 def test_the_three_valid_component_types_are_accepted():
     assert COMPONENT_TYPES == ("existence", "count", "direction")
     for component_type in COMPONENT_TYPES:
-        component = QuestionComponent(component_type, "sofa", "yes")
+        component = QuestionComponent(component_type, "yes")
         assert component.component_type == component_type
 
 
 def test_a_component_type_outside_the_three_is_rejected():
     with pytest.raises(ValueError, match="colour"):
-        QuestionComponent("colour", "sofa", "red")
+        QuestionComponent("colour", "red")
 
 
 def test_an_invalid_component_type_in_a_file_names_the_file_and_the_line(
@@ -161,11 +153,9 @@ def test_an_invalid_component_type_in_a_file_names_the_file_and_the_line(
     path = tmp_path / "questions.jsonl"
     path.write_text(
         '{"image_id": "x", "question_id": "x_q1", "question_text": "?", '
-        '"components": [{"component_type": "existence", "target": "sofa", '
-        '"answer": "yes"}]}\n'
+        '"components": [{"component_type": "existence", "answer": "yes"}]}\n'
         '{"image_id": "y", "question_id": "y_q1", "question_text": "?", '
-        '"components": [{"component_type": "colour", "target": "sofa", '
-        '"answer": "red"}]}\n',
+        '"components": [{"component_type": "colour", "answer": "red"}]}\n',
         encoding="utf-8",
     )
 

@@ -11,8 +11,7 @@ usage() {
     cat >&2 <<'EOF'
 Usage: DATASET=<name> CONFIG_PATTERN=<configs/run_x_{length}.yaml> \
        COMPOSED_CONFIG=<configs/run_x_long.yaml> \
-       VOCABULARY=<vocab.json> ANNOTATIONS=<annotations.jsonl> \
-       QUESTIONS=<questions.jsonl> DIRECTION_TERMS=<direction_terms.json> \
+       QUESTIONS=<questions.jsonl> \
        bash scripts/run_experiment.sh [--smoke]
 
 Stages run in order and each one can be skipped:
@@ -23,11 +22,12 @@ Stages run in order and each one can be skipped:
   description  scripts/run_sparc_matrix.sh
   composed     scripts/run_composed_matrix.sh
 
-Every artefact is demanded only by the stage that consumes it, so a dataset
-that runs one track does not have to invent a path for the other:
+Neither track scores anything here any more: both generate, and the scoring
+stage runs offline against a judge model. Every artefact is demanded only by
+the stage that consumes it:
   always       DATASET
-  description  CONFIG_PATTERN, VOCABULARY, ANNOTATIONS
-  composed     COMPOSED_CONFIG, QUESTIONS, DIRECTION_TERMS
+  description  CONFIG_PATTERN
+  composed     COMPOSED_CONFIG, QUESTIONS
   diagnostic   DIAG_CONFIG (falls back to COMPOSED_CONFIG, then to the deepest
                regime of CONFIG_PATTERN)
 
@@ -88,13 +88,9 @@ has_stage() {
 }
 
 # Each artefact is demanded by the stage that consumes it, and by no one else.
-# Neither dataset carries all four: ADT has objects and no questions, ODI-Bench
-# has questions and no per-image object list. Demanding everything up front made
-# each of them unrunnable without inventing a path.
-#   description -> CONFIG_PATTERN, VOCABULARY, ANNOTATIONS
-#                  (scripts/run_sparc_matrix.sh reads the last two)
-#   composed    -> COMPOSED_CONFIG, QUESTIONS, DIRECTION_TERMS
-#                  (scripts/run_composed_matrix.sh reads the last two)
+#   description -> CONFIG_PATTERN
+#   composed    -> COMPOSED_CONFIG, QUESTIONS
+#                  (scripts/run_composed_matrix.sh reads the last one)
 #   diagnostic  -> a config to run on
 demand() {
     local stage="$1"; shift
@@ -108,10 +104,10 @@ demand() {
 }
 
 if has_stage description; then
-    demand description CONFIG_PATTERN VOCABULARY ANNOTATIONS
+    demand description CONFIG_PATTERN
 fi
 if has_stage composed; then
-    demand composed COMPOSED_CONFIG QUESTIONS DIRECTION_TERMS
+    demand composed COMPOSED_CONFIG QUESTIONS
 fi
 
 LENGTHS="${LENGTHS:-medium long}"
@@ -160,10 +156,7 @@ echo "  items            : $NUM_ITEMS   smoke=$SMOKE"
 echo "  config pattern   : ${CONFIG_PATTERN:-<unset>}"
 echo "  composed config  : ${COMPOSED_CONFIG:-<unset>}"
 echo "  diagnostic config: ${DIAG_CONFIG:-<unset>}"
-echo "  vocabulary       : ${VOCABULARY:-<unset>}"
-echo "  annotations      : ${ANNOTATIONS:-<unset>}"
 echo "  questions        : ${QUESTIONS:-<unset>}"
-echo "  direction terms  : ${DIRECTION_TERMS:-<unset>}"
 echo "  output root      : $OUTPUT_ROOT"
 echo "  log file         : $LOG_FILE"
 echo "=================================================================="
@@ -204,10 +197,16 @@ if has_stage preflight; then
         --limit "$NUM_ITEMS"
         --output-root "$OUTPUT_ROOT"
     )
-    [[ -n "${ANNOTATIONS:-}" ]] && preflight_cmd+=(--annotations "$ANNOTATIONS")
-    [[ -n "${VOCABULARY:-}" ]] && preflight_cmd+=(--vocabulary "$VOCABULARY")
-    [[ -n "${QUESTIONS:-}" ]] && preflight_cmd+=(--questions "$QUESTIONS")
-    [[ -n "${DIRECTION_TERMS:-}" ]] && preflight_cmd+=(--direction-terms "$DIRECTION_TERMS")
+    # QUESTIONS is the only ground truth this script still knows about, so its
+    # absence means nothing will be graded: a diagnostic-only run, or the
+    # description track, which generates but has no object list to score
+    # against until such a dataset comes back into scope. Either way preflight
+    # must not treat the absence as a problem.
+    if [[ -n "${QUESTIONS:-}" ]]; then
+        preflight_cmd+=(--questions "$QUESTIONS")
+    else
+        preflight_cmd+=(--no-scoring)
+    fi
     if [[ "${#PREFLIGHT_ARMS[@]}" -gt 0 ]]; then
         preflight_cmd+=(--arms "${PREFLIGHT_ARMS[@]}")
     fi
@@ -262,7 +261,6 @@ if has_stage description; then
        LENGTHS="$LENGTHS" \
        NUM_IMAGES="$NUM_ITEMS" \
        OUTPUT_ROOT="$OUTPUT_ROOT" \
-       VOCABULARY="$VOCABULARY" ANNOTATIONS="$ANNOTATIONS" \
        PYTHON="$PYTHON" \
        bash scripts/run_sparc_matrix.sh "${SMOKE_FLAG[@]}"; then
         record "description OK"
@@ -278,7 +276,7 @@ if has_stage composed; then
     echo ""
     echo "---- STAGE composed -----------------------------------------------"
     if CONFIG="$COMPOSED_CONFIG" \
-       QUESTIONS="$QUESTIONS" DIRECTION_TERMS="$DIRECTION_TERMS" \
+       QUESTIONS="$QUESTIONS" \
        NUM_ITEMS="$NUM_ITEMS" \
        OUTPUT_ROOT="$OUTPUT_ROOT" \
        PYTHON="$PYTHON" \
