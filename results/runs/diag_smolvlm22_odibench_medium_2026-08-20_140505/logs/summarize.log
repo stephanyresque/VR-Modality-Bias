@@ -1,0 +1,6 @@
+2026-08-20T14:17:22 INFO __main__ :: Run dir: /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505
+2026-08-20T14:17:23 INFO __main__ :: Loaded 100 metric row(s) from /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505/metrics.parquet.
+2026-08-20T14:17:23 INFO __main__ :: Wrote 100 row(s) to /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505/summary.csv.
+2026-08-20T14:17:23 INFO __main__ :: Wrote /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505/summary.json.
+2026-08-20T14:17:23 INFO __main__ :: residual_ratio summary — n_finite_in_range=100/100, median=0.947365790605545, q25=0.9252877086400986, q75=0.9640821367502213, iqr=0.03879442811012268
+2026-08-20T14:17:23 INFO __main__ :: Diagnostics — pairs=100, total=7m 34.9s, median/pair=4.63 s, VRAM peak=4.90 GB, disk pairs=17.52 GB (median/pair=186.01 MB), disk run=17.52 GB
