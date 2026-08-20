@@ -1,0 +1,44 @@
+{
+  "n_images": 100,
+  "n_residual_ratio_finite": 100,
+  "n_residual_ratio_finite_in_range": 100,
+  "n_share_tail_finite": 100,
+  "n_head_tail_ratio_finite": 0,
+  "range": {
+    "lo": 0.0,
+    "hi": 1.0
+  },
+  "residual_ratio": {
+    "median": 0.947365790605545,
+    "q25": 0.9252877086400986,
+    "q75": 0.9640821367502213,
+    "iqr": 0.03879442811012268,
+    "min": 0.6798824667930603,
+    "max": 0.9881247878074646,
+    "mean": 0.9364803212881089,
+    "std": 0.04733157689813517
+  },
+  "share_tail": {
+    "median": 0.32361024618148804,
+    "q25": 0.26848790794610977,
+    "q75": 0.4030165448784828,
+    "iqr": 0.13452863693237305,
+    "min": 0.1597260981798172,
+    "max": 0.5797333121299744,
+    "mean": 0.34099395155906675,
+    "std": 0.09175909470282033
+  },
+  "head_tail_ratio": {
+    "median": null,
+    "q25": null,
+    "q75": null,
+    "iqr": null,
+    "min": null,
+    "max": null,
+    "mean": null,
+    "std": null
+  },
+  "model_id": "HuggingFaceTB/SmolVLM-Instruct",
+  "prompt_key": "caption_medium",
+  "seed_global": 42
+}

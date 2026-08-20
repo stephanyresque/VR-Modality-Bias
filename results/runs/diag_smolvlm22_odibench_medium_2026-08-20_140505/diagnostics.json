@@ -1,0 +1,10 @@
+{
+  "n_pairs": 100,
+  "time_total_seconds": 454.9280281960964,
+  "time_median_seconds_per_pair": 4.628887556493282,
+  "time_mean_seconds_per_pair": 4.549280281960964,
+  "vram_peak_bytes": 5256024064,
+  "disk_total_bytes_pairs": 18809995589,
+  "disk_median_bytes_per_pair": 195048890.5,
+  "disk_total_bytes_run": 18814526370
+}

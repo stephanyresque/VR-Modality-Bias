@@ -1,0 +1,140 @@
+2026-08-20T14:15:41 INFO __main__ :: Run dir: /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505
+2026-08-20T14:15:41 INFO __main__ :: Found 100 complete (A, B) pair(s).
+2026-08-20T14:15:41 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…
+2026-08-20T14:15:42 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:42 WARNING huggingface_hub.utils._http :: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-08-20T14:15:42 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:42 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:42 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:42 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/chat_template.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:43 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/chat_template.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/preprocessor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:44 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/preprocessor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:45 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:15:46 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-08-20T14:15:46 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:46 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:46 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:15:46 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/generation_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:15:47 INFO __main__ :: Loaded. n_layers=24
+2026-08-20T14:15:48 INFO __main__ :: [indoor_0] residual_ratio=0.9316  share_tail=0.3698
+2026-08-20T14:15:49 INFO __main__ :: [indoor_1] residual_ratio=0.8714  share_tail=0.3855
+2026-08-20T14:15:50 INFO __main__ :: [indoor_10] residual_ratio=0.9022  share_tail=0.1925
+2026-08-20T14:15:51 INFO __main__ :: [indoor_100] residual_ratio=0.9463  share_tail=0.4601
+2026-08-20T14:15:52 INFO __main__ :: [indoor_101] residual_ratio=0.9520  share_tail=0.4094
+2026-08-20T14:15:53 INFO __main__ :: [indoor_102] residual_ratio=0.9234  share_tail=0.3225
+2026-08-20T14:15:54 INFO __main__ :: [indoor_103] residual_ratio=0.9165  share_tail=0.2269
+2026-08-20T14:15:55 INFO __main__ :: [indoor_104] residual_ratio=0.9548  share_tail=0.2457
+2026-08-20T14:15:56 INFO __main__ :: [indoor_105] residual_ratio=0.9691  share_tail=0.3460
+2026-08-20T14:15:57 INFO __main__ :: [indoor_106] residual_ratio=0.9308  share_tail=0.3248
+2026-08-20T14:15:58 INFO __main__ :: [indoor_107] residual_ratio=0.9523  share_tail=0.3082
+2026-08-20T14:15:59 INFO __main__ :: [indoor_108] residual_ratio=0.9728  share_tail=0.2501
+2026-08-20T14:16:00 INFO __main__ :: [indoor_109] residual_ratio=0.9695  share_tail=0.4844
+2026-08-20T14:16:01 INFO __main__ :: [indoor_11] residual_ratio=0.9603  share_tail=0.3931
+2026-08-20T14:16:01 INFO __main__ :: [indoor_110] residual_ratio=0.9609  share_tail=0.3816
+2026-08-20T14:16:02 INFO __main__ :: [indoor_111] residual_ratio=0.9231  share_tail=0.2201
+2026-08-20T14:16:03 INFO __main__ :: [indoor_112] residual_ratio=0.9738  share_tail=0.4977
+2026-08-20T14:16:04 INFO __main__ :: [indoor_113] residual_ratio=0.9640  share_tail=0.4631
+2026-08-20T14:16:05 INFO __main__ :: [indoor_114] residual_ratio=0.9809  share_tail=0.4619
+2026-08-20T14:16:06 INFO __main__ :: [indoor_115] residual_ratio=0.9835  share_tail=0.4224
+2026-08-20T14:16:07 INFO __main__ :: [indoor_116] residual_ratio=0.9797  share_tail=0.3237
+2026-08-20T14:16:08 INFO __main__ :: [indoor_117] residual_ratio=0.9656  share_tail=0.3779
+2026-08-20T14:16:09 INFO __main__ :: [indoor_118] residual_ratio=0.9866  share_tail=0.4588
+2026-08-20T14:16:10 INFO __main__ :: [indoor_119] residual_ratio=0.9477  share_tail=0.2389
+2026-08-20T14:16:11 INFO __main__ :: [indoor_12] residual_ratio=0.9606  share_tail=0.2848
+2026-08-20T14:16:12 INFO __main__ :: [indoor_120] residual_ratio=0.9481  share_tail=0.3626
+2026-08-20T14:16:13 INFO __main__ :: [indoor_121] residual_ratio=0.9109  share_tail=0.5421
+2026-08-20T14:16:14 INFO __main__ :: [indoor_122] residual_ratio=0.9293  share_tail=0.2545
+2026-08-20T14:16:15 INFO __main__ :: [indoor_123] residual_ratio=0.8862  share_tail=0.1597
+2026-08-20T14:16:16 INFO __main__ :: [indoor_124] residual_ratio=0.9881  share_tail=0.4858
+2026-08-20T14:16:17 INFO __main__ :: [indoor_125] residual_ratio=0.9647  share_tail=0.4554
+2026-08-20T14:16:18 INFO __main__ :: [indoor_126] residual_ratio=0.9133  share_tail=0.3919
+2026-08-20T14:16:19 INFO __main__ :: [indoor_127] residual_ratio=0.9194  share_tail=0.4792
+2026-08-20T14:16:20 INFO __main__ :: [indoor_128] residual_ratio=0.9732  share_tail=0.2698
+2026-08-20T14:16:21 INFO __main__ :: [indoor_129] residual_ratio=0.9540  share_tail=0.2671
+2026-08-20T14:16:22 INFO __main__ :: [indoor_13] residual_ratio=0.9065  share_tail=0.3052
+2026-08-20T14:16:23 INFO __main__ :: [indoor_130] residual_ratio=0.9351  share_tail=0.4254
+2026-08-20T14:16:23 INFO __main__ :: [indoor_131] residual_ratio=0.6874  share_tail=0.3734
+2026-08-20T14:16:24 INFO __main__ :: [indoor_132] residual_ratio=0.9515  share_tail=0.4103
+2026-08-20T14:16:25 INFO __main__ :: [indoor_133] residual_ratio=0.9143  share_tail=0.2607
+2026-08-20T14:16:26 INFO __main__ :: [indoor_134] residual_ratio=0.9111  share_tail=0.2145
+2026-08-20T14:16:27 INFO __main__ :: [indoor_135] residual_ratio=0.9273  share_tail=0.1980
+2026-08-20T14:16:28 INFO __main__ :: [indoor_136] residual_ratio=0.9334  share_tail=0.2440
+2026-08-20T14:16:29 INFO __main__ :: [indoor_137] residual_ratio=0.9333  share_tail=0.2530
+2026-08-20T14:16:30 INFO __main__ :: [indoor_138] residual_ratio=0.9610  share_tail=0.3823
+2026-08-20T14:16:31 INFO __main__ :: [indoor_139] residual_ratio=0.9481  share_tail=0.4336
+2026-08-20T14:16:32 INFO __main__ :: [indoor_14] residual_ratio=0.9587  share_tail=0.3684
+2026-08-20T14:16:33 INFO __main__ :: [indoor_140] residual_ratio=0.9471  share_tail=0.3713
+2026-08-20T14:16:34 INFO __main__ :: [indoor_141] residual_ratio=0.8571  share_tail=0.2108
+2026-08-20T14:16:35 INFO __main__ :: [indoor_142] residual_ratio=0.9583  share_tail=0.2481
+2026-08-20T14:16:35 INFO __main__ :: [indoor_143] residual_ratio=0.9533  share_tail=0.3299
+2026-08-20T14:16:36 INFO __main__ :: [indoor_144] residual_ratio=0.9442  share_tail=0.2849
+2026-08-20T14:16:37 INFO __main__ :: [indoor_145] residual_ratio=0.9788  share_tail=0.2580
+2026-08-20T14:16:38 INFO __main__ :: [indoor_146] residual_ratio=0.9759  share_tail=0.4389
+2026-08-20T14:16:39 INFO __main__ :: [indoor_147] residual_ratio=0.9602  share_tail=0.3553
+2026-08-20T14:16:40 INFO __main__ :: [indoor_148] residual_ratio=0.9147  share_tail=0.2439
+2026-08-20T14:16:41 INFO __main__ :: [indoor_149] residual_ratio=0.8953  share_tail=0.3506
+2026-08-20T14:16:42 INFO __main__ :: [indoor_15] residual_ratio=0.9548  share_tail=0.2289
+2026-08-20T14:16:43 INFO __main__ :: [indoor_150] residual_ratio=0.9452  share_tail=0.3156
+2026-08-20T14:16:44 INFO __main__ :: [indoor_151] residual_ratio=0.9672  share_tail=0.3315
+2026-08-20T14:16:45 INFO __main__ :: [indoor_152] residual_ratio=0.9169  share_tail=0.3805
+2026-08-20T14:16:46 INFO __main__ :: [indoor_153] residual_ratio=0.9497  share_tail=0.2779
+2026-08-20T14:16:47 INFO __main__ :: [indoor_154] residual_ratio=0.9443  share_tail=0.2794
+2026-08-20T14:16:48 INFO __main__ :: [indoor_155] residual_ratio=0.8635  share_tail=0.4009
+2026-08-20T14:16:49 INFO __main__ :: [indoor_156] residual_ratio=0.9551  share_tail=0.3094
+2026-08-20T14:16:50 INFO __main__ :: [indoor_157] residual_ratio=0.9790  share_tail=0.4507
+2026-08-20T14:16:51 INFO __main__ :: [indoor_158] residual_ratio=0.9295  share_tail=0.5797
+2026-08-20T14:16:52 INFO __main__ :: [indoor_159] residual_ratio=0.9492  share_tail=0.4875
+2026-08-20T14:16:53 INFO __main__ :: [indoor_16] residual_ratio=0.9680  share_tail=0.4832
+2026-08-20T14:16:53 INFO __main__ :: [indoor_160] residual_ratio=0.6799  share_tail=0.4924
+2026-08-20T14:16:54 INFO __main__ :: [indoor_161] residual_ratio=0.9259  share_tail=0.2666
+2026-08-20T14:16:55 INFO __main__ :: [indoor_162] residual_ratio=0.8507  share_tail=0.3040
+2026-08-20T14:16:56 INFO __main__ :: [indoor_163] residual_ratio=0.9642  share_tail=0.3044
+2026-08-20T14:16:57 INFO __main__ :: [indoor_164] residual_ratio=0.9800  share_tail=0.4885
+2026-08-20T14:16:58 INFO __main__ :: [indoor_165] residual_ratio=0.9635  share_tail=0.3934
+2026-08-20T14:16:59 INFO __main__ :: [indoor_166] residual_ratio=0.9645  share_tail=0.2082
+2026-08-20T14:17:00 INFO __main__ :: [indoor_167] residual_ratio=0.9514  share_tail=0.3112
+2026-08-20T14:17:01 INFO __main__ :: [indoor_168] residual_ratio=0.9425  share_tail=0.3840
+2026-08-20T14:17:02 INFO __main__ :: [indoor_169] residual_ratio=0.9684  share_tail=0.2493
+2026-08-20T14:17:03 INFO __main__ :: [indoor_17] residual_ratio=0.9667  share_tail=0.4356
+2026-08-20T14:17:04 INFO __main__ :: [indoor_170] residual_ratio=0.9447  share_tail=0.3098
+2026-08-20T14:17:05 INFO __main__ :: [indoor_171] residual_ratio=0.9448  share_tail=0.3235
+2026-08-20T14:17:06 INFO __main__ :: [indoor_172] residual_ratio=0.9394  share_tail=0.3089
+2026-08-20T14:17:07 INFO __main__ :: [indoor_173] residual_ratio=0.9261  share_tail=0.3014
+2026-08-20T14:17:08 INFO __main__ :: [indoor_174] residual_ratio=0.9476  share_tail=0.3624
+2026-08-20T14:17:08 INFO __main__ :: [indoor_175] residual_ratio=0.9076  share_tail=0.1994
+2026-08-20T14:17:09 INFO __main__ :: [indoor_176] residual_ratio=0.9780  share_tail=0.2918
+2026-08-20T14:17:10 INFO __main__ :: [indoor_177] residual_ratio=0.9673  share_tail=0.4596
+2026-08-20T14:17:11 INFO __main__ :: [indoor_178] residual_ratio=0.9386  share_tail=0.3524
+2026-08-20T14:17:12 INFO __main__ :: [indoor_179] residual_ratio=0.9400  share_tail=0.3206
+2026-08-20T14:17:13 INFO __main__ :: [indoor_18] residual_ratio=0.9540  share_tail=0.2326
+2026-08-20T14:17:14 INFO __main__ :: [indoor_180] residual_ratio=0.9456  share_tail=0.4722
+2026-08-20T14:17:15 INFO __main__ :: [indoor_181] residual_ratio=0.8646  share_tail=0.2842
+2026-08-20T14:17:16 INFO __main__ :: [indoor_182] residual_ratio=0.8950  share_tail=0.3077
+2026-08-20T14:17:17 INFO __main__ :: [indoor_183] residual_ratio=0.9266  share_tail=0.2689
+2026-08-20T14:17:18 INFO __main__ :: [indoor_184] residual_ratio=0.9831  share_tail=0.3337
+2026-08-20T14:17:19 INFO __main__ :: [indoor_185] residual_ratio=0.8695  share_tail=0.1783
+2026-08-20T14:17:20 INFO __main__ :: [indoor_186] residual_ratio=0.9323  share_tail=0.3203
+2026-08-20T14:17:21 INFO __main__ :: [indoor_187] residual_ratio=0.9411  share_tail=0.3194
+2026-08-20T14:17:22 INFO __main__ :: [indoor_188] residual_ratio=0.9026  share_tail=0.3105
+2026-08-20T14:17:22 INFO __main__ :: Wrote 100 row(s) to /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505/metrics.parquet.

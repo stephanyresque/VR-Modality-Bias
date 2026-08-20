@@ -1,0 +1,140 @@
+2026-08-20T14:07:52 INFO __main__ :: Run dir: /home/main/repos/VR-Modality-Bias/results/runs/diag_smolvlm22_odibench_medium_2026-08-20_140505
+2026-08-20T14:07:52 INFO __main__ :: Loading model HuggingFaceTB/SmolVLM-Instruct on cuda (dtype=torch.float16)…
+2026-08-20T14:07:53 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:53 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:53 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:54 WARNING huggingface_hub.utils._http :: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/chat_template.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:54 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/chat_template.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/chat_template.jinja "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/audio_tokenizer_config.json "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/preprocessor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/processor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:55 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/processor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/preprocessor_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/preprocessor_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-08-20T14:07:56 INFO httpx :: HTTP Request: GET https://huggingface.co/api/models/HuggingFaceTB/SmolVLM-Instruct/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-08-20T14:07:57 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:57 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:57 INFO httpx :: HTTP Request: HEAD https://huggingface.co/HuggingFaceTB/SmolVLM-Instruct/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-08-20T14:07:57 INFO httpx :: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/HuggingFaceTB/SmolVLM-Instruct/81cd9a775a4d644f2faf4e7becff4559b46b14c7/generation_config.json "HTTP/1.1 200 OK"
+2026-08-20T14:07:58 INFO __main__ :: Loaded. n_layers=24
+2026-08-20T14:07:58 INFO __main__ :: Loaded 100 reference captions.
+2026-08-20T14:08:03 INFO __main__ :: [indoor_0] saved (time=5.22 s, vram_peak=4.90 GB, disk=186.03 MB)
+2026-08-20T14:08:08 INFO __main__ :: [indoor_1] saved (time=4.76 s, vram_peak=4.89 GB, disk=179.92 MB)
+2026-08-20T14:08:13 INFO __main__ :: [indoor_10] saved (time=4.88 s, vram_peak=4.89 GB, disk=186.03 MB)
+2026-08-20T14:08:18 INFO __main__ :: [indoor_100] saved (time=4.69 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:08:22 INFO __main__ :: [indoor_101] saved (time=4.78 s, vram_peak=4.89 GB, disk=182.07 MB)
+2026-08-20T14:08:26 INFO __main__ :: [indoor_102] saved (time=3.67 s, vram_peak=4.89 GB, disk=165.33 MB)
+2026-08-20T14:08:31 INFO __main__ :: [indoor_103] saved (time=4.56 s, vram_peak=4.89 GB, disk=176.01 MB)
+2026-08-20T14:08:36 INFO __main__ :: [indoor_104] saved (time=4.88 s, vram_peak=4.89 GB, disk=186.06 MB)
+2026-08-20T14:08:40 INFO __main__ :: [indoor_105] saved (time=4.69 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:08:45 INFO __main__ :: [indoor_106] saved (time=4.60 s, vram_peak=4.89 GB, disk=185.99 MB)
+2026-08-20T14:08:49 INFO __main__ :: [indoor_107] saved (time=3.80 s, vram_peak=4.89 GB, disk=173.77 MB)
+2026-08-20T14:08:52 INFO __main__ :: [indoor_108] saved (time=3.73 s, vram_peak=4.89 GB, disk=171.00 MB)
+2026-08-20T14:08:57 INFO __main__ :: [indoor_109] saved (time=4.61 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:09:02 INFO __main__ :: [indoor_11] saved (time=4.89 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:09:06 INFO __main__ :: [indoor_110] saved (time=3.66 s, vram_peak=4.89 GB, disk=168.28 MB)
+2026-08-20T14:09:10 INFO __main__ :: [indoor_111] saved (time=3.94 s, vram_peak=4.89 GB, disk=167.06 MB)
+2026-08-20T14:09:15 INFO __main__ :: [indoor_112] saved (time=4.87 s, vram_peak=4.89 GB, disk=186.06 MB)
+2026-08-20T14:09:19 INFO __main__ :: [indoor_113] saved (time=4.63 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:09:24 INFO __main__ :: [indoor_114] saved (time=4.61 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:09:28 INFO __main__ :: [indoor_115] saved (time=4.42 s, vram_peak=4.89 GB, disk=179.41 MB)
+2026-08-20T14:09:33 INFO __main__ :: [indoor_116] saved (time=4.60 s, vram_peak=4.89 GB, disk=185.67 MB)
+2026-08-20T14:09:37 INFO __main__ :: [indoor_117] saved (time=4.60 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:09:42 INFO __main__ :: [indoor_118] saved (time=4.60 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:09:46 INFO __main__ :: [indoor_119] saved (time=3.53 s, vram_peak=4.89 GB, disk=162.23 MB)
+2026-08-20T14:09:51 INFO __main__ :: [indoor_12] saved (time=4.88 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:09:55 INFO __main__ :: [indoor_120] saved (time=4.71 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:10:00 INFO __main__ :: [indoor_121] saved (time=4.69 s, vram_peak=4.89 GB, disk=165.54 MB)
+2026-08-20T14:10:04 INFO __main__ :: [indoor_122] saved (time=3.80 s, vram_peak=4.89 GB, disk=174.42 MB)
+2026-08-20T14:10:09 INFO __main__ :: [indoor_123] saved (time=4.63 s, vram_peak=4.89 GB, disk=186.00 MB)
+2026-08-20T14:10:13 INFO __main__ :: [indoor_124] saved (time=4.60 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:10:23 INFO __main__ :: [indoor_125] saved (time=8.61 s, vram_peak=4.89 GB, disk=186.08 MB)
+2026-08-20T14:10:28 INFO __main__ :: [indoor_126] saved (time=4.86 s, vram_peak=4.89 GB, disk=186.03 MB)
+2026-08-20T14:10:32 INFO __main__ :: [indoor_127] saved (time=4.22 s, vram_peak=4.89 GB, disk=172.40 MB)
+2026-08-20T14:10:41 INFO __main__ :: [indoor_128] saved (time=8.35 s, vram_peak=4.89 GB, disk=186.08 MB)
+2026-08-20T14:10:46 INFO __main__ :: [indoor_129] saved (time=4.37 s, vram_peak=4.89 GB, disk=178.53 MB)
+2026-08-20T14:10:50 INFO __main__ :: [indoor_13] saved (time=4.45 s, vram_peak=4.89 GB, disk=177.65 MB)
+2026-08-20T14:10:55 INFO __main__ :: [indoor_130] saved (time=4.67 s, vram_peak=4.89 GB, disk=186.00 MB)
+2026-08-20T14:10:59 INFO __main__ :: [indoor_131] saved (time=3.56 s, vram_peak=4.89 GB, disk=157.12 MB)
+2026-08-20T14:11:03 INFO __main__ :: [indoor_132] saved (time=4.73 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:11:08 INFO __main__ :: [indoor_133] saved (time=4.68 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:11:13 INFO __main__ :: [indoor_134] saved (time=4.74 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:11:18 INFO __main__ :: [indoor_135] saved (time=4.78 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:11:23 INFO __main__ :: [indoor_136] saved (time=4.78 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:11:28 INFO __main__ :: [indoor_137] saved (time=4.88 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:11:31 INFO __main__ :: [indoor_138] saved (time=3.71 s, vram_peak=4.89 GB, disk=166.64 MB)
+2026-08-20T14:11:35 INFO __main__ :: [indoor_139] saved (time=3.55 s, vram_peak=4.89 GB, disk=163.89 MB)
+2026-08-20T14:11:39 INFO __main__ :: [indoor_14] saved (time=3.88 s, vram_peak=4.89 GB, disk=168.81 MB)
+2026-08-20T14:11:42 INFO __main__ :: [indoor_140] saved (time=3.66 s, vram_peak=4.89 GB, disk=168.25 MB)
+2026-08-20T14:11:46 INFO __main__ :: [indoor_141] saved (time=3.85 s, vram_peak=4.89 GB, disk=162.94 MB)
+2026-08-20T14:11:51 INFO __main__ :: [indoor_142] saved (time=4.93 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:11:55 INFO __main__ :: [indoor_143] saved (time=3.64 s, vram_peak=4.89 GB, disk=168.23 MB)
+2026-08-20T14:12:00 INFO __main__ :: [indoor_144] saved (time=4.89 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:12:05 INFO __main__ :: [indoor_145] saved (time=4.89 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:12:10 INFO __main__ :: [indoor_146] saved (time=4.58 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:12:14 INFO __main__ :: [indoor_147] saved (time=4.66 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:12:18 INFO __main__ :: [indoor_148] saved (time=3.79 s, vram_peak=4.89 GB, disk=170.00 MB)
+2026-08-20T14:12:23 INFO __main__ :: [indoor_149] saved (time=4.82 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:12:28 INFO __main__ :: [indoor_15] saved (time=4.76 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:12:31 INFO __main__ :: [indoor_150] saved (time=3.70 s, vram_peak=4.89 GB, disk=170.49 MB)
+2026-08-20T14:12:36 INFO __main__ :: [indoor_151] saved (time=4.38 s, vram_peak=4.89 GB, disk=178.53 MB)
+2026-08-20T14:12:40 INFO __main__ :: [indoor_152] saved (time=4.33 s, vram_peak=4.89 GB, disk=172.56 MB)
+2026-08-20T14:12:45 INFO __main__ :: [indoor_153] saved (time=4.58 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:12:50 INFO __main__ :: [indoor_154] saved (time=4.79 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:12:54 INFO __main__ :: [indoor_155] saved (time=3.96 s, vram_peak=4.89 GB, disk=172.07 MB)
+2026-08-20T14:12:58 INFO __main__ :: [indoor_156] saved (time=4.56 s, vram_peak=4.89 GB, disk=175.69 MB)
+2026-08-20T14:13:03 INFO __main__ :: [indoor_157] saved (time=4.57 s, vram_peak=4.89 GB, disk=186.01 MB)
+2026-08-20T14:13:08 INFO __main__ :: [indoor_158] saved (time=4.80 s, vram_peak=4.89 GB, disk=186.06 MB)
+2026-08-20T14:13:11 INFO __main__ :: [indoor_159] saved (time=3.54 s, vram_peak=4.89 GB, disk=163.10 MB)
+2026-08-20T14:13:16 INFO __main__ :: [indoor_16] saved (time=4.77 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:13:20 INFO __main__ :: [indoor_160] saved (time=3.34 s, vram_peak=4.89 GB, disk=154.68 MB)
+2026-08-20T14:13:24 INFO __main__ :: [indoor_161] saved (time=4.42 s, vram_peak=4.89 GB, disk=175.34 MB)
+2026-08-20T14:13:28 INFO __main__ :: [indoor_162] saved (time=3.54 s, vram_peak=4.89 GB, disk=161.90 MB)
+2026-08-20T14:13:32 INFO __main__ :: [indoor_163] saved (time=4.57 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:13:37 INFO __main__ :: [indoor_164] saved (time=4.59 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:13:41 INFO __main__ :: [indoor_165] saved (time=4.06 s, vram_peak=4.89 GB, disk=166.03 MB)
+2026-08-20T14:13:49 INFO __main__ :: [indoor_166] saved (time=7.38 s, vram_peak=4.89 GB, disk=169.34 MB)
+2026-08-20T14:13:53 INFO __main__ :: [indoor_167] saved (time=3.75 s, vram_peak=4.89 GB, disk=167.06 MB)
+2026-08-20T14:13:58 INFO __main__ :: [indoor_168] saved (time=4.73 s, vram_peak=4.89 GB, disk=179.07 MB)
+2026-08-20T14:14:03 INFO __main__ :: [indoor_169] saved (time=4.89 s, vram_peak=4.89 GB, disk=186.17 MB)
+2026-08-20T14:14:08 INFO __main__ :: [indoor_17] saved (time=4.81 s, vram_peak=4.89 GB, disk=185.86 MB)
+2026-08-20T14:14:12 INFO __main__ :: [indoor_170] saved (time=4.79 s, vram_peak=4.89 GB, disk=181.93 MB)
+2026-08-20T14:14:17 INFO __main__ :: [indoor_171] saved (time=4.78 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:14:22 INFO __main__ :: [indoor_172] saved (time=4.72 s, vram_peak=4.89 GB, disk=182.76 MB)
+2026-08-20T14:14:26 INFO __main__ :: [indoor_173] saved (time=4.00 s, vram_peak=4.89 GB, disk=171.72 MB)
+2026-08-20T14:14:31 INFO __main__ :: [indoor_174] saved (time=4.82 s, vram_peak=4.89 GB, disk=186.04 MB)
+2026-08-20T14:14:35 INFO __main__ :: [indoor_175] saved (time=3.77 s, vram_peak=4.89 GB, disk=163.91 MB)
+2026-08-20T14:14:40 INFO __main__ :: [indoor_176] saved (time=4.80 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:14:45 INFO __main__ :: [indoor_177] saved (time=4.82 s, vram_peak=4.89 GB, disk=186.05 MB)
+2026-08-20T14:14:49 INFO __main__ :: [indoor_178] saved (time=4.83 s, vram_peak=4.89 GB, disk=186.03 MB)
+2026-08-20T14:14:54 INFO __main__ :: [indoor_179] saved (time=4.72 s, vram_peak=4.89 GB, disk=186.06 MB)
+2026-08-20T14:14:59 INFO __main__ :: [indoor_18] saved (time=4.78 s, vram_peak=4.89 GB, disk=186.06 MB)
+2026-08-20T14:15:03 INFO __main__ :: [indoor_180] saved (time=3.86 s, vram_peak=4.89 GB, disk=169.14 MB)
+2026-08-20T14:15:07 INFO __main__ :: [indoor_181] saved (time=4.00 s, vram_peak=4.89 GB, disk=174.29 MB)
+2026-08-20T14:15:12 INFO __main__ :: [indoor_182] saved (time=4.79 s, vram_peak=4.89 GB, disk=186.03 MB)
+2026-08-20T14:15:17 INFO __main__ :: [indoor_183] saved (time=4.82 s, vram_peak=4.89 GB, disk=186.02 MB)
+2026-08-20T14:15:21 INFO __main__ :: [indoor_184] saved (time=4.60 s, vram_peak=4.89 GB, disk=186.56 MB)
+2026-08-20T14:15:25 INFO __main__ :: [indoor_185] saved (time=3.94 s, vram_peak=4.89 GB, disk=171.19 MB)
+2026-08-20T14:15:30 INFO __main__ :: [indoor_186] saved (time=4.80 s, vram_peak=4.89 GB, disk=186.01 MB)
+2026-08-20T14:15:35 INFO __main__ :: [indoor_187] saved (time=4.63 s, vram_peak=4.89 GB, disk=180.08 MB)
+2026-08-20T14:15:40 INFO __main__ :: [indoor_188] saved (time=4.80 s, vram_peak=4.89 GB, disk=186.15 MB)
+2026-08-20T14:15:40 INFO __main__ :: scripts/04 rollup — 100 pair(s), total=7m 34.9s, median/pair=4.63 s, VRAM peak=4.90 GB, disk total=17.52 GB (median/pair=186.01 MB)
