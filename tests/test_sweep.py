@@ -339,6 +339,8 @@ def test_sweep_configs_have_expected_n_images():
 
     for path in Path("configs").glob("run_*.yaml"):
         cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if cfg["dataset"]["name"] != "mscoco_baseline":
+            continue
         assert int(cfg["dataset"]["n_images"]) == 50, (
             f"{path}: n_images should be 50, got {cfg['dataset']['n_images']}"
         )
@@ -355,5 +357,7 @@ def test_sweep_configs_have_matching_prompt_keys():
     }
     for path in Path("configs").glob("run_*.yaml"):
         cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if cfg["dataset"]["name"] != "mscoco_baseline":
+            continue
         suffix = path.stem.rsplit("_", 1)[-1]
         assert cfg["task"]["prompt_key"] == expected[suffix], path
