@@ -177,16 +177,104 @@ def test_the_composed_track_passes_its_config_and_questions(tmp_path: Path):
 
 
 @needs_bash
-@pytest.mark.parametrize("script,env_fn,report", [
-    (_MATRIX, _matrix_env, "chair_report.py"),
-    (_COMPOSED, _composed_env, "composed_report.py"),
-])
-def test_neither_matrix_scores_anything(tmp_path, script, env_fn, report):
-    """Scoring moved to an offline judge stage; the matrices only generate."""
-    result = _run(script, env_fn(tmp_path, ARMS="arm1_sparc"))
+def test_the_description_matrix_still_scores_nothing(tmp_path: Path):
+    """This dataset has no per-image object list, so there is no reference."""
+    result = _run(_MATRIX, _matrix_env(tmp_path, ARMS="arm1_sparc"))
 
     assert result.returncode == 0, result.stderr
-    assert report not in result.stdout
+    for scorer in ("chair_report.py", "judge_report.py"):
+        assert scorer not in result.stdout, scorer
+
+
+# ---------------------------------------------------------------- the judge
+
+
+@needs_bash
+def test_the_composed_matrix_judges_what_it_generated(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    assert result.returncode == 0, result.stderr
+    gen = _gen_lines(result.stdout, "composed_generate.py")
+    judge = _gen_lines(result.stdout, "judge_report.py")
+    assert len(gen) == 1 and len(judge) == 1
+    assert "--questions questions.jsonl" in judge[0]
+    assert result.stdout.index(gen[0]) < result.stdout.index(judge[0]), (
+        "the judge runs after generation, never beside it"
+    )
+
+
+@needs_bash
+def test_the_judge_reads_the_run_dir_the_generation_wrote(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "arm1_sparc_q" in judge
+
+
+@needs_bash
+def test_skip_generation_judges_an_existing_answers_file(tmp_path: Path):
+    """Re-scoring must never cost a regeneration."""
+    env = _composed_env(tmp_path, ARMS="arm1_sparc", SKIP_GENERATION="1")
+    del env["CONFIG"]
+    del env["DERIVED_LAYER"]
+
+    result = _run(_COMPOSED, env)
+
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+    assert not _gen_lines(result.stdout, "composed_generate.py")
+    assert _gen_lines(result.stdout, "judge_report.py")
+
+
+@needs_bash
+def test_skip_judge_generates_without_scoring(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc", SKIP_JUDGE="1"))
+
+    assert result.returncode == 0, result.stderr
+    assert _gen_lines(result.stdout, "composed_generate.py")
+    assert not _gen_lines(result.stdout, "judge_report.py")
+    assert "not_judged" in result.stdout
+
+
+@needs_bash
+def test_skipping_both_stages_is_rejected(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", SKIP_GENERATION="1", SKIP_JUDGE="1",
+    ))
+
+    assert result.returncode != 0
+    assert "nothing to do" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_the_judge_model_is_passed_through_when_set(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", JUDGE_MODEL="some/judge",
+        JUDGE_REVISION="abc123",
+    ))
+
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "--judge-model some/judge" in judge
+    assert "--judge-revision abc123" in judge
+
+
+@needs_bash
+def test_the_default_judge_model_is_left_to_the_script(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "--judge-model" not in judge, (
+        "an unset JUDGE_MODEL must not become an empty flag"
+    )
+
+
+@needs_bash
+def test_the_summary_decides_done_by_the_judge_artefact(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    assert "judge_results.json" in result.stdout
+    assert "NO_VERDICTS" in result.stdout, (
+        "PYTHON=echo writes no artefact, so the summary must say so"
+    )
 
 
 @needs_bash
@@ -492,6 +580,63 @@ def test_a_diagnostic_only_run_passes_preflight(tmp_path: Path):
     line = _gen_lines(result.stdout, "preflight.py")[0]
     assert "--no-scoring" in line
     assert _gen_lines(result.stdout, "generate_refs.py"), "the diagnostic must run"
+
+
+# ---------------------------------------------------------------- judge stage
+
+
+@needs_bash
+def test_the_judge_stage_scores_without_generating(tmp_path: Path):
+    """Re-scoring an existing run, which is the point of the isolated stage."""
+    result = _run(_EXPERIMENT, _odi_env(tmp_path, STAGES="judge", ARMS="arm1_sparc"))
+
+    assert result.returncode == 0, result.stdout[-2000:]
+    assert _gen_lines(result.stdout, "judge_report.py")
+    assert not _gen_lines(result.stdout, "composed_generate.py")
+    assert not _gen_lines(result.stdout, "phase3_generate.py")
+
+
+@needs_bash
+def test_the_judge_stage_needs_no_reference_layer(tmp_path: Path):
+    env = _odi_env(tmp_path, STAGES="judge", ARMS="arm1_sparc")
+    del env["COMPOSED_CONFIG"]
+
+    result = _run(_EXPERIMENT, env)
+
+    assert result.returncode == 0, (
+        "the judge reads text off disk; it has no arm and no layer to "
+        f"configure.\n{result.stdout[-2000:]}"
+    )
+
+
+@needs_bash
+def test_the_judge_stage_still_demands_the_questions(tmp_path: Path):
+    result = _run(_EXPERIMENT, _odi_env(tmp_path, STAGES="judge", QUESTIONS=""))
+
+    assert result.returncode != 0
+    assert "QUESTIONS" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_the_judge_stage_passes_the_judge_model_down(tmp_path: Path):
+    result = _run(_EXPERIMENT, _odi_env(
+        tmp_path, STAGES="judge", ARMS="arm1_sparc", JUDGE_MODEL="some/judge",
+    ))
+
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "--judge-model some/judge" in judge
+
+
+@needs_bash
+def test_a_judge_only_run_with_preflight_says_what_is_missing(tmp_path: Path):
+    """preflight has no config to check in a judge-only run; it must say so."""
+    env = _odi_env(tmp_path, STAGES="preflight judge", ARMS="arm1_sparc")
+    del env["COMPOSED_CONFIG"]
+
+    result = _run(_EXPERIMENT, env)
+
+    assert result.returncode != 0
+    assert "no config to check" in result.stdout + result.stderr
 
 
 @needs_bash

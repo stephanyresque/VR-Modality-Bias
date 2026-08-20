@@ -360,7 +360,11 @@ def build_component(candidate: Candidate) -> QuestionComponent:
     answer: str | int = candidate.answer
     if candidate.component_type == "count":
         answer = int(candidate.answer)
-    return QuestionComponent(component_type=candidate.component_type, answer=answer)
+    return QuestionComponent(
+        component_type=candidate.component_type,
+        question=candidate.question,
+        answer=answer,
+    )
 
 
 # ---------------------------------------------------------------- run

@@ -45,7 +45,7 @@ def _question(image_id: str, question_id: str, text: str = "Are there chairs?") 
         image_id=image_id,
         question_id=question_id,
         question_text=text,
-        components=(QuestionComponent("existence", "yes"),),
+        components=(QuestionComponent("existence", "Is there a chair?", "yes"),),
     )
 
 

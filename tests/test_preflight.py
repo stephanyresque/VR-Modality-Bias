@@ -257,7 +257,7 @@ def test_a_clean_setup_passes_end_to_end(preflight, tmp_path: Path):
         [
             QuestionAnnotation(
                 image_id=i, question_id=f"{i}_q1", question_text="Are there chairs?",
-                components=(QuestionComponent("existence", "yes"),),
+                components=(QuestionComponent("existence", "Is there a chair?", "yes"),),
             )
             for i in ("a", "b")
         ],
@@ -288,7 +288,7 @@ def test_the_question_ids_are_crossed_too(preflight, tmp_path: Path):
     write_question_annotations(
         [QuestionAnnotation(
             image_id="wrong_format", question_id="q1", question_text="?",
-            components=(QuestionComponent("existence", "yes"),),
+            components=(QuestionComponent("existence", "Is there a chair?", "yes"),),
         )],
         tmp_path / "questions.jsonl",
     )
@@ -332,7 +332,7 @@ def _odi_shaped(tmp_path: Path) -> list[str]:
         [
             QuestionAnnotation(
                 image_id=i, question_id=f"{i}_q1", question_text="Are there chairs?",
-                components=(QuestionComponent("existence", "yes"),),
+                components=(QuestionComponent("existence", "Is there a chair?", "yes"),),
             )
             for i in ("a", "b")
         ],
@@ -419,7 +419,7 @@ def test_the_id_crossing_still_runs_for_the_side_that_was_given(preflight, tmp_p
     write_question_annotations(
         [QuestionAnnotation(
             image_id="wrong_format", question_id="q1", question_text="?",
-            components=(QuestionComponent("existence", "yes"),),
+            components=(QuestionComponent("existence", "Is there a chair?", "yes"),),
         )],
         tmp_path / "questions.jsonl",
     )

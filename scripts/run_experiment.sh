@@ -19,25 +19,31 @@ Stages run in order and each one can be skipped:
   diagnostic   generate_refs -> collect_hidden_states -> compute_metrics ->
                summarize -> select_reference_layer, writing the derived layer
                to a file the later stages read
-  description  scripts/run_sparc_matrix.sh
-  composed     scripts/run_composed_matrix.sh
+  description  scripts/run_sparc_matrix.sh          (generates, scores nothing)
+  composed     scripts/run_composed_matrix.sh       (generates, then judges)
+  judge        scripts/run_composed_matrix.sh with generation skipped: scores
+               an answers.jsonl that already exists. STAGES="judge" is how a
+               run gets re-scored, or scored with a different judge, without
+               paying for generation again.
 
-Neither track scores anything here any more: both generate, and the scoring
-stage runs offline against a judge model. Every artefact is demanded only by
-the stage that consumes it:
+The description track scores nothing: this dataset has no per-image object
+list. Every artefact is demanded only by the stage that consumes it:
   always       DATASET
   description  CONFIG_PATTERN
   composed     COMPOSED_CONFIG, QUESTIONS
+  judge        QUESTIONS
   diagnostic   DIAG_CONFIG (falls back to COMPOSED_CONFIG, then to the deepest
                regime of CONFIG_PATTERN)
 
-Optional env: LENGTHS       description regimes, default "medium long"
-              STAGES        default "preflight diagnostic description composed"
-              ARMS          arm subset, passed to both matrices
-              NUM_ITEMS     default 100
-              DIAG_CONFIG   config for the diagnostic (default: COMPOSED_CONFIG)
-              DERIVED_LAYER skip deriving and force this layer
-              OUTPUT_ROOT   default results/runs
+Optional env: LENGTHS        description regimes, default "medium long"
+              STAGES         default "preflight diagnostic description composed"
+              ARMS           arm subset, passed to both matrices
+              NUM_ITEMS      default 100
+              DIAG_CONFIG    config for the diagnostic (default: COMPOSED_CONFIG)
+              DERIVED_LAYER  skip deriving and force this layer
+              JUDGE_MODEL    judge model id (default: judge_report.py's own)
+              JUDGE_REVISION judge revision, recorded in the output
+              OUTPUT_ROOT    default results/runs
               PYTHON
   --smoke   2 items everywhere, and the matrices run in their own smoke mode.
 EOF
@@ -67,7 +73,7 @@ fi
 
 STAGES="${STAGES:-preflight diagnostic description composed}"
 read -r -a SELECTED_STAGES <<< "$STAGES"
-KNOWN_STAGES=(preflight diagnostic description composed)
+KNOWN_STAGES=(preflight diagnostic description composed judge)
 for stage in "${SELECTED_STAGES[@]}"; do
     found=0
     for known in "${KNOWN_STAGES[@]}"; do
@@ -90,7 +96,8 @@ has_stage() {
 # Each artefact is demanded by the stage that consumes it, and by no one else.
 #   description -> CONFIG_PATTERN
 #   composed    -> COMPOSED_CONFIG, QUESTIONS
-#                  (scripts/run_composed_matrix.sh reads the last one)
+#   judge       -> QUESTIONS only: it reads an answers.jsonl that already
+#                  exists, so it needs no model config and no reference layer
 #   diagnostic  -> a config to run on
 demand() {
     local stage="$1"; shift
@@ -108,6 +115,9 @@ if has_stage description; then
 fi
 if has_stage composed; then
     demand composed COMPOSED_CONFIG QUESTIONS
+fi
+if has_stage judge; then
+    demand judge QUESTIONS
 fi
 
 LENGTHS="${LENGTHS:-medium long}"
@@ -157,6 +167,7 @@ echo "  config pattern   : ${CONFIG_PATTERN:-<unset>}"
 echo "  composed config  : ${COMPOSED_CONFIG:-<unset>}"
 echo "  diagnostic config: ${DIAG_CONFIG:-<unset>}"
 echo "  questions        : ${QUESTIONS:-<unset>}"
+echo "  judge model      : ${JUDGE_MODEL:-<script default>}"
 echo "  output root      : $OUTPUT_ROOT"
 echo "  log file         : $LOG_FILE"
 echo "=================================================================="
@@ -184,6 +195,12 @@ if has_stage preflight; then
     fi
     if [[ "${#PREFLIGHT_CONFIGS[@]}" -eq 0 && -n "${DIAG_CONFIG:-}" ]]; then
         PREFLIGHT_CONFIGS+=("$DIAG_CONFIG")
+    fi
+    if [[ "${#PREFLIGHT_CONFIGS[@]}" -eq 0 ]]; then
+        echo "ERROR: the preflight stage has no config to check. A judge-only" >&2
+        echo "  run has none to offer: either set DIAG_CONFIG, or drop" >&2
+        echo "  'preflight' from STAGES." >&2
+        exit 1
     fi
 
     PREFLIGHT_ARMS=()
@@ -250,6 +267,8 @@ if [[ -z "${DERIVED_LAYER:-}" ]]; then
         echo "  DERIVED_LAYER=<layer> explicitly." >&2
         exit 1
     fi
+    # The judge stage is deliberately not in that list: it scores text that is
+    # already on disk, so it has no arm to configure and needs no layer.
 fi
 export DERIVED_LAYER
 
@@ -279,12 +298,33 @@ if has_stage composed; then
        QUESTIONS="$QUESTIONS" \
        NUM_ITEMS="$NUM_ITEMS" \
        OUTPUT_ROOT="$OUTPUT_ROOT" \
+       JUDGE_MODEL="${JUDGE_MODEL:-}" JUDGE_REVISION="${JUDGE_REVISION:-}" \
        PYTHON="$PYTHON" \
        bash scripts/run_composed_matrix.sh "${SMOKE_FLAG[@]}"; then
         record "composed OK"
     else
         record "composed FAILED"
         echo "STAGE composed FAILED -- see the summary below."
+    fi
+fi
+
+# ---- judge only -------------------------------------------------------------
+# Scores an answers.jsonl that already exists. Reuses the composed matrix so the
+# arm names and run dirs come from one place, with generation switched off.
+if has_stage judge; then
+    echo ""
+    echo "---- STAGE judge --------------------------------------------------"
+    if SKIP_GENERATION=1 \
+       QUESTIONS="$QUESTIONS" \
+       NUM_ITEMS="$NUM_ITEMS" \
+       OUTPUT_ROOT="$OUTPUT_ROOT" \
+       JUDGE_MODEL="${JUDGE_MODEL:-}" JUDGE_REVISION="${JUDGE_REVISION:-}" \
+       PYTHON="$PYTHON" \
+       bash scripts/run_composed_matrix.sh "${SMOKE_FLAG[@]}"; then
+        record "judge OK"
+    else
+        record "judge FAILED"
+        echo "STAGE judge FAILED -- see the summary below."
     fi
 fi
 

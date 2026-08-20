@@ -24,6 +24,12 @@ COMPONENT_TYPES: tuple[str, ...] = ("existence", "count", "direction")
 @dataclass(frozen=True)
 class QuestionComponent:
     component_type: str
+    # The sub-question as the annotator wrote it. QuestionAnnotation.question_text
+    # is the concatenation handed to the model, which cannot be split back apart
+    # reliably, and the judge grades one sub-question at a time against its own
+    # reference answer. Required, so an older questions.jsonl fails loudly on
+    # read instead of judging against an empty statement.
+    question: str
     answer: str | int
 
     def __post_init__(self) -> None:

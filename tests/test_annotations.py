@@ -103,9 +103,11 @@ def test_question_annotation_round_trip(tmp_path: Path):
                 "the window to the left of the door?"
             ),
             components=(
-                QuestionComponent("existence", "yes"),
-                QuestionComponent("count", 2),
-                QuestionComponent("direction", "left"),
+                QuestionComponent("existence", "Is there a sofa?", "yes"),
+                QuestionComponent("count", "How many lamps are there?", 2),
+                QuestionComponent(
+                    "direction", "Is the window left of the door?", "left"
+                ),
             ),
         ),
     ]
@@ -122,7 +124,7 @@ def test_components_are_rebuilt_as_dataclasses_on_read(tmp_path: Path):
                 image_id="x",
                 question_id="x_q1",
                 question_text="Is there a sofa?",
-                components=(QuestionComponent("existence", "yes"),),
+                components=(QuestionComponent("existence", "Is there a sofa?", "yes"),),
             )
         ],
         path,
@@ -138,13 +140,13 @@ def test_components_are_rebuilt_as_dataclasses_on_read(tmp_path: Path):
 def test_the_three_valid_component_types_are_accepted():
     assert COMPONENT_TYPES == ("existence", "count", "direction")
     for component_type in COMPONENT_TYPES:
-        component = QuestionComponent(component_type, "yes")
+        component = QuestionComponent(component_type, "Is there a sofa?", "yes")
         assert component.component_type == component_type
 
 
 def test_a_component_type_outside_the_three_is_rejected():
     with pytest.raises(ValueError, match="colour"):
-        QuestionComponent("colour", "red")
+        QuestionComponent("colour", "What colour is the sofa?", "red")
 
 
 def test_an_invalid_component_type_in_a_file_names_the_file_and_the_line(
@@ -153,9 +155,11 @@ def test_an_invalid_component_type_in_a_file_names_the_file_and_the_line(
     path = tmp_path / "questions.jsonl"
     path.write_text(
         '{"image_id": "x", "question_id": "x_q1", "question_text": "?", '
-        '"components": [{"component_type": "existence", "answer": "yes"}]}\n'
+        '"components": [{"component_type": "existence", '
+        '"question": "Is there a sofa?", "answer": "yes"}]}\n'
         '{"image_id": "y", "question_id": "y_q1", "question_text": "?", '
-        '"components": [{"component_type": "colour", "answer": "red"}]}\n',
+        '"components": [{"component_type": "colour", '
+        '"question": "What colour?", "answer": "red"}]}\n',
         encoding="utf-8",
     )
 
@@ -166,3 +170,51 @@ def test_an_invalid_component_type_in_a_file_names_the_file_and_the_line(
     assert str(path) in message
     assert "line 2" in message
     assert "colour" in message
+
+
+def test_a_component_without_its_sub_question_is_rejected(tmp_path: Path):
+    """A questions.jsonl written before the judge existed must fail loudly.
+
+    The judge grades one sub-question at a time against its own reference, so a
+    component with no statement would be judged against an empty prompt. Better
+    to force a re-ingestion than to score nonsense.
+    """
+    path = tmp_path / "questions.jsonl"
+    path.write_text(
+        '{"image_id": "x", "question_id": "x_q1", "question_text": "?", '
+        '"components": [{"component_type": "existence", "answer": "yes"}]}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        read_question_annotations(path)
+
+    message = str(excinfo.value)
+    assert "line 1" in message
+    assert "question" in message
+
+
+def test_the_sub_question_survives_the_round_trip(tmp_path: Path):
+    path = tmp_path / "questions.jsonl"
+    write_question_annotations(
+        [
+            QuestionAnnotation(
+                image_id="x", question_id="x_q1",
+                question_text="Is there a sofa? How many lamps are there?",
+                components=(
+                    QuestionComponent("existence", "Is there a sofa?", "yes"),
+                    QuestionComponent("count", "How many lamps are there?", 2),
+                ),
+            )
+        ],
+        path,
+    )
+
+    components = read_question_annotations(path)[0].components
+
+    assert [c.question for c in components] == [
+        "Is there a sofa?", "How many lamps are there?",
+    ], (
+        "question_text is the concatenation handed to the model and cannot be "
+        "split back apart; the judge needs each statement on its own"
+    )

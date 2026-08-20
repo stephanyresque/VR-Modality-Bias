@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run the SPARC matrix on the COMPOSED-QUESTION track, sequentially and
-# unattended: per arm, composed_generate.py writes answers.jsonl. Scoring is a
-# separate offline stage against a judge model, so nothing here grades anything.
+# unattended: per arm, composed_generate.py writes answers.jsonl and then
+# judge_report.py scores it against an open text-only judge. The two models
+# never coexist in memory -- the judge runs after generation, off the JSONL.
 # Sibling of scripts/run_sparc_matrix.sh; the difference is that this track has
 # no length regime, so it takes ONE config instead of a {length} pattern.
 # Run: DERIVED_LAYER=<layer> CONFIG=<cfg.yaml> QUESTIONS=<q.jsonl> \
@@ -14,17 +15,25 @@ usage() {
 Usage: DERIVED_LAYER=<layer> CONFIG=<cfg.yaml> QUESTIONS=<questions.jsonl> \
        bash scripts/run_composed_matrix.sh [--smoke]
 
-Runs the selected arms in sequence, each into its own results/runs/<arm>_q dir.
-A failing arm stops the script; a re-run resumes (composed_generate.py skips
-done cells, the arm guard protects dirs).
+Runs the selected arms in sequence, each into its own results/runs/<arm>_q dir:
+composed_generate.py, then judge_report.py over the answers it just wrote.
+A failing arm stops the script; a re-run resumes (both stages skip done cells,
+the arm guard protects dirs).
 
 Required env: DERIVED_LAYER    arm5's reference layer, from select_reference_layer.py
               CONFIG           family config (model block, seed, max_new_tokens)
+                               (not needed when SKIP_GENERATION=1)
               QUESTIONS        JSON Lines question annotations
 Optional env: ARMS             space-separated subset of
                                "baseline arm1_sparc arm2_adaptive arm3_qcond
                                 arm4_conserve arm5_reflayer"
                                (default: the five arm* ones)
+              JUDGE_MODEL      judge model id (default: judge_report.py's own)
+              JUDGE_REVISION   judge revision, recorded in the output
+              SKIP_GENERATION  1 to judge an existing answers.jsonl and
+                               generate nothing. This is how a run gets
+                               re-scored without paying for generation again.
+              SKIP_JUDGE       1 to generate and score nothing.
               NUM_ITEMS (default 100), SEED (default 0),
               OUTPUT_ROOT (default results/runs), PYTHON.
   --smoke   run the whole sequence with 2 items for an end-to-end check.
@@ -47,14 +56,33 @@ cd "$REPO_ROOT" || exit 1
 
 PYTHON="${PYTHON:-python}"
 
+# ---- stage selection --------------------------------------------------------
+SKIP_GENERATION="${SKIP_GENERATION:-0}"
+SKIP_JUDGE="${SKIP_JUDGE:-0}"
+if [[ "$SKIP_GENERATION" -eq 1 && "$SKIP_JUDGE" -eq 1 ]]; then
+    echo "ERROR: SKIP_GENERATION and SKIP_JUDGE are both set; nothing to do." >&2
+    exit 1
+fi
+
 # ---- required env, no defaults ----------------------------------------------
-for required in DERIVED_LAYER CONFIG QUESTIONS; do
+REQUIRED=(QUESTIONS)
+# Generation needs the model config and the reference layer; judging an
+# existing answers.jsonl needs neither.
+if [[ "$SKIP_GENERATION" -ne 1 ]]; then
+    REQUIRED+=(DERIVED_LAYER CONFIG)
+fi
+for required in "${REQUIRED[@]}"; do
     if [[ -z "${!required:-}" ]]; then
         echo "ERROR: $required is not set; the composed matrix needs it." >&2
         usage
         exit 1
     fi
 done
+# Only generation reads these, so under SKIP_GENERATION they stay empty rather
+# than tripping `set -u` in the header and the arm5 dispatch.
+DERIVED_LAYER="${DERIVED_LAYER:-}"
+CONFIG="${CONFIG:-}"
+
 
 # ---- overridable run config -------------------------------------------------
 NUM_ITEMS="${NUM_ITEMS:-100}"
@@ -108,14 +136,16 @@ done
 
 echo "=================================================================="
 echo "SPARC composed-question matrix"
-echo "  config           : $CONFIG"
+echo "  config           : ${CONFIG:-<generation skipped>}"
 echo "  questions        : $QUESTIONS"
 echo "  items/arm        : $NUM_ITEMS"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
 echo "  arms             : ${SELECTED_ARMS[*]}"
-echo "  arm5 ref layer   : $DERIVED_LAYER"
+echo "  arm5 ref layer   : ${DERIVED_LAYER:-<generation skipped>}"
+echo "  judge model      : ${JUDGE_MODEL:-<script default>}"
 echo "  seed (provenance): $SEED"
 echo "  output root      : $OUTPUT_ROOT"
+echo "  generate / judge : $((1 - SKIP_GENERATION)) / $((1 - SKIP_JUDGE))"
 echo "  smoke            : $SMOKE"
 echo "=================================================================="
 
@@ -131,20 +161,38 @@ run_arm() {
     echo "[composed] ARM $run_name (selected_layer=$sel_layer, flags: ${extra_flags[*]:-none})"
     echo "------------------------------------------------------------------"
 
-    "$PYTHON" scripts/composed_generate.py \
-        --run-name "$run_name" \
-        --output-root "$OUTPUT_ROOT" \
-        --config "$CONFIG" \
-        --questions "$QUESTIONS" \
-        --limit "$NUM_ITEMS" \
-        --alpha "$ALPHA" \
-        --beta "$BETA" \
-        --tau "$TAU" \
-        --selected-layer "$sel_layer" \
-        --se-layers "$SE_LAYERS_LO" "$SE_LAYERS_HI" \
-        --repetition-penalty "$REPETITION_PENALTY" \
-        "${extra_flags[@]}" \
-        2>&1 | tee -a "$run_dir/console.log"
+    if [[ "$SKIP_GENERATION" -ne 1 ]]; then
+        "$PYTHON" scripts/composed_generate.py \
+            --run-name "$run_name" \
+            --output-root "$OUTPUT_ROOT" \
+            --config "$CONFIG" \
+            --questions "$QUESTIONS" \
+            --limit "$NUM_ITEMS" \
+            --alpha "$ALPHA" \
+            --beta "$BETA" \
+            --tau "$TAU" \
+            --selected-layer "$sel_layer" \
+            --se-layers "$SE_LAYERS_LO" "$SE_LAYERS_HI" \
+            --repetition-penalty "$REPETITION_PENALTY" \
+            "${extra_flags[@]}" \
+            2>&1 | tee -a "$run_dir/console.log"
+    fi
+
+    # The judge starts only after generation has finished and released the GPU;
+    # it reads the JSONL, never the model that wrote it.
+    if [[ "$SKIP_JUDGE" -ne 1 ]]; then
+        echo "[composed] judging $run_name -> $run_dir/judge_report.txt"
+        judge_cmd=(
+            "$PYTHON" scripts/judge_report.py
+            --run-dir "$run_dir"
+            --questions "$QUESTIONS"
+            --limit "$NUM_ITEMS"
+            --seed "$SEED"
+        )
+        [[ -n "${JUDGE_MODEL:-}" ]] && judge_cmd+=(--judge-model "$JUDGE_MODEL")
+        [[ -n "${JUDGE_REVISION:-}" ]] && judge_cmd+=(--judge-revision "$JUDGE_REVISION")
+        "${judge_cmd[@]}" 2>&1 | tee "$run_dir/judge_report.txt"
+    fi
 }
 
 dispatch_arm() {
@@ -178,13 +226,19 @@ echo "=================================================================="
 for run_name in "${RUN_NAMES[@]}"; do
     run_dir="$OUTPUT_ROOT/$run_name"
     answers="$run_dir/answers.jsonl"
+    results="$run_dir/judge_results.json"
     if [[ -f "$answers" ]]; then
         cells="$(wc -l < "$answers" | tr -d '[:space:]')"
-        status="done"
     else
         cells=0
-        status="NO_ANSWERS"
     fi
-    printf '  %-22s %-10s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$answers"
+    if [[ "$SKIP_JUDGE" -eq 1 ]]; then
+        status="not_judged"
+    elif [[ -f "$results" ]]; then
+        status="done"
+    else
+        status="NO_VERDICTS"
+    fi
+    printf '  %-22s %-12s cells=%-6s %s\n' "$run_name" "$status" "$cells" "$results"
 done
 echo "=================================================================="
