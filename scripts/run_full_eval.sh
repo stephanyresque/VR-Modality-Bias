@@ -111,14 +111,22 @@ if [[ "$SKIP_OMNICOT" -ne 1 ]]; then
         echo "[full_eval] OmniCoT diagnostic ($DIAG_LIMIT images) -> derived layer"
         "$PYTHON" scripts/build_manifest.py \
             --config configs/run_smolvlm22_omnicot_medium.yaml --overwrite
+        # generate_refs creates the timestamped run dir (and its LATEST
+        # pointer) that the two next stages resolve; without it,
+        # collect_hidden_states has nowhere to run. Same stage order as the
+        # ODI diagnostic of 20/08.
+        "$PYTHON" scripts/generate_refs.py \
+            --config configs/run_smolvlm22_omnicot_medium.yaml --limit "$DIAG_LIMIT"
         "$PYTHON" scripts/collect_hidden_states.py \
             --config configs/run_smolvlm22_omnicot_medium.yaml --limit "$DIAG_LIMIT"
         "$PYTHON" scripts/compute_metrics.py \
             --config configs/run_smolvlm22_omnicot_medium.yaml --limit "$DIAG_LIMIT"
-        # The diagnostic writes under the CONFIG's output_root (results/runs),
-        # not under $OUTPUT_ROOT, hence the fixed glob.
+        # Resolve the CURRENT diagnostic run through the LATEST pointer
+        # instead of a name wildcard: a wildcard would also swallow the
+        # parquet of an earlier smoke run and contaminate the curve.
+        DIAG_DIR="$(tr -d '[:space:]' < results/runs/diag_smolvlm22_omnicot_medium_LATEST.txt)"
         "$PYTHON" scripts/select_reference_layer.py \
-            --metrics-glob "results/runs/diag_smolvlm22_omnicot_medium*/metrics.parquet" \
+            --metrics-glob "$DIAG_DIR/*.parquet" \
             --out "$LAYER_FILE"
     fi
     if [[ ! -f "$LAYER_FILE" ]]; then
