@@ -18,7 +18,28 @@ __all__ = [
     "write_question_annotations",
 ]
 
-COMPONENT_TYPES: tuple[str, ...] = ("existence", "count", "direction")
+# "direction" is the legacy merged label of the first ODI ingestion (exp 1);
+# it stays so old questions.jsonl files keep parsing. The new ODI ingestion
+# splits it by reference frame, and the OmniCoT types are the six of the paper.
+COMPONENT_TYPES: tuple[str, ...] = (
+    "existence",
+    "count",
+    "direction",
+    "ocr",
+    "object_attribute",
+    "human_attribute",
+    "direction_ego",
+    "direction_allo",
+    "direction_rel",
+    "scene_simulation",
+    "odi_reasoning",
+    "mot",
+    "rac",
+    "moi",
+    "mdi",
+    "ptm",
+    "rtm",
+)
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,26 @@
+run:
+  name: "composed_smolvlm22_odibench"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "odibench"
+  manifest_path: "data/processed/odibench/manifest.jsonl"
+  images_dir: "data/processed/odibench/images"
+  n_images: 200
+
+model:
+  key: "smolvlm-2.2b"
+  model_id: "HuggingFaceTB/SmolVLM-Instruct"
+  dtype: "float16"
+
+task:
+  name: "vqa_composed"
+  prompt_key: "vqa_composed"
+
+generation:
+  max_new_tokens: 256
+  do_sample: false
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.2

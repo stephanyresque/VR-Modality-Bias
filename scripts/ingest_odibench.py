@@ -37,16 +37,48 @@ except ModuleNotFoundError:
 
 
 DATASET_NAME = "odibench"
-IMAGE_PREFIX = "indoor"
 
+# All ten QA files of the benchmark. The first ingestion (exp 1) read only
+# existence/counting and merged view_orientation+relative into "direction";
+# the full-evaluation round keeps one component type per source file so the
+# report can break accuracy down by the benchmark's own taxonomy.
 QA_FILES: dict[str, str] = {
     "existence.jsonl": "existence",
     "counting.jsonl": "count",
-    "view_orientation.jsonl": "direction",
-    "relative.jsonl": "direction",
+    "ocr.jsonl": "ocr",
+    "object_attribute.jsonl": "object_attribute",
+    "human_attribute.jsonl": "human_attribute",
+    "view_orientation.jsonl": "direction_ego",
+    "allocentric.jsonl": "direction_allo",
+    "relative.jsonl": "direction_rel",
+    "scene_simulation.jsonl": "scene_simulation",
+    "ODI_reasoning.jsonl": "odi_reasoning",
 }
 
-TYPE_ORDER: tuple[str, ...] = ("existence", "count", "direction")
+# Object/human attributes came from an automatic pipeline with human
+# refinement; the other eight types are fully human-annotated. The report and
+# meta.json carry this flag so the paper can signal it.
+AUTO_ANNOTATED_TYPES: frozenset[str] = frozenset(
+    {"object_attribute", "human_attribute"}
+)
+
+DIRECTION_TYPES: frozenset[str] = frozenset(
+    {"direction_ego", "direction_allo", "direction_rel"}
+)
+
+# Composition order: perception first, then spatial, then reasoning.
+TYPE_ORDER: tuple[str, ...] = (
+    "existence",
+    "count",
+    "ocr",
+    "object_attribute",
+    "human_attribute",
+    "direction_ego",
+    "direction_allo",
+    "direction_rel",
+    "scene_simulation",
+    "odi_reasoning",
+)
 
 IMAGE_KEYS: tuple[str, ...] = (
     "image", "imagename", "image_id", "image_name", "image_path", "img",
@@ -105,8 +137,47 @@ def _pick(record: dict, keys: tuple[str, ...], what: str, source: str, lineno: i
     )
 
 
+def resolve_option(record: dict):
+    """Return the option text the ``correct`` field points at, or None.
+
+    Most ODI files are multiple-choice: ``options`` plus a ``correct`` that is
+    either a letter (A-D), an index, or the option text itself. The evaluation
+    is open-format, so the reference the judge receives is the winning option's
+    TEXT, never the letter.
+    """
+    options = record.get("options")
+    correct = record.get("correct")
+    if not isinstance(options, (list, tuple)) or not options or correct is None:
+        return None
+    texts = [str(o).strip() for o in options]
+    label = str(correct).strip()
+    if len(label) == 1 and label.isalpha():
+        index = ord(label.upper()) - ord("A")
+        if 0 <= index < len(texts):
+            return texts[index]
+        return None
+    if label.isdigit():
+        index = int(label)
+        if 0 <= index < len(texts):
+            return texts[index]
+        return None
+    for text in texts:
+        if text.lower() == label.lower():
+            return text
+    return None
+
+
+def _strip_option_prefix(text: str) -> str:
+    return re.sub(r"^[A-Da-d][\.\):]\s+", "", text.strip())
+
+
 def iter_raw_components(raw_dir: Path):
-    """Yield ``(component_type, image_id, question, answer)`` from QAs/*.jsonl."""
+    """Yield ``(component_type, image_id, question, answer)`` from QAs/*.jsonl.
+
+    Also returns, via the second element of the outer tuple, which QA files
+    were actually found: silently narrowing the benchmark because one file is
+    missing is exactly the failure the tally exists to expose.
+    """
     qa_dir = Path(raw_dir) / "QAs"
     if not qa_dir.is_dir():
         raise FileNotFoundError(f"{qa_dir} not found.")
@@ -125,13 +196,29 @@ def iter_raw_components(raw_dir: Path):
                     raise ValueError(f"{path}:{lineno}: malformed JSON: {exc}") from exc
                 image_ref = _pick(record, IMAGE_KEYS, "image", str(path), lineno)
                 question = _pick(record, QUESTION_KEYS, "question", str(path), lineno)
-                answer = _pick(record, ANSWER_KEYS, "answer", str(path), lineno)
+                try:
+                    answer = _pick(record, ANSWER_KEYS, "answer", str(path), lineno)
+                except ValueError:
+                    # No answer key at all: a schema error, unless the record
+                    # is multiple-choice and the option resolves.
+                    answer = resolve_option(record)
+                    if answer is None and "options" not in record:
+                        raise
+                if answer is None or not str(answer).strip():
+                    answer = resolve_option(record)
                 yield (
                     component_type,
                     Path(str(image_ref)).stem,
                     str(question).strip(),
-                    str(answer),
+                    "" if answer is None else str(answer),
                 )
+
+
+def list_missing_qa_files(raw_dir: Path) -> list[str]:
+    qa_dir = Path(raw_dir) / "QAs"
+    return sorted(
+        file_name for file_name in QA_FILES if not (qa_dir / file_name).is_file()
+    )
 
 
 # ---------------------------------------------------------------- filters
@@ -170,34 +257,63 @@ def normalize_direction(answer, directions) -> str | None:
     return directions.synonym_to_category.get(text)
 
 
+def normalize_free_text(answer) -> str | None:
+    text = _strip_option_prefix(str(answer))
+    return text if text else None
+
+
 def normalize_answer(component_type: str, answer, directions):
+    """Per-type reference normalization.
+
+    existence and count stay strict (same rule as exp 1). The three direction
+    types canonicalize through the vocabulary when the answer resolves there
+    and otherwise keep the raw text: allocentric references are relational
+    sentences by nature, and the judge grades text, so dropping them would
+    throw away the type. The remaining types keep the raw (or option-resolved)
+    text. Empty always drops.
+    """
     if component_type == "existence":
         return normalize_existence(answer)
     if component_type == "count":
         return normalize_count(answer)
-    if component_type == "direction":
-        return normalize_direction(answer, directions)
+    if component_type in DIRECTION_TYPES:
+        canonical = normalize_direction(answer, directions)
+        if canonical is not None:
+            return canonical
+        return normalize_free_text(answer)
+    if component_type in QA_FILES.values():
+        return normalize_free_text(answer)
     raise ValueError(f"unknown component type {component_type!r}")
 
 
-def select_candidates(raw_components, directions) -> tuple[list[Candidate], dict]:
+def select_candidates(
+    raw_components, directions, *, image_prefix: str | None = None
+) -> tuple[list[Candidate], dict]:
     """Apply every selection filter. Returns the survivors and a tally."""
     tally = {
         "seen": 0, "wrong_prefix": 0, "bad_answer": 0,
         "kept_by_type": defaultdict(int),
+        "kept_by_image_prefix": defaultdict(int),
+        "direction_canonical": 0, "direction_raw_text": 0,
     }
     kept: list[Candidate] = []
     for component_type, image_id, question, answer in raw_components:
         tally["seen"] += 1
-        if not image_id.startswith(IMAGE_PREFIX):
+        if image_prefix and not image_id.startswith(image_prefix):
             tally["wrong_prefix"] += 1
             continue
         normalized = normalize_answer(component_type, answer, directions)
         if normalized is None:
             tally["bad_answer"] += 1
             continue
+        if component_type in DIRECTION_TYPES:
+            if normalize_direction(answer, directions) is not None:
+                tally["direction_canonical"] += 1
+            else:
+                tally["direction_raw_text"] += 1
         kept.append(Candidate(image_id, component_type, question, str(normalized)))
         tally["kept_by_type"][component_type] += 1
+        tally["kept_by_image_prefix"][image_id.split("_")[0]] += 1
     return kept, tally
 
 
@@ -221,11 +337,15 @@ def qualifies(components: list[Candidate]) -> bool:
 def select_images(
     grouped: dict[str, list[Candidate]], *, limit: int | None, seed: int
 ) -> list[str]:
-    """Pick the images to keep, richest first.
+    """Pick the images to keep: round-robin over the component types.
 
-    A uniform draw would spend the quota on the majority type: the set holds 643
-    direction components against 90 existence ones, so half the items would end
-    up direction-only and the scarce types would land too thin to mean anything.
+    Richest-first alone spends the quota on the majority types; with ten types
+    the scarce ones (ocr, odi_reasoning) would land too thin for the per-type
+    breakdown the evaluation exists to produce. The round-robin walks the
+    types in a fixed order and, at each turn, takes the not-yet-selected image
+    that carries that type and is richest (most distinct types, then most
+    components; shuffled by seed as the last tiebreak). Every type present in
+    the data gets images until it runs out or the quota fills.
     """
     population = sorted(grouped)
     random.Random(seed).shuffle(population)
@@ -235,7 +355,40 @@ def select_images(
     ))
     if limit is None or limit >= len(population):
         return sorted(population)
-    return sorted(population[:limit])
+
+    # Queues come from the types PRESENT in the data (TYPE_ORDER first, then
+    # anything else, e.g. the legacy "direction"), so an unexpected type still
+    # gets its share instead of being silently unreachable.
+    present = sorted(
+        {c.component_type for components in grouped.values() for c in components},
+        key=_type_rank,
+    )
+    queues: dict[str, list[str]] = {
+        component_type: [
+            image_id for image_id in population
+            if any(c.component_type == component_type for c in grouped[image_id])
+        ]
+        for component_type in present
+    }
+    selected: list[str] = []
+    chosen: set[str] = set()
+    while len(selected) < limit:
+        progressed = False
+        for component_type in present:
+            if len(selected) >= limit:
+                break
+            queue = queues[component_type]
+            while queue and queue[0] in chosen:
+                queue.pop(0)
+            if not queue:
+                continue
+            image_id = queue.pop(0)
+            chosen.add(image_id)
+            selected.append(image_id)
+            progressed = True
+        if not progressed:
+            break
+    return sorted(selected)
 
 
 # ---------------------------------------------------------------- images
@@ -276,8 +429,17 @@ def index_images(raw_dir: Path) -> tuple[dict[str, Path], int]:
 # ---------------------------------------------------------------- composition
 
 
+def _type_rank(component_type: str) -> int:
+    # Unknown types (the legacy merged "direction" of old files) go last
+    # instead of crashing the ordering.
+    try:
+        return TYPE_ORDER.index(component_type)
+    except ValueError:
+        return len(TYPE_ORDER)
+
+
 def order_components(components: list[Candidate]) -> list[Candidate]:
-    return sorted(components, key=lambda c: TYPE_ORDER.index(c.component_type))
+    return sorted(components, key=lambda c: _type_rank(c.component_type))
 
 
 def compose_question(components: list[Candidate]) -> str:
@@ -371,7 +533,9 @@ def build_component(candidate: Candidate) -> QuestionComponent:
 
 
 def plan(args, directions):
-    candidates, tally = select_candidates(iter_raw_components(args.raw), directions)
+    candidates, tally = select_candidates(
+        iter_raw_components(args.raw), directions, image_prefix=args.image_prefix
+    )
     grouped = group_by_image(candidates)
     qualified = {
         image_id: comps for image_id, comps in grouped.items() if qualifies(comps)
@@ -400,16 +564,29 @@ def plan(args, directions):
             continue
         kept.append((image_id, ordered))
 
+    components_per_item = defaultdict(int)
+    written_by_type = defaultdict(int)
+    for _, ordered in kept:
+        components_per_item[len(ordered)] += 1
+        for candidate in ordered:
+            written_by_type[candidate.component_type] += 1
+
     meta = {
         "dataset": DATASET_NAME,
         "raw": str(args.raw),
         "direction_terms": str(args.direction_terms),
         "seed": args.seed,
         "limit": args.limit,
+        "image_prefix": args.image_prefix,
+        "qa_files_missing": list_missing_qa_files(args.raw),
+        "auto_annotated_types": sorted(AUTO_ANNOTATED_TYPES),
         "components_seen": tally["seen"],
         "dropped_wrong_prefix": tally["wrong_prefix"],
         "dropped_bad_answer": tally["bad_answer"],
         "kept_by_type": dict(tally["kept_by_type"]),
+        "kept_by_image_prefix": dict(tally["kept_by_image_prefix"]),
+        "direction_canonical": tally["direction_canonical"],
+        "direction_raw_text": tally["direction_raw_text"],
         "images_with_any_component": len(grouped),
         "images_qualified": len(qualified),
         "images_selected": len(chosen),
@@ -417,6 +594,8 @@ def plan(args, directions):
         "components_dropped_by_negative_existence": n_dropped_by_negative,
         "items_discarded_single_component": n_discarded_single_component,
         "items_written": len(kept),
+        "components_per_item": {str(k): v for k, v in sorted(components_per_item.items())},
+        "components_written_by_type": dict(written_by_type),
     }
     return kept, meta, missing_images, index
 
@@ -425,12 +604,20 @@ def _report(meta: dict, *, out_dir: Path, dry_run: bool) -> None:
     print("=" * 78)
     print(f"ODI-BENCH INGESTION{'  -- dry run, nothing written' if dry_run else ''}")
     print("=" * 78)
+    if meta["qa_files_missing"]:
+        print(f"  WARN: QA file(s) absent : {meta['qa_files_missing']}")
+        print("        the benchmark is being ingested NARROWER than planned.")
     print(f"  components seen        : {meta['components_seen']}")
+    print(f"  image prefix filter    : {meta['image_prefix'] or '(none, all images)'}")
     print(f"  dropped, wrong prefix  : {meta['dropped_wrong_prefix']}")
     print(f"  dropped, bad answer    : {meta['dropped_bad_answer']}")
     for component_type in TYPE_ORDER:
         kept = meta["kept_by_type"].get(component_type, 0)
-        print(f"  kept, {component_type:<10}       : {kept}")
+        auto = "  [auto-annotated]" if component_type in AUTO_ANNOTATED_TYPES else ""
+        print(f"  kept, {component_type:<16} : {kept}{auto}")
+    print(f"  kept by image prefix   : {meta['kept_by_image_prefix']}")
+    print(f"  direction refs         : {meta['direction_canonical']} canonical, "
+          f"{meta['direction_raw_text']} raw text")
     print(f"  images with a component: {meta['images_with_any_component']}")
     print(f"  images qualified (>=2) : {meta['images_qualified']}")
     print(f"  images selected (limit={meta['limit']}, seed={meta['seed']}): "
@@ -523,9 +710,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Direction table. A direction answer is kept only if it resolves "
              "here, which is what rejects composites and noise.")
     parser.add_argument("--limit", type=int, default=None,
-        help="Keep this many qualified images, sampled with --seed.")
+        help="Keep this many qualified images, selected by the per-type "
+             "round-robin with --seed as the tiebreak.")
     parser.add_argument("--seed", type=int, default=0,
         help="Sampling seed, recorded in meta.json.")
+    parser.add_argument("--image-prefix", type=str, default=None,
+        help="Keep only images whose id starts with this prefix (e.g. "
+             "'indoor', the exp 1 restriction). Default: all images.")
     parser.add_argument("--dry-run", action="store_true",
         help="Print the tally and write nothing.")
     return parser

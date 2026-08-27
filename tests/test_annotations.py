@@ -137,14 +137,21 @@ def test_components_are_rebuilt_as_dataclasses_on_read(tmp_path: Path):
     assert component.answer == "yes"
 
 
-def test_the_three_valid_component_types_are_accepted():
-    assert COMPONENT_TYPES == ("existence", "count", "direction")
+def test_every_declared_component_type_is_accepted():
+    # The legacy exp 1 types, the ten ODI types, and the six OmniCoT types.
+    assert set(COMPONENT_TYPES) >= {"existence", "count", "direction"}
+    assert set(COMPONENT_TYPES) >= {
+        "ocr", "object_attribute", "human_attribute",
+        "direction_ego", "direction_allo", "direction_rel",
+        "scene_simulation", "odi_reasoning",
+    }
+    assert set(COMPONENT_TYPES) >= {"mot", "rac", "moi", "mdi", "ptm", "rtm"}
     for component_type in COMPONENT_TYPES:
         component = QuestionComponent(component_type, "Is there a sofa?", "yes")
         assert component.component_type == component_type
 
 
-def test_a_component_type_outside_the_three_is_rejected():
+def test_a_component_type_outside_the_declared_set_is_rejected():
     with pytest.raises(ValueError, match="colour"):
         QuestionComponent("colour", "What colour is the sofa?", "red")
 

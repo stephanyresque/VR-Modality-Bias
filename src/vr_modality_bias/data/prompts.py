@@ -74,6 +74,10 @@ contradicts the reference is "incorrect".
 Wording need not match; judge the claim, not the phrasing.
 - For a count, the number must match the reference to be "correct". For a \
 direction, the named direction must match.
+- For an angle, the numeric value must match the reference. For text read \
+from the scene, the transcription must match the reference apart from case \
+and punctuation. For a yes/no reference, the generated claim must take the \
+same side.
 - If the answer is degenerate or repetitive but still contains a claim about \
 this sub-question, grade that claim normally.
 

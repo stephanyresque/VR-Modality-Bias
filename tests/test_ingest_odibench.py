@@ -125,7 +125,9 @@ def test_every_retained_direction_resolves_in_the_table(ingest):
 # ---------------------------------------------------------------- selection
 
 
-def test_only_indoor_images_are_kept(ingest, tmp_path: Path):
+def test_all_image_prefixes_are_kept_by_default(ingest, tmp_path: Path):
+    """The exp 1 ingestion was indoor-only; the full evaluation keeps both
+    halves of the benchmark, and the filter became opt-in."""
     raw = _write_raw(tmp_path, {
         "existence.jsonl": [
             _qa("indoor_1.png", "Is there a chair?", "yes"),
@@ -135,6 +137,23 @@ def test_only_indoor_images_are_kept(ingest, tmp_path: Path):
 
     candidates, tally = ingest.select_candidates(
         ingest.iter_raw_components(raw), _DIRECTIONS
+    )
+
+    assert sorted(c.image_id for c in candidates) == ["indoor_1", "outdoor_1"]
+    assert tally["wrong_prefix"] == 0
+    assert tally["kept_by_image_prefix"] == {"indoor": 1, "outdoor": 1}
+
+
+def test_an_explicit_prefix_restores_the_exp1_restriction(ingest, tmp_path: Path):
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [
+            _qa("indoor_1.png", "Is there a chair?", "yes"),
+            _qa("outdoor_1.png", "Is there a tree?", "yes"),
+        ],
+    }, [])
+
+    candidates, tally = ingest.select_candidates(
+        ingest.iter_raw_components(raw), _DIRECTIONS, image_prefix="indoor"
     )
 
     assert [c.image_id for c in candidates] == ["indoor_1"]
@@ -150,7 +169,9 @@ def test_the_tally_separates_prefix_and_answer_rejections(ingest, tmp_path: Path
         ],
     }, [])
 
-    _, tally = ingest.select_candidates(ingest.iter_raw_components(raw), _DIRECTIONS)
+    _, tally = ingest.select_candidates(
+        ingest.iter_raw_components(raw), _DIRECTIONS, image_prefix="indoor"
+    )
 
     assert tally["seen"] == 3
     assert tally["wrong_prefix"] == 1
@@ -158,9 +179,13 @@ def test_the_tally_separates_prefix_and_answer_rejections(ingest, tmp_path: Path
     assert tally["kept_by_type"]["count"] == 1
 
 
-def test_both_direction_files_feed_the_same_type(ingest, tmp_path: Path):
+def test_the_direction_files_split_by_reference_frame(ingest, tmp_path: Path):
+    """exp 1 merged view_orientation and relative into one `direction`; the
+    full evaluation keeps one type per source file so the report separates the
+    reference frames the ego/allocentric audit worried about."""
     raw = _write_raw(tmp_path, {
         "view_orientation.jsonl": [_qa("indoor_1.png", "Facing where?", "left")],
+        "allocentric.jsonl": [_qa("indoor_1.png", "Left of the sofa?", "left")],
         "relative.jsonl": [_qa("indoor_1.png", "Where is it?", "right")],
     }, [])
 
@@ -168,8 +193,9 @@ def test_both_direction_files_feed_the_same_type(ingest, tmp_path: Path):
         ingest.iter_raw_components(raw), _DIRECTIONS
     )
 
-    assert {c.component_type for c in candidates} == {"direction"}
-    assert len(candidates) == 2
+    assert {c.component_type for c in candidates} == {
+        "direction_ego", "direction_allo", "direction_rel",
+    }
 
 
 # ---------------------------------------------------------------- qualifying
@@ -514,7 +540,7 @@ def test_one_pass_produces_a_usable_dataset(ingest, tmp_path: Path):
     manifest = read_manifest(out_dir / "manifest.jsonl")
     questions = read_question_annotations(out_dir / "questions.jsonl")
 
-    assert [r.image_id for r in manifest] == ["indoor_1"]
+    assert [r.image_id for r in manifest] == ["indoor_1", "indoor_2"]
     assert all(r.width == 64 and r.height == 32 for r in manifest), (
         "the manifest records the real pixel size, and nothing is resized"
     )
@@ -527,15 +553,22 @@ def test_one_pass_produces_a_usable_dataset(ingest, tmp_path: Path):
         "Is there a chair? How many chairs are there? Where is the chair?"
     )
     assert [c.component_type for c in by_id["indoor_1"].components] == [
-        "existence", "count", "direction",
+        "existence", "count", "direction_rel",
     ]
     assert by_id["indoor_1"].components[1].answer == 3
 
-    # indoor_2 said there is no sofa, so counting the sofas went away, leaving
-    # one component -- an ordinary short question, which this track does not
-    # measure. It is discarded rather than shipped.
-    assert "indoor_2" not in by_id
-    assert (out_dir / "images" / "indoor_2.png").exists() is False
+    # indoor_2 said there is no sofa, so counting the sofas went away. The
+    # composite direction answer ("front-left") is kept as raw text now that
+    # the judge grades free text, so the item survives with two components.
+    assert [c.component_type for c in by_id["indoor_2"].components] == [
+        "existence", "direction_rel",
+    ]
+    assert by_id["indoor_2"].components[1].answer == "front-left"
+
+    # outdoor_9 has a single component: an ordinary short question, which this
+    # track does not measure. It is discarded rather than shipped.
+    assert "outdoor_9" not in by_id
+    assert (out_dir / "images" / "outdoor_9.png").exists() is False
 
 
 def test_no_curated_csv_is_read_or_written(ingest, tmp_path: Path):
@@ -586,7 +619,10 @@ def test_the_meta_counts_what_the_negative_rule_dropped(ingest, tmp_path: Path):
     assert meta["components_dropped_by_negative_existence"] == 1, (
         "indoor_2 denies the sofa, so counting the sofas goes"
     )
-    assert meta["items_discarded_single_component"] == 1
+    # indoor_2 keeps two components (the composite direction answer survives
+    # as raw text), and outdoor_9 never qualifies, so nothing is discarded
+    # AFTER the negative rule.
+    assert meta["items_discarded_single_component"] == 0
 
 
 # ---------------------------------------------------------------- dry run
@@ -742,3 +778,110 @@ def test_an_image_with_a_single_component_never_reaches_the_output(
     assert _run_ingest(ingest, raw, out_dir) == 0
 
     assert read_question_annotations(out_dir / "questions.jsonl") == []
+
+
+# ---------------------------------------------------------------- full set (10 types)
+
+
+def test_every_qa_file_maps_to_its_own_component_type(ingest):
+    assert len(set(ingest.QA_FILES.values())) == len(ingest.QA_FILES) == 10
+
+
+def test_a_multiple_choice_answer_resolves_from_the_correct_letter(ingest):
+    record = {"options": ["red", "green", "blue"], "correct": "B"}
+    assert ingest.resolve_option(record) == "green"
+
+
+def test_a_multiple_choice_answer_resolves_from_an_index(ingest):
+    record = {"options": ["red", "green"], "correct": "1"}
+    assert ingest.resolve_option(record) == "green"
+
+
+def test_a_multiple_choice_answer_resolves_from_the_option_text(ingest):
+    record = {"options": ["Red", "Green"], "correct": "green"}
+    assert ingest.resolve_option(record) == "Green"
+
+
+@pytest.mark.parametrize("record", [
+    {"options": ["red"], "correct": "E"},
+    {"options": [], "correct": "A"},
+    {"options": ["red"]},
+    {"correct": "A"},
+])
+def test_an_unresolvable_option_returns_none(ingest, record):
+    assert ingest.resolve_option(record) is None
+
+
+def test_a_record_with_options_and_no_answer_key_uses_the_correct_option(
+    ingest, tmp_path: Path
+):
+    raw = tmp_path / "raw"
+    (raw / "QAs").mkdir(parents=True)
+    (raw / "QAs" / "ocr.jsonl").write_text(
+        json.dumps({
+            "imagename": "indoor_1.png",
+            "question": "What does the sign say?",
+            "options": ["EXIT", "OPEN"],
+            "correct": "A",
+        }) + "\n",
+        encoding="utf-8",
+    )
+
+    components = list(ingest.iter_raw_components(raw))
+
+    assert components == [("ocr", "indoor_1", "What does the sign say?", "EXIT")]
+
+
+def test_an_attribute_reference_keeps_the_raw_text(ingest):
+    assert ingest.normalize_answer(
+        "object_attribute", "B. dark brown leather", _DIRECTIONS
+    ) == "dark brown leather"
+
+
+def test_a_direction_that_resolves_is_canonicalised(ingest):
+    assert ingest.normalize_answer("direction_ego", "the left side", _DIRECTIONS) == "left"
+
+
+def test_a_direction_that_does_not_resolve_survives_as_raw_text(ingest):
+    """The allocentric references are relational sentences by nature; dropping
+    whatever the vocabulary cannot canonicalise would throw the type away."""
+    kept = ingest.normalize_answer(
+        "direction_allo", "to the left of the sofa", _DIRECTIONS
+    )
+    assert kept == "to the left of the sofa"
+
+
+def test_missing_qa_files_are_listed_not_silently_skipped(ingest, tmp_path: Path):
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [_qa("indoor_1.png", "Is there a chair?", "yes")],
+    }, [])
+
+    missing = ingest.list_missing_qa_files(raw)
+
+    assert "ocr.jsonl" in missing
+    assert "existence.jsonl" not in missing
+    assert len(missing) == 9
+
+
+def test_the_round_robin_covers_the_scarce_type(ingest):
+    """80 images carry only the majority type and 2 carry the scarce one;
+    richest-first alone would spend a limit of 10 before reaching them."""
+    spec = {f"indoor_{i:03d}": ["direction_ego", "direction_ego"] for i in range(80)}
+    spec["indoor_900"] = ["ocr", "ocr"]
+    spec["indoor_901"] = ["ocr", "ocr"]
+    grouped = _grouped(ingest, spec)
+
+    chosen = ingest.select_images(grouped, limit=10, seed=0)
+
+    assert "indoor_900" in chosen and "indoor_901" in chosen
+    assert len(chosen) == 10
+
+
+def test_the_round_robin_still_fills_the_quota_when_a_type_runs_out(ingest):
+    spec = {f"indoor_{i:03d}": ["direction_ego"] * 2 for i in range(20)}
+    spec["indoor_900"] = ["ocr", "ocr"]
+    grouped = _grouped(ingest, spec)
+
+    chosen = ingest.select_images(grouped, limit=10, seed=0)
+
+    assert len(chosen) == 10

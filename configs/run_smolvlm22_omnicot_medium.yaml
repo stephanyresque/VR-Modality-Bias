@@ -1,0 +1,44 @@
+run:
+  name: "diag_smolvlm22_omnicot_medium"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "omnicot_diag"
+  manifest_path: "data/processed/omnicot_diag/manifest.jsonl"
+  images_dir: "data/processed/omnicot/images"
+  n_images: 200
+
+model:
+  key: "smolvlm-2.2b"
+  model_id: "HuggingFaceTB/SmolVLM-Instruct"
+  dtype: "float16"
+
+task:
+  name: "caption_medium"
+  prompt_key: "caption_medium"
+
+generation:
+  max_new_tokens: 200
+  do_sample: true
+  temperature: 0.8
+  top_p: 0.9
+  repetition_penalty: 1.1
+
+teacher_forcing:
+  output_hidden_states: true
+  use_cache: false
+
+metrics:
+  logits_top_k: 50
+  deep_block_rule: "last_third"
+
+residual:
+  t0: 5
+
+io:
+  hidden_states_format: "h5"
+  hidden_states_dtype: "float16"
+  compression: "gzip"
+  compression_level: 4
+  discard_hidden_states_after_metrics: true
