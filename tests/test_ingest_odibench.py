@@ -582,13 +582,17 @@ def test_no_curated_csv_is_read_or_written(ingest, tmp_path: Path):
     )
 
 
-def test_a_selected_image_without_a_file_is_fatal(ingest, tmp_path: Path):
+def test_every_image_missing_is_fatal_as_an_id_mismatch(ingest, tmp_path: Path):
+    """A missing file here or there is an availability gap (excluded and
+    counted); EVERY qualified image missing means the ids do not match the
+    file names, and that still stops the run."""
     raw = _write_raw(tmp_path, {
         "existence.jsonl": [_qa("indoor_missing.png", "Is there a chair?", "yes")],
         "counting.jsonl": [_qa("indoor_missing.png", "How many lamps are there?", "3")],
     }, ["indoor_1.png"])
 
-    assert _run_ingest(ingest, raw, tmp_path / "processed") == 1
+    with pytest.raises(ValueError, match="do not match"):
+        _run_ingest(ingest, raw, tmp_path / "processed")
 
 
 def test_the_run_records_its_seed_and_counts(ingest, tmp_path: Path):
@@ -885,3 +889,48 @@ def test_the_round_robin_still_fills_the_quota_when_a_type_runs_out(ingest):
     chosen = ingest.select_images(grouped, limit=10, seed=0)
 
     assert len(chosen) == 10
+
+
+# ---------------------------------------------------------------- missing files
+
+
+def test_a_qualified_image_without_a_file_is_excluded_before_selection(
+    ingest, tmp_path: Path
+):
+    """The HF release carries fewer images than the QA files reference; the
+    gap is an availability fact to count, never a fatal error, and the quota
+    must be spent on images that can actually run."""
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [
+            _qa("indoor_1.png", "Is there a chair?", "yes"),
+            _qa("outdoor_9.png", "Is there a tree?", "yes"),
+        ],
+        "counting.jsonl": [
+            _qa("indoor_1.png", "How many chairs are there?", "3"),
+            _qa("outdoor_9.png", "How many trees are there?", "2"),
+        ],
+    }, ["indoor_1.png"])
+    out_dir = tmp_path / "processed"
+
+    assert _run_ingest(ingest, raw, out_dir, "--limit", "2") == 0
+
+    questions = read_question_annotations(out_dir / "questions.jsonl")
+    meta = json.loads((out_dir / "meta.json").read_text(encoding="utf-8"))
+
+    assert [q.image_id for q in questions] == ["indoor_1"]
+    assert meta["images_qualified_without_file"] == 1
+    assert meta["images_qualified_without_file_sample"] == ["outdoor_9"]
+
+
+def test_no_qualified_image_having_a_file_is_the_id_mismatch_signature(
+    ingest, tmp_path: Path
+):
+    raw = _write_raw(tmp_path, {
+        "existence.jsonl": [_qa("indoor_1.png", "Is there a chair?", "yes")],
+        "counting.jsonl": [_qa("indoor_1.png", "How many chairs?", "3")],
+    }, ["completely_different_name.png"])
+
+    with pytest.raises(ValueError) as excinfo:
+        _run_ingest(ingest, raw, tmp_path / "processed")
+
+    assert "do not match" in str(excinfo.value)

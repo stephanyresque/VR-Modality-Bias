@@ -540,8 +540,26 @@ def plan(args, directions):
     qualified = {
         image_id: comps for image_id, comps in grouped.items() if qualifies(comps)
     }
-    chosen = select_images(qualified, limit=args.limit, seed=args.seed)
     index, skipped_files = index_images(args.raw)
+
+    # The QA files reference images that images_final does not carry (the HF
+    # release ships fewer files than the paper's 2000). Those images are
+    # excluded BEFORE the selection, so the quota is spent on items that can
+    # actually run, and the exclusion is counted instead of silent. Zero
+    # overlap stays fatal below: that is the id-mismatch signature, not an
+    # availability gap.
+    absent = sorted(image_id for image_id in qualified if image_id not in index)
+    qualified = {
+        image_id: comps for image_id, comps in qualified.items()
+        if image_id in index
+    }
+    if absent and not qualified:
+        raise ValueError(
+            f"every qualified image is missing from {args.raw}/images_final "
+            f"(e.g. {absent[:5]}). The QA ids and the file names do not match."
+        )
+
+    chosen = select_images(qualified, limit=args.limit, seed=args.seed)
 
     kept: list[tuple[str, list[Candidate]]] = []
     missing_images: list[str] = []
@@ -589,6 +607,8 @@ def plan(args, directions):
         "direction_raw_text": tally["direction_raw_text"],
         "images_with_any_component": len(grouped),
         "images_qualified": len(qualified),
+        "images_qualified_without_file": len(absent),
+        "images_qualified_without_file_sample": absent[:10],
         "images_selected": len(chosen),
         "files_skipped_in_images_final": skipped_files,
         "components_dropped_by_negative_existence": n_dropped_by_negative,
@@ -620,6 +640,9 @@ def _report(meta: dict, *, out_dir: Path, dry_run: bool) -> None:
           f"{meta['direction_raw_text']} raw text")
     print(f"  images with a component: {meta['images_with_any_component']}")
     print(f"  images qualified (>=2) : {meta['images_qualified']}")
+    if meta["images_qualified_without_file"]:
+        print(f"  qualified but no file  : {meta['images_qualified_without_file']} "
+              f"(e.g. {meta['images_qualified_without_file_sample'][:3]})")
     print(f"  images selected (limit={meta['limit']}, seed={meta['seed']}): "
           f"{meta['images_selected']}")
     print(f"  files skipped in images_final (not an image): "
