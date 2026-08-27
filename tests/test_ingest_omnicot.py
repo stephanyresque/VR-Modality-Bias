@@ -37,15 +37,19 @@ def ingest():
 
 
 def _record(**overrides) -> dict:
+    # Mirrors the real metadata measured on 27/08: the image is in `file_name`
+    # (with the images/ prefix), cot is an empty list, and random_objects came
+    # empty in the real subset. The anchor-bearing fixtures below override
+    # random_objects explicitly to keep that machinery pinned.
     record = {
-        "image": "balcony_0002.jpg",
-        "scene_id": "balcony_0002",
-        "qa_id": "balcony_0002_q1",
+        "file_name": "images/balcony_0002.jpg",
+        "scene_id": "balcony",
+        "qa_id": "balcony_0002-1",
         "type": "multi_hop_object",
         "subtype": "",
         "question": "Starting at the plant, move two objects east. What do you reach?",
         "answer": "a wooden bench",
-        "cot": "",
+        "cot": [],
         "random_objects": [
             {"name": "plant", "position": [1.0, 2.0], "orientation": 90},
             {"name": "bench", "position": [3.5, 2.0], "orientation": 180},
@@ -76,16 +80,37 @@ def _run_ingest(ingest, raw: Path, out_dir: Path, *extra) -> int:
 # ---------------------------------------------------------------- type mapping
 
 
-def test_the_known_labels_map_to_the_paper_acronyms(ingest):
+def test_the_six_real_labels_map_to_the_paper_acronyms(ingest):
+    """The six labels and their mapping were verified against the real
+    metadata on 27/08; the per-label counts matched Table 12 exactly."""
     for label, acronym in [
         ("viewpoint_transform_identify", "mot"),
         ("viewpoint_transform_angle", "rac"),
         ("multi_hop_object", "moi"),
         ("multi_hop_direction", "mdi"),
+        ("move_translation", "ptm"),
+        ("move_turn_combined", "rtm"),
     ]:
         assert ingest.map_component_type(
             {"type": label, "subtype": ""}, source="f", lineno=1
         ) == acronym
+
+
+def test_the_image_comes_from_file_name_with_the_images_prefix(ingest):
+    """The real key is `file_name`, holding "images/<id>.jpg"."""
+    record = {"file_name": "images/balcony_0002.jpg"}
+    assert ingest.image_id_of(record, source="f", lineno=1) == "balcony_0002"
+
+
+def test_a_legacy_image_key_still_resolves(ingest):
+    assert ingest.image_id_of({"image": "x.jpg"}, source="f", lineno=1) == "x"
+
+
+def test_a_record_without_any_image_key_raises_naming_the_keys(ingest):
+    with pytest.raises(ValueError) as excinfo:
+        ingest.image_id_of({"qa_id": "q1"}, source="f", lineno=9)
+    message = str(excinfo.value)
+    assert "f:9" in message and "file_name" in message and "qa_id" in message
 
 
 def test_a_label_only_in_subtype_still_maps(ingest):
@@ -212,7 +237,7 @@ def test_one_pass_produces_a_usable_dataset(ingest, tmp_path: Path):
     records = [
         _record(),
         _record(qa_id="balcony_0002_q2", type="multi_hop_direction", answer="east"),
-        _record(image="office_0001.jpg", scene_id="office_0001",
+        _record(file_name="images/office_0001.jpg", scene_id="office",
                 qa_id="office_0001_q1", type="viewpoint_transform_identify",
                 answer="a desk"),
     ]
@@ -248,7 +273,7 @@ def test_the_image_limit_keeps_whole_images_with_all_their_qas(ingest, tmp_path:
     records = [
         _record(),
         _record(qa_id="balcony_0002_q2", type="multi_hop_direction", answer="east"),
-        _record(image="office_0001.jpg", scene_id="office_0001",
+        _record(file_name="images/office_0001.jpg", scene_id="office",
                 qa_id="office_0001_q1", type="viewpoint_transform_identify",
                 answer="a desk"),
     ]

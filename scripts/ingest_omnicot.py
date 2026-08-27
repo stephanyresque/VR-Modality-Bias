@@ -38,16 +38,18 @@ METADATA_RELPATH = Path("real") / "metadata.jsonl"
 IMAGES_RELPATH = Path("real") / "images"
 
 # The six task types of the OmniCoT paper (Table 12), keyed by the labels the
-# metadata carries in `type`/`subtype`. Four labels were read off the HF viewer
-# before the download; the two movement types (PTM/RTM) were not visible there.
-# An unmapped label is a hard error that prints every distinct label seen, so
-# the fix is one line here after `--inspect` on the real file — never a silent
-# drop of a task type.
+# metadata carries in `type`/`subtype`. Verified against the real file on
+# 27/08 (--inspect): the six labels below cover all 1073 records, and the
+# per-label counts match the paper exactly (198/170/173/158/197/177). An
+# unmapped label is a hard error that prints every distinct label seen — never
+# a silent drop of a task type.
 TYPE_MAP: dict[str, str] = {
     "viewpoint_transform_identify": "mot",
     "viewpoint_transform_angle": "rac",
     "multi_hop_object": "moi",
     "multi_hop_direction": "mdi",
+    "move_translation": "ptm",
+    "move_turn_combined": "rtm",
 }
 
 TYPE_ORDER: tuple[str, ...] = ("mot", "rac", "moi", "mdi", "ptm", "rtm")
@@ -62,6 +64,23 @@ ANCHOR_HEADER: str = (
     "positive y axis pointing north; the orientation is the direction the "
     "object faces."
 )
+
+
+# Measured on the real file (27/08): the image lives in `file_name`
+# ("images/balcony_0002.jpg"), not in `image`. Both are accepted so the
+# synthetic fixtures and any future schema drift keep working.
+IMAGE_KEYS: tuple[str, ...] = ("file_name", "image")
+
+
+def image_id_of(record: dict, *, source: str, lineno: int) -> str:
+    for key in IMAGE_KEYS:
+        value = record.get(key)
+        if value:
+            return Path(str(value)).stem
+    raise ValueError(
+        f"{source}:{lineno}: no image field. Tried {list(IMAGE_KEYS)}; this "
+        f"record has {sorted(record)}."
+    )
 
 
 def map_component_type(record: dict, *, source: str, lineno: int) -> str:
@@ -188,9 +207,11 @@ def iter_metadata(raw_dir: Path):
 
 
 def select_image_ids(
-    records: list[tuple[int, dict]], *, limit: int | None, seed: int
+    records: list[tuple[int, dict]], *, limit: int | None, seed: int, source: str
 ) -> set[str]:
-    image_ids = sorted({Path(str(r["image"])).stem for _, r in records})
+    image_ids = sorted({
+        image_id_of(r, source=source, lineno=lineno) for lineno, r in records
+    })
     if limit is None or limit >= len(image_ids):
         return set(image_ids)
     random.Random(seed).shuffle(image_ids)
@@ -208,7 +229,7 @@ def build_items(
     items: list[QuestionAnnotation] = []
     for lineno, record in records:
         tally["seen"] += 1
-        image_id = Path(str(record["image"])).stem
+        image_id = image_id_of(record, source=source, lineno=lineno)
         if image_id not in selected:
             continue
         answer = str(record.get("answer", "")).strip()
@@ -259,11 +280,14 @@ def inspect(raw_dir: Path, n: int) -> int:
     source = str(Path(raw_dir) / METADATA_RELPATH)
     labels: dict[tuple[str, str], int] = defaultdict(int)
     anchor_shapes: dict[str, int] = defaultdict(int)
+    n_empty_anchors = 0
     printed = 0
     for lineno, record in iter_metadata(raw_dir):
         labels[(str(record.get("type")), str(record.get("subtype")))] += 1
         anchors = record.get("random_objects")
         anchor_shapes[type(anchors).__name__] += 1
+        if not anchors:
+            n_empty_anchors += 1
         if printed < n:
             printed += 1
             print(f"── record {lineno} " + "─" * 50)
@@ -280,6 +304,8 @@ def inspect(raw_dir: Path, n: int) -> int:
         status = mapped or "UNMAPPED — add to TYPE_MAP"
         print(f"  type={type_label!r} subtype={subtype_label!r}: {count}  -> {status}")
     print(f"random_objects container shapes: {dict(anchor_shapes)}")
+    print(f"random_objects empty in {n_empty_anchors} record(s); "
+          f"non-empty in {sum(labels.values()) - n_empty_anchors}")
     return 0
 
 
@@ -289,7 +315,9 @@ def run(args) -> int:
 
     source = str(Path(args.raw) / METADATA_RELPATH)
     records = list(iter_metadata(args.raw))
-    selected = select_image_ids(records, limit=args.limit, seed=args.seed)
+    selected = select_image_ids(
+        records, limit=args.limit, seed=args.seed, source=source
+    )
     items, tally = build_items(records, source=source, selected=selected)
     index = index_images(args.raw)
 
