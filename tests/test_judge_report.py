@@ -473,3 +473,59 @@ def test_a_missing_answers_file_is_reported(judge_report, tmp_path: Path, capsys
 
     assert _run(judge_report, run_dir, questions_path) == 1
     assert "answers.jsonl" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------- think
+
+
+def test_the_judge_grades_the_answer_after_think_and_reports_the_block(
+    judge_report, tmp_path: Path, capsys
+):
+    run_dir, questions_path = _stage(tmp_path, entries=[
+        {**_answer("indoor_001", "off", "There is a sofa and two lamps."),
+         "answer_raw": "<think>lamps</think> There is a sofa and two lamps.",
+         "think": "lamps", "think_well_formed": True},
+        {**_answer("indoor_002", "off", "<think>I see a window and"),
+         "answer_raw": "<think>I see a window and",
+         "think": "", "think_well_formed": False},
+    ])
+    seen_prompts: list[str] = []
+
+    def factory(**kwargs):
+        def judge_fn(prompt: str) -> str:
+            seen_prompts.append(prompt)
+            return _OK
+        return judge_fn
+
+    _run(judge_report, run_dir, questions_path, factory=factory)
+    out = capsys.readouterr().out
+    results = json.loads((run_dir / "judge_results.json").read_text(encoding="utf-8"))
+
+    assert all("<think>" not in p.split("THE FULL ANSWER THE MODEL GENERATED:")[1]
+               for p in seen_prompts[:2])
+    assert "%think_ok" in out and "think_words" in out
+    row = results["rows"][0]
+    assert row["n_think"] == 2
+    assert row["rate_think_well_formed"] == 0.5
+
+
+def test_plain_runs_show_no_think_columns(judge_report, tmp_path: Path, capsys):
+    run_dir, questions_path = _stage(tmp_path)
+
+    _run(judge_report, run_dir, questions_path)
+
+    assert "%think_ok" not in capsys.readouterr().out
+
+
+def test_the_limit_follows_the_generation_order_not_the_alphabet(judge_report, tmp_path: Path):
+    run_dir, questions_path = _stage(tmp_path, entries=[
+        _answer("indoor_002", "off", "I can see a window."),
+        _answer("indoor_002", "on", "I can see a window."),
+        _answer("indoor_001", "off", "There is a sofa and two lamps."),
+        _answer("indoor_001", "on", "There is a sofa and two lamps."),
+    ])
+    entries = judge_report._read_jsonl(run_dir / "answers.jsonl")
+
+    kept = judge_report.limit_entries(entries, 1)
+
+    assert {e["image_id"] for e in kept} == {"indoor_002"}

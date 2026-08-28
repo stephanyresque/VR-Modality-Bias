@@ -1,0 +1,26 @@
+run:
+  name: "composed_llava_omnicot"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "omnicot"
+  manifest_path: "data/processed/omnicot/manifest.jsonl"
+  images_dir: "data/processed/omnicot/images"
+  n_images: 200
+
+model:
+  key: "llava-1.5-7b"
+  model_id: "llava-hf/llava-1.5-7b-hf"
+  dtype: "float16"
+
+task:
+  name: "vqa_composed"
+  prompt_key: "vqa_composed"
+
+generation:
+  max_new_tokens: 256
+  do_sample: false
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.2

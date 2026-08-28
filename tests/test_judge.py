@@ -330,3 +330,25 @@ def test_group_by_arm_splits_the_items():
 
     assert set(groups) == {"off", "on sparc a=1.05 L15"}
     assert len(groups["off"]) == 2
+
+
+# ---------------------------------------------------------------- think
+
+
+def test_think_statistics_are_absent_without_think_items():
+    agg = compute_judge_aggregate([_item(VERDICT_CORRECT)])
+
+    assert agg["n_think"] == 0
+    assert math.isnan(agg["rate_think_well_formed"])
+    assert math.isnan(agg["mean_think_words"])
+
+
+def test_think_statistics_count_well_formed_blocks_and_their_length():
+    agg = compute_judge_aggregate([
+        {**_item(VERDICT_CORRECT), "think_well_formed": True, "think": "a b c d"},
+        {**_item(VERDICT_CORRECT), "think_well_formed": False, "think": ""},
+    ])
+
+    assert agg["n_think"] == 2
+    assert agg["rate_think_well_formed"] == 0.5
+    assert agg["mean_think_words"] == 2.0

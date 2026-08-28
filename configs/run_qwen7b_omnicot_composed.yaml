@@ -1,0 +1,26 @@
+run:
+  name: "composed_qwen7b_omnicot"
+  seed_global: 42
+  output_root: "results/runs"
+
+dataset:
+  name: "omnicot"
+  manifest_path: "data/processed/omnicot/manifest.jsonl"
+  images_dir: "data/processed/omnicot/images"
+  n_images: 200
+
+model:
+  key: "qwen2.5-vl-7b"
+  model_id: "Qwen/Qwen2.5-VL-7B-Instruct"
+  dtype: "bfloat16"
+
+task:
+  name: "vqa_composed"
+  prompt_key: "vqa_composed"
+
+generation:
+  max_new_tokens: 256
+  do_sample: false
+  temperature: 1.0
+  top_p: 1.0
+  repetition_penalty: 1.2

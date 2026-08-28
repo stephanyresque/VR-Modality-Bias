@@ -160,6 +160,9 @@ def compute_judge_aggregate(items: list[dict]) -> dict:
     n_all_correct = 0
     n_degenerate = 0
     total_words = 0
+    n_think = 0
+    n_think_well_formed = 0
+    total_think_words = 0
 
     for item in items:
         verdicts = item["verdicts"]
@@ -181,6 +184,10 @@ def compute_judge_aggregate(items: list[dict]) -> dict:
         if classify_degeneration(answer)[0]:
             n_degenerate += 1
         total_words += len(answer.split())
+        if "think_well_formed" in item:
+            n_think += 1
+            n_think_well_formed += int(bool(item["think_well_formed"]))
+            total_think_words += len(str(item.get("think", "")).split())
 
     return {
         "n_items": n_items,
@@ -189,6 +196,9 @@ def compute_judge_aggregate(items: list[dict]) -> dict:
         "mean_answer_words": (total_words / n_items) if n_items else float("nan"),
         "n_degenerate": n_degenerate,
         "rate_degenerate": (n_degenerate / n_items) if n_items else float("nan"),
+        "n_think": n_think,
+        "rate_think_well_formed": (n_think_well_formed / n_think) if n_think else float("nan"),
+        "mean_think_words": (total_think_words / n_think) if n_think else float("nan"),
         "overall": _rates(overall),
         "by_type": {name: _rates(counts) for name, counts in sorted(by_type.items())},
     }

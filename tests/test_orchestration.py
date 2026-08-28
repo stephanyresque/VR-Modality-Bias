@@ -660,3 +660,331 @@ def test_the_diagnostic_falls_back_to_the_deepest_description_regime(tmp_path: P
 
     assert result.returncode == 0, result.stdout[-2000:]
     assert "configs/run_smolvlm22_long.yaml" in result.stdout
+
+
+# ---------------------------------------------------------------- per-family knobs
+
+_FULL = _SCRIPTS / "run_full_eval.sh"
+
+
+@needs_bash
+def test_the_composed_matrix_defaults_to_the_smolvlm_geometry(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--selected-layer 15" in gen
+    assert "--se-layers 0 24" in gen
+    assert "--max-edge" not in gen
+    assert "--think" not in gen
+    assert "--max-new-tokens" not in gen
+
+
+@needs_bash
+def test_the_composed_matrix_takes_the_layer_and_window_from_the_env(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", SELECTED_LAYER="20", SE_LAYERS_HI="32",
+    ))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--selected-layer 20" in gen
+    assert "--se-layers 0 32" in gen
+
+
+@needs_bash
+def test_the_derived_arm_ignores_the_heuristic_layer(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm5_reflayer", SELECTED_LAYER="20", DERIVED_LAYER="17",
+    ))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--selected-layer 17" in gen
+
+
+@needs_bash
+def test_max_edge_reaches_both_conditions_through_one_flag(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc", MAX_EDGE="1536"))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--max-edge 1536" in gen
+
+
+@needs_bash
+def test_think_runs_get_their_own_suffix_and_flags(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", THINK="1", MAX_NEW_TOKENS="512",
+    ))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "--think" in gen
+    assert "--max-new-tokens 512" in gen
+    assert "--run-name arm1_sparc_q_think" in gen
+    assert "arm1_sparc_q_think" in judge
+
+
+@needs_bash
+def test_think_and_smoke_suffixes_compose(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc", THINK="1"), "--smoke")
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--run-name arm1_sparc_q_think_smoke" in gen
+
+
+# ---------------------------------------------------------------- full eval
+
+
+def _full_eval_sandbox(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    (root / "scripts").mkdir(parents=True)
+    for script in (_FULL, _COMPOSED):
+        target = root / "scripts" / script.name
+        target.write_text(script.read_text(encoding="utf-8"), encoding="utf-8")
+    for dataset in ("odibench", "omnicot"):
+        processed = root / "data" / "processed" / dataset
+        processed.mkdir(parents=True)
+        (processed / "questions.jsonl").write_text("", encoding="utf-8")
+        (processed / "manifest.jsonl").write_text("", encoding="utf-8")
+    (root / "results" / "runs").mkdir(parents=True)
+    return root
+
+
+def _run_full(root: Path, env_extra: dict, *args) -> subprocess.CompletedProcess:
+    env = {**os.environ, "PYTHON": "echo", **env_extra}
+    return subprocess.run(
+        [_bash, str(root / "scripts" / "run_full_eval.sh"), *args],
+        capture_output=True, text=True, env=env,
+    )
+
+
+@needs_bash
+def test_full_eval_is_strict_bash_with_valid_syntax():
+    text = _FULL.read_text(encoding="utf-8")
+    assert text.startswith("#!/usr/bin/env bash")
+    assert "set -euo pipefail" in text
+    result = subprocess.run([_bash, "-n", str(_FULL)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+@needs_bash
+def test_full_eval_defaults_to_smolvlm_with_both_arms(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {"SKIP_OMNICOT": "1", "SKIP_JUDGE": "1"})
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    gen = _gen_lines(result.stdout, "composed_generate.py")
+    assert len(gen) == 2
+    assert "run_smolvlm22_odibench_composed.yaml" in gen[0]
+    assert "--selected-layer 15" in gen[0] and "--se-layers 0 24" in gen[0]
+    assert "--selected-layer 17" in gen[1]
+    assert "--max-edge" not in gen[0]
+    assert "full_eval_odibench/smolvlm-2.2b" in gen[0]
+
+
+@needs_bash
+def test_full_eval_runs_the_other_families_on_one_arm_with_their_geometry(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {
+        "FAMILIES": "llava-1.5-7b qwen2.5-vl-7b internvl3-8b-hf",
+        "SKIP_OMNICOT": "1", "SKIP_JUDGE": "1",
+    })
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    gen = _gen_lines(result.stdout, "composed_generate.py")
+    assert len(gen) == 3
+    assert "run_llava_odibench_composed.yaml" in gen[0]
+    assert "--selected-layer 20" in gen[0] and "--se-layers 0 32" in gen[0]
+    assert "run_qwen7b_odibench_composed.yaml" in gen[1]
+    assert "--selected-layer 18" in gen[1] and "--se-layers 0 28" in gen[1]
+    assert "run_internvl3_odibench_composed.yaml" in gen[2]
+    assert "--selected-layer 18" in gen[2] and "--se-layers 0 28" in gen[2]
+    for line in gen:
+        assert "--max-edge 1536" in line
+        assert "--adaptive" not in line
+        assert "--run-name arm1_sparc_q" in line
+    assert "full_eval_odibench/qwen2.5-vl-7b" in gen[1]
+
+
+@needs_bash
+def test_full_eval_skips_the_diagnostic_for_families_without_the_derived_arm(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {
+        "FAMILIES": "qwen2.5-vl-7b", "SKIP_ODIBENCH": "1", "SKIP_JUDGE": "1",
+    })
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    assert not _gen_lines(result.stdout, "collect_hidden_states.py")
+    gen = _gen_lines(result.stdout, "composed_generate.py")
+    assert len(gen) == 1
+    assert "run_qwen7b_omnicot_composed.yaml" in gen[0]
+    assert "--selected-layer 18" in gen[0]
+
+
+@needs_bash
+def test_full_eval_demands_the_derived_layer_when_the_diagnostic_is_skipped(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {"SKIP_ODIBENCH": "1", "SKIP_DIAG": "1", "SKIP_JUDGE": "1"})
+
+    assert result.returncode != 0
+    assert "derived_layer.txt" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_full_eval_reads_a_derived_layer_from_the_family_dir(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+    layer_file = root / "results" / "runs" / "full_eval_omnicot" / "smolvlm-2.2b" / "derived_layer.txt"
+    layer_file.parent.mkdir(parents=True)
+    layer_file.write_text("17\n", encoding="utf-8")
+
+    result = _run_full(root, {"SKIP_ODIBENCH": "1", "SKIP_DIAG": "1", "SKIP_JUDGE": "1"})
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    gen = _gen_lines(result.stdout, "composed_generate.py")
+    assert len(gen) == 2
+    assert "--selected-layer 17" in gen[1]
+
+
+@needs_bash
+def test_the_think_sample_is_off_by_default_and_appends_one_arm_when_on(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    off = _run_full(root, {"FAMILIES": "llava-1.5-7b", "SKIP_OMNICOT": "1", "SKIP_JUDGE": "1"})
+    on = _run_full(root, {
+        "FAMILIES": "llava-1.5-7b", "SKIP_OMNICOT": "1", "SKIP_JUDGE": "1",
+        "THINK_SAMPLE": "1",
+    })
+
+    assert not [ln for ln in _gen_lines(off.stdout, "composed_generate.py") if "--think" in ln]
+    think = [ln for ln in _gen_lines(on.stdout, "composed_generate.py") if "--think" in ln]
+    assert len(think) == 1
+    assert "--limit 50" in think[0]
+    assert "--max-new-tokens 512" in think[0]
+    assert "--run-name arm1_sparc_q_think" in think[0]
+    assert "--max-edge 1536" in think[0]
+    assert "--selected-layer 20" in think[0]
+
+
+@needs_bash
+def test_full_eval_rejects_an_unknown_family(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {"FAMILIES": "gpt-9", "SKIP_JUDGE": "1"})
+
+    assert result.returncode != 0
+    assert "unknown family" in result.stdout + result.stderr
+
+
+@needs_bash
+def test_full_eval_forwards_skip_generation_to_the_judge_stage(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {
+        "FAMILIES": "qwen2.5-vl-7b", "SKIP_OMNICOT": "1", "SKIP_GENERATION": "1",
+        "THINK_SAMPLE": "1",
+    })
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    assert not _gen_lines(result.stdout, "composed_generate.py")
+    judge = _gen_lines(result.stdout, "judge_report.py")
+    assert len(judge) == 2
+    assert "arm1_sparc_q_think" in judge[1]
+
+
+# ---------------------------------------------------------------- rope variant
+
+
+@needs_bash
+def test_spherope_and_circular_pad_reach_the_generator_with_a_rope_suffix(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", SPHEROPE="both", CIRCULAR_PAD="112",
+    ))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    judge = _gen_lines(result.stdout, "judge_report.py")[0]
+    assert "--spherope both" in gen
+    assert "--circular-pad 112" in gen
+    assert "--run-name arm1_sparc_q_rope" in gen
+    assert "arm1_sparc_q_rope" in judge
+
+
+@needs_bash
+def test_padding_alone_still_gets_the_rope_suffix(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc", CIRCULAR_PAD="112"))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--spherope" not in gen
+    assert "--circular-pad 112" in gen
+    assert "--run-name arm1_sparc_q_rope" in gen
+
+
+@needs_bash
+def test_think_and_rope_suffixes_compose_in_a_fixed_order(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(
+        tmp_path, ARMS="arm1_sparc", THINK="1", SPHEROPE="vit",
+    ))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--run-name arm1_sparc_q_think_rope" in gen
+
+
+@needs_bash
+def test_the_composed_matrix_defaults_to_fifty_items(tmp_path: Path):
+    result = _run(_COMPOSED, _composed_env(tmp_path, ARMS="arm1_sparc"))
+
+    gen = _gen_lines(result.stdout, "composed_generate.py")[0]
+    assert "--limit 50" in gen
+
+
+@needs_bash
+def test_full_eval_rope_sample_gives_qwen_the_sphere_and_the_others_only_padding(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {
+        "FAMILIES": "smolvlm-2.2b qwen2.5-vl-7b llava-1.5-7b",
+        "ARMS": "arm1_sparc", "SKIP_OMNICOT": "1", "SKIP_JUDGE": "1", "ROPE_SAMPLE": "1",
+    })
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    rope = [ln for ln in _gen_lines(result.stdout, "composed_generate.py") if "_rope" in ln]
+    assert len(rope) == 3
+    smol, qwen, llava = rope
+    assert "run_smolvlm22_odibench_composed.yaml" in smol
+    assert "--spherope" not in smol and "--circular-pad 112" in smol
+    assert "run_qwen7b_odibench_composed.yaml" in qwen
+    assert "--spherope both" in qwen and "--circular-pad 112" in qwen
+    assert "--selected-layer 18" in qwen
+    assert "run_llava_odibench_composed.yaml" in llava
+    assert "--spherope" not in llava and "--circular-pad 112" in llava
+    for line in rope:
+        assert "--limit 50" in line
+        assert "--run-name arm1_sparc_q_rope" in line
+
+
+@needs_bash
+def test_full_eval_defaults_to_fifty_items_per_dataset(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {"FAMILIES": "llava-1.5-7b", "SKIP_JUDGE": "1"})
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    for line in _gen_lines(result.stdout, "composed_generate.py"):
+        assert "--limit 50" in line
+
+
+@needs_bash
+def test_full_eval_judges_the_rope_runs_too_when_generation_is_skipped(tmp_path: Path):
+    root = _full_eval_sandbox(tmp_path)
+
+    result = _run_full(root, {
+        "FAMILIES": "qwen2.5-vl-7b", "SKIP_OMNICOT": "1", "SKIP_GENERATION": "1",
+        "THINK_SAMPLE": "1", "ROPE_SAMPLE": "1",
+    })
+
+    assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-2000:]
+    judge = _gen_lines(result.stdout, "judge_report.py")
+    assert len(judge) == 3
+    assert "arm1_sparc_q_think" in judge[1]
+    assert "arm1_sparc_q_rope" in judge[2]

@@ -287,3 +287,179 @@ def test_the_sparc_record_lands_in_the_snapshot(composed):
     assert composed._sparc_snapshot(hp) == hp.as_dict()
     assert composed._sparc_snapshot(None) is None
     json.dumps(composed._sparc_snapshot(hp))
+
+
+# ---------------------------------------------------------------- think
+
+
+def test_the_think_prompt_still_carries_the_question(composed):
+    prompt = composed.compose_prompt("Are there chairs?", composed.PROMPT_KEY_THINK)
+
+    assert "Are there chairs?" in prompt
+    assert "<think>" in prompt and "</think>" in prompt
+
+
+def test_the_think_prompt_asks_for_no_long_answer_either():
+    from vr_modality_bias.data.prompts import get_prompt
+
+    text = get_prompt("vqa_composed_think").lower()
+    for word in _BANNED:
+        assert word not in text, word
+
+
+def test_split_think_separates_reasoning_from_the_answer(composed):
+    think, answer, ok = composed.split_think(
+        "<think>The chairs are on the left.</think> Yes, there are three chairs."
+    )
+
+    assert think == "The chairs are on the left."
+    assert answer == "Yes, there are three chairs."
+    assert ok is True
+
+
+def test_split_think_tolerates_a_missing_opening_tag(composed):
+    think, answer, ok = composed.split_think("I see two chairs.</think>Two.")
+
+    assert (think, answer, ok) == ("I see two chairs.", "Two.", True)
+
+
+def test_an_unclosed_think_keeps_the_whole_text_as_the_answer(composed):
+    think, answer, ok = composed.split_think("<think>I see two chairs and")
+
+    assert think == ""
+    assert answer == "<think>I see two chairs and"
+    assert ok is False
+
+
+def test_answer_fields_without_think_are_the_old_shape(composed):
+    assert composed.answer_fields("Two.", think=False) == {"answer": "Two."}
+
+
+def test_answer_fields_with_think_keep_the_raw_text(composed):
+    fields = composed.answer_fields("<think>hm</think> Two.", think=True)
+
+    assert fields == {
+        "answer": "Two.",
+        "answer_raw": "<think>hm</think> Two.",
+        "think": "hm",
+        "think_well_formed": True,
+    }
+
+
+def test_resuming_a_think_run_into_a_plain_run_is_rejected(composed, tmp_path: Path):
+    path = tmp_path / "answers.jsonl"
+    composed._append(path, {
+        "image_id": "a", "question_id": "q1", "condition": "off",
+        "prompt_key": composed.PROMPT_KEY, "sparc": None,
+    })
+
+    with pytest.raises(ValueError, match="prompt_key"):
+        composed.assert_resume_arm_matches(path, {"alpha": 1.05}, composed.PROMPT_KEY_THINK)
+
+
+def test_resuming_under_the_same_prompt_key_passes(composed, tmp_path: Path):
+    path = tmp_path / "answers.jsonl"
+    composed._append(path, {
+        "image_id": "a", "question_id": "q1", "condition": "off",
+        "prompt_key": composed.PROMPT_KEY_THINK, "sparc": None,
+    })
+
+    composed.assert_resume_arm_matches(path, {"alpha": 1.05}, composed.PROMPT_KEY_THINK)
+
+
+def test_the_think_and_input_flags_parse(composed):
+    args = composed.build_parser().parse_args([
+        "--config", "c.yaml", "--questions", "q.jsonl", *_LAYERS,
+        "--think", "--max-edge", "1536", "--max-new-tokens", "512",
+    ])
+
+    assert args.think is True
+    assert args.max_edge == 1536
+    assert args.max_new_tokens == 512
+
+
+def test_the_input_flags_default_to_leaving_everything_alone(composed):
+    args = composed.build_parser().parse_args(
+        ["--config", "c.yaml", "--questions", "q.jsonl", *_LAYERS]
+    )
+
+    assert args.think is False
+    assert args.max_edge is None
+    assert args.max_new_tokens is None
+
+
+# ---------------------------------------------------------------- max edge
+
+
+def test_fit_image_caps_the_longer_side_and_keeps_the_aspect(composed):
+    from PIL import Image
+
+    fitted = composed.fit_image(Image.new("RGB", (4096, 2048)), 1536)
+
+    assert fitted.size == (1536, 768)
+
+
+def test_fit_image_leaves_a_small_image_and_none_untouched(composed):
+    from PIL import Image
+
+    small = Image.new("RGB", (800, 400))
+
+    assert composed.fit_image(small, 1536) is small
+    assert composed.fit_image(small, None) is small
+
+
+# ---------------------------------------------------------------- spherope / circular
+
+
+def test_the_rope_flags_parse_and_default_to_off(composed):
+    off = composed.build_parser().parse_args(
+        ["--config", "c.yaml", "--questions", "q.jsonl", *_LAYERS]
+    )
+    on = composed.build_parser().parse_args([
+        "--config", "c.yaml", "--questions", "q.jsonl", *_LAYERS,
+        "--spherope", "both", "--circular-pad", "112",
+    ])
+
+    assert (off.spherope, off.circular_pad) == ("off", 0)
+    assert (on.spherope, on.circular_pad) == ("both", 112)
+
+
+def test_an_unknown_spherope_mode_is_rejected_by_argparse(composed):
+    with pytest.raises(SystemExit):
+        composed.build_parser().parse_args([
+            "--config", "c.yaml", "--questions", "q.jsonl", *_LAYERS, "--spherope", "sphere",
+        ])
+
+
+def test_resuming_a_rope_run_into_a_plain_run_is_rejected(composed, tmp_path: Path):
+    path = tmp_path / "answers.jsonl"
+    composed._append(path, {
+        "image_id": "a", "question_id": "q1", "condition": "off",
+        "prompt_key": composed.PROMPT_KEY, "spherope": "off", "circular_pad": 0,
+        "sparc": None,
+    })
+
+    with pytest.raises(ValueError, match="spherope"):
+        composed.assert_resume_arm_matches(
+            path, {"alpha": 1.05}, composed.PROMPT_KEY,
+            {"spherope": "both", "circular_pad": 0},
+        )
+    with pytest.raises(ValueError, match="circular_pad"):
+        composed.assert_resume_arm_matches(
+            path, {"alpha": 1.05}, composed.PROMPT_KEY,
+            {"spherope": "off", "circular_pad": 112},
+        )
+    composed.assert_resume_arm_matches(
+        path, {"alpha": 1.05}, composed.PROMPT_KEY, {"spherope": "off", "circular_pad": 0},
+    )
+
+
+def test_an_old_answers_file_without_variant_fields_still_resumes(composed, tmp_path: Path):
+    path = tmp_path / "answers.jsonl"
+    composed._append(path, {
+        "image_id": "a", "question_id": "q1", "condition": "off", "sparc": None,
+    })
+
+    composed.assert_resume_arm_matches(
+        path, {"alpha": 1.05}, composed.PROMPT_KEY, {"spherope": "off", "circular_pad": 0},
+    )

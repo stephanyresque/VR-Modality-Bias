@@ -33,10 +33,12 @@ try:
     from vr_modality_bias.data.manifests import iter_manifest
     from vr_modality_bias.data.prompts import get_prompt
     from vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from vr_modality_bias.experiment.spherope import SPHEROPE_MODES, enable_spherope
     from vr_modality_bias.models.registry import build_model
     from vr_modality_bias.utils.config import load_config
     from vr_modality_bias.utils.device import resolve_dtype, select_device
     from vr_modality_bias.utils.seeds import derive_image_seed
+    from vr_modality_bias.utils.spherope import circular_pad_image, pad_columns
 except ModuleNotFoundError:
     sys.path.insert(0, str(here()))
 
@@ -44,13 +46,18 @@ except ModuleNotFoundError:
     from src.vr_modality_bias.data.manifests import iter_manifest
     from src.vr_modality_bias.data.prompts import get_prompt
     from src.vr_modality_bias.experiment.sparc import SparcHyperparams, enable_sparc
+    from src.vr_modality_bias.experiment.spherope import SPHEROPE_MODES, enable_spherope
     from src.vr_modality_bias.models.registry import build_model
     from src.vr_modality_bias.utils.config import load_config
     from src.vr_modality_bias.utils.device import resolve_dtype, select_device
     from src.vr_modality_bias.utils.seeds import derive_image_seed
+    from src.vr_modality_bias.utils.spherope import circular_pad_image, pad_columns
 
 
 PROMPT_KEY = "vqa_composed"
+PROMPT_KEY_THINK = "vqa_composed_think"
+THINK_CLOSE = "</think>"
+THINK_OPEN = "<think>"
 
 
 def _iso_now() -> str:
@@ -67,8 +74,39 @@ def _sparc_snapshot(hparams: SparcHyperparams | None) -> dict | None:
     return hparams.as_dict() if hparams is not None else None
 
 
-def compose_prompt(question_text: str) -> str:
-    return get_prompt(PROMPT_KEY).format(question=question_text)
+def compose_prompt(question_text: str, prompt_key: str = PROMPT_KEY) -> str:
+    return get_prompt(prompt_key).format(question=question_text)
+
+
+def split_think(text: str) -> tuple[str, str, bool]:
+    close = text.find(THINK_CLOSE)
+    if close == -1:
+        return "", text.strip(), False
+    head = text[:close]
+    opened = head.find(THINK_OPEN)
+    think = head[opened + len(THINK_OPEN):] if opened != -1 else head
+    answer = text[close + len(THINK_CLOSE):]
+    return think.strip(), answer.strip(), True
+
+
+def fit_image(image: Image.Image, max_edge: int | None) -> Image.Image:
+    if max_edge is None or max(image.size) <= max_edge:
+        return image
+    fitted = image.copy()
+    fitted.thumbnail((max_edge, max_edge))
+    return fitted
+
+
+def answer_fields(answer: str, think: bool) -> dict:
+    if not think:
+        return {"answer": answer}
+    reasoning, final, well_formed = split_think(answer)
+    return {
+        "answer": final,
+        "answer_raw": answer,
+        "think": reasoning,
+        "think_well_formed": well_formed,
+    }
 
 
 def answer_key(image_id: str, question_id: str, condition: str) -> tuple[str, str, str]:
@@ -101,7 +139,10 @@ def read_done(jsonl_path: Path) -> set[tuple[str, str, str]]:
     return done
 
 
-def assert_resume_arm_matches(jsonl_path: Path, current_sparc: dict) -> None:
+def assert_resume_arm_matches(
+    jsonl_path: Path, current_sparc: dict, prompt_key: str | None = None,
+    variant: dict | None = None,
+) -> None:
     """Abort resuming into an answers.jsonl written by a different SPARC arm.
 
     Same hazard as the description track: the resume key does not mention the
@@ -119,6 +160,19 @@ def assert_resume_arm_matches(jsonl_path: Path, current_sparc: dict) -> None:
                 entry = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            if prompt_key is not None and entry.get("prompt_key") not in (None, prompt_key):
+                raise ValueError(
+                    f"{jsonl_path} already holds answers under prompt_key="
+                    f"{entry.get('prompt_key')!r}, current is {prompt_key!r}. "
+                    f"Use a different --run-name or --overwrite."
+                )
+            for key, value in (variant or {}).items():
+                if key in entry and entry[key] != value:
+                    raise ValueError(
+                        f"{jsonl_path} already holds answers with {key}="
+                        f"{entry[key]!r}, current is {value!r}. Use a different "
+                        f"--run-name or --overwrite."
+                    )
             if entry.get("condition") != "on":
                 continue
             existing = entry.get("sparc")
@@ -216,7 +270,7 @@ def pair_up(
 
 
 def _probe_sparc_layout(model_wrapper, image, prompt):
-    """Return ``(input_len, image_positions, question_positions)`` for one prefill.
+    """Return ``(input_len, image_positions, question_positions, image_grid)`` for one prefill.
 
     Must be re-run per PAIR, not per image: each composed question has its own
     token length, so ``input_len`` moves even though the image does not.
@@ -241,7 +295,9 @@ def _probe_sparc_layout(model_wrapper, image, prompt):
     question_positions = torch.arange(
         int(image_positions[-1]) + 1, answer_start, dtype=torch.long
     )
-    return answer_start - num_image_patches, image_positions, question_positions
+    grid = prefix_inputs.get("image_grid_thw")
+    image_grid = None if grid is None else [int(v) for v in grid[0]]
+    return answer_start - num_image_patches, image_positions, question_positions, image_grid
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -310,6 +366,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Print each answer to stdout in addition to the log.")
     parser.add_argument("--overwrite", action="store_true",
         help="Delete an existing answers.jsonl before starting.")
+    parser.add_argument("--max-edge", type=int, default=None,
+        help="Resize every image so its longer side is at most this many "
+             "pixels before the processor sees it. Applied identically to "
+             "OFF and ON. Default: hand the image over as is.")
+    parser.add_argument("--think", action="store_true",
+        help=f"Use the {PROMPT_KEY_THINK!r} prompt: the model reasons inside "
+             "<think></think> before answering. The judged answer is the text "
+             "after </think>; the reasoning is kept in the JSONL.")
+    parser.add_argument("--max-new-tokens", type=int, default=None,
+        help="Override generation.max_new_tokens from the config.")
+    parser.add_argument("--spherope", choices=list(SPHEROPE_MODES), default="off",
+        help="Replace the width axis of the model's 2D RoPE by the spherical "
+             "one of SpheRoPE, in the vision tower (vit), the decoder mRoPE "
+             "(llm) or both. Qwen2.5-VL only; applied to OFF and ON alike.")
+    parser.add_argument("--circular-pad", type=int, default=0,
+        help="Circularly pad the image by this many pixels on each side "
+             "(left edge sees the right edge and vice versa) before the "
+             "processor. Applied after --max-edge, to OFF and ON alike.")
     return parser
 
 
@@ -344,6 +418,10 @@ def main() -> int:
     cfg = load_config(args.config)
     seed_global = int(cfg["run"]["seed_global"])
     max_new_tokens = int(cfg["generation"]["max_new_tokens"])
+    if args.max_new_tokens is not None:
+        max_new_tokens = int(args.max_new_tokens)
+    prompt_key = PROMPT_KEY_THINK if args.think else PROMPT_KEY
+    variant = {"spherope": args.spherope, "circular_pad": int(args.circular_pad)}
     model_key = str(cfg["model"]["key"])
     model_id = str(cfg["model"]["model_id"])
     dtype_str = str(cfg["model"]["dtype"])
@@ -366,7 +444,9 @@ def main() -> int:
     logger.info(f"Composed-question generation — run_name={args.run_name}")
     logger.info(f"config  : {args.config}  (model {model_id}, {dtype_str})")
     logger.info(f"questions: {args.questions}")
-    logger.info(f"prompt_key: {PROMPT_KEY} — carries no length instruction")
+    logger.info(f"prompt_key: {prompt_key} — carries no length instruction")
+    logger.info(f"max_edge : {args.max_edge}  think={args.think}  "
+                f"spherope={args.spherope}  circular_pad={args.circular_pad}")
     logger.info(
         f"SPARC arm: alpha={args.alpha} beta={args.beta} tau={args.tau} "
         f"selected_layer={args.selected_layer} se_layers={tuple(args.se_layers)} "
@@ -380,7 +460,10 @@ def main() -> int:
         "run_name": args.run_name,
         "config": str(args.config),
         "questions": str(args.questions),
-        "prompt_key": PROMPT_KEY,
+        "prompt_key": prompt_key,
+        "think": args.think,
+        "max_edge": args.max_edge,
+        **variant,
         **sparc_hparams.as_dict(),
         "limit": args.limit,
         "max_new_tokens": max_new_tokens,
@@ -402,7 +485,7 @@ def main() -> int:
 
     sparc_dict = _sparc_snapshot(sparc_hparams)
     try:
-        assert_resume_arm_matches(jsonl_path, sparc_dict)
+        assert_resume_arm_matches(jsonl_path, sparc_dict, prompt_key, variant)
     except ValueError as exc:
         logger.error(str(exc))
         return 1
@@ -434,21 +517,39 @@ def main() -> int:
     t_start = time.time()
 
     for image_id, image_path, question in pairs:
-        prompt = compose_prompt(question.question_text)
+        prompt = compose_prompt(question.question_text, prompt_key)
         # One seed per pair, shared by OFF and ON so the two are directly
         # comparable; distinct across questions so two questions on one image
         # never share a sampling trajectory.
         seed = int(derive_image_seed(seed_global, f"{image_id}::{question.question_id}"))
 
         with Image.open(image_path) as raw:
-            image = raw.convert("RGB")
+            image = fit_image(raw.convert("RGB"), args.max_edge)
+        image = circular_pad_image(image, args.circular_pad)
+
+        layout = None
+        pad_cols_vit = pad_cols_llm = 0
+        if args.spherope != "off":
+            layout = _probe_sparc_layout(model_wrapper, image, prompt)
+            if layout[3] is None:
+                raise ValueError(
+                    f"--spherope needs the processor's image_grid_thw and "
+                    f"{model_id} does not provide one; SpheRoPE is Qwen2.5-VL only."
+                )
+            pad_cols_vit = pad_columns(args.circular_pad, image.width, layout[3][2], merge=2)
+            pad_cols_llm = pad_cols_vit // 2
 
         base_entry = {
             "image_id": image_id,
             "question_id": question.question_id,
             "question_text": question.question_text,
             "seed": seed,
-            "prompt_key": PROMPT_KEY,
+            "prompt_key": prompt_key,
+            "max_edge": args.max_edge,
+            **variant,
+            "pad_cols_vit": pad_cols_vit,
+            "pad_cols_llm": pad_cols_llm,
+            "image_size": list(image.size),
             "model_id": model_id,
             "dtype": dtype_str,
             "max_new_tokens": max_new_tokens,
@@ -461,18 +562,23 @@ def main() -> int:
         else:
             t_cell = time.time()
             try:
-                answer = model_wrapper.generate_caption(
-                    image=image, prompt=prompt,
-                    max_new_tokens=max_new_tokens,
-                    seed=seed,
-                    generation_kwargs=gen_kwargs,
-                )
+                with enable_spherope(
+                    model_wrapper, mode=args.spherope,
+                    image_positions=None if layout is None else layout[1],
+                    pad_cols_vit=pad_cols_vit, pad_cols_llm=pad_cols_llm,
+                ):
+                    answer = model_wrapper.generate_caption(
+                        image=image, prompt=prompt,
+                        max_new_tokens=max_new_tokens,
+                        seed=seed,
+                        generation_kwargs=gen_kwargs,
+                    )
                 _append(jsonl_path, {
                     **base_entry,
                     "condition": "off",
                     "alpha": None,
                     "sparc": None,
-                    "answer": answer,
+                    **answer_fields(answer, args.think),
                     "timestamp_iso": _iso_now(),
                 })
                 done.add(key_off)
@@ -504,10 +610,13 @@ def main() -> int:
             continue
         t_cell = time.time()
         try:
-            input_len, image_positions, question_positions = _probe_sparc_layout(
-                model_wrapper, image, prompt,
-            )
-            with enable_sparc(
+            if layout is None:
+                layout = _probe_sparc_layout(model_wrapper, image, prompt)
+            input_len, image_positions, question_positions, _ = layout
+            with enable_spherope(
+                model_wrapper, mode=args.spherope, image_positions=image_positions,
+                pad_cols_vit=pad_cols_vit, pad_cols_llm=pad_cols_llm,
+            ), enable_sparc(
                 model_wrapper, hparams=sparc_hparams,
                 probe_image=image, prompt=prompt,
             ) as buffer:
@@ -531,7 +640,7 @@ def main() -> int:
                 "se_layers": list(args.se_layers),
                 "beta": float(args.beta),
                 "sparc": sparc_dict,
-                "answer": answer,
+                **answer_fields(answer, args.think),
                 "timestamp_iso": _iso_now(),
             })
             done.add(key_on)

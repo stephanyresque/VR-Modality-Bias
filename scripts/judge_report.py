@@ -121,7 +121,11 @@ def read_done(path: Path) -> set[tuple[str, str, str, int]]:
 def limit_entries(entries: list[dict], limit: int | None) -> list[dict]:
     if limit is None:
         return entries
-    pairs = sorted({(str(e["image_id"]), str(e["question_id"])) for e in entries})
+    pairs: list[tuple[str, str]] = []
+    for e in entries:
+        pair = (str(e["image_id"]), str(e["question_id"]))
+        if pair not in pairs:
+            pairs.append(pair)
     keep = set(pairs[:limit])
     return [
         e for e in entries
@@ -222,7 +226,7 @@ def collect_items(entries: list[dict], records: list[dict]) -> list[dict]:
             continue
         answer = str(entry.get("answer", ""))
         is_degenerate, reason = classify_degeneration(answer)
-        items.append({
+        item = {
             "image_id": entry["image_id"],
             "question_id": entry["question_id"],
             "condition": entry["condition"],
@@ -232,7 +236,11 @@ def collect_items(entries: list[dict], records: list[dict]) -> list[dict]:
             "degeneration_reason": reason,
             "verdicts": verdicts,
             "entry": entry,
-        })
+        }
+        if "think_well_formed" in entry:
+            item["think_well_formed"] = bool(entry["think_well_formed"])
+            item["think"] = str(entry.get("think", ""))
+        items.append(item)
     return items
 
 
@@ -275,13 +283,18 @@ def report_overall(groups: dict[str, list[dict]]) -> None:
         "arm", "items", "subq", "%correct", "%incorrect", "%not_addr",
         "%invalid", "all_correct", "words", "%degen",
     ]
-    aligns = ["<"] + [">"] * 9
+    with_think = any(
+        "think_well_formed" in item for items in groups.values() for item in items
+    )
+    if with_think:
+        headers += ["%think_ok", "think_words"]
+    aligns = ["<"] + [">"] * (len(headers) - 1)
 
     rows: list[list] = []
     for label in sorted(groups, key=condition_sort_key):
         agg = compute_judge_aggregate(groups[label])
         overall = agg["overall"]
-        rows.append([
+        row = [
             label, agg["n_items"], overall["n_subquestions"],
             f"{100 * overall['rate_correct']:.1f}%",
             f"{100 * overall['rate_incorrect']:.1f}%",
@@ -290,7 +303,13 @@ def report_overall(groups: dict[str, list[dict]]) -> None:
             f"{100 * agg['rate_all_correct']:.1f}%",
             f"{agg['mean_answer_words']:.1f}",
             f"{100 * agg['rate_degenerate']:.1f}%",
-        ])
+        ]
+        if with_think:
+            row += [
+                f"{100 * agg['rate_think_well_formed']:.1f}%",
+                f"{agg['mean_think_words']:.1f}",
+            ]
+        rows.append(row)
     print_table(headers, rows, aligns)
 
 
@@ -313,6 +332,9 @@ def report_audit_sample(items: list[dict], *, n_samples: int) -> None:
     for item in sorted(items, key=_interest)[:n_samples]:
         print(f"  ── {item['image_id']} / {item['question_id']}  "
               f"[{item['condition_label']}]")
+        if "think" in item:
+            print(f"     T: {item['think'][:300]}"
+                  f"{'' if item['think_well_formed'] else '   ! think block not closed'}")
         print(f"     A: {item['answer']}")
         if item["is_degenerate"]:
             print(f"     ! degenerate ({item['degeneration_reason']})")
@@ -349,6 +371,9 @@ def collect_rows(groups: dict[str, list[dict]], *, model_id: str, judge_meta: di
             "mean_answer_words": agg["mean_answer_words"],
             "n_degenerate": agg["n_degenerate"],
             "rate_degenerate": agg["rate_degenerate"],
+            "n_think": agg["n_think"],
+            "rate_think_well_formed": agg["rate_think_well_formed"],
+            "mean_think_words": agg["mean_think_words"],
         }
         for label_name in ALL_LABELS:
             row[f"n_{label_name}"] = overall[f"n_{label_name}"]

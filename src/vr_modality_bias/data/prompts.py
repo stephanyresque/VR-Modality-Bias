@@ -28,6 +28,12 @@ CAPTION_LONG: str = (
 
 VQA_COMPOSED: str = "Answer the question about the image.\n\n{question}"
 
+VQA_COMPOSED_THINK: str = (
+    "Answer the question about the image. First reason step by step about "
+    "what you see, inside <think> and </think> tags. Then, after </think>, "
+    "give your final answer.\n\n{question}"
+)
+
 
 # The judge is text-only by design, not to save compute. What is under test is
 # whether the equirectangular projection breaks the model being evaluated; a
@@ -93,6 +99,7 @@ PROMPTS: dict[str, str] = {
     "caption_medium": CAPTION_MEDIUM,
     "caption_long": CAPTION_LONG,
     "vqa_composed": VQA_COMPOSED,
+    "vqa_composed_think": VQA_COMPOSED_THINK,
     "judge_composed": JUDGE_COMPOSED,
 }
 

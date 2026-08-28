@@ -34,7 +34,20 @@ Optional env: ARMS             space-separated subset of
                                generate nothing. This is how a run gets
                                re-scored without paying for generation again.
               SKIP_JUDGE       1 to generate and score nothing.
-              NUM_ITEMS (default 100), SEED (default 0),
+              SELECTED_LAYER   reference layer of the non-derived arms
+                               (default 15, the SmolVLM heuristic)
+              SE_LAYERS_HI     upper bound of se_layers (default 24, SmolVLM)
+              MAX_EDGE         resize images to this longer side before the
+                               processor (default: none; SmolVLM's processor
+                               already caps at 1536)
+              THINK            1 to use the <think> prompt; run dirs get the
+                               _think suffix so they never collide
+              MAX_NEW_TOKENS   override generation.max_new_tokens
+              SPHEROPE         off|vit|llm|both: spherical width RoPE (Qwen2.5-VL
+                               only); together with CIRCULAR_PAD the run dirs
+                               get the _rope suffix
+              CIRCULAR_PAD     pixels of circular padding per side (default 0)
+              NUM_ITEMS (default 50), SEED (default 0),
               OUTPUT_ROOT (default results/runs), PYTHON.
   --smoke   run the whole sequence with 2 items for an end-to-end check.
 EOF
@@ -85,25 +98,43 @@ CONFIG="${CONFIG:-}"
 
 
 # ---- overridable run config -------------------------------------------------
-NUM_ITEMS="${NUM_ITEMS:-100}"
+NUM_ITEMS="${NUM_ITEMS:-50}"
 SEED="${SEED:-0}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-results/runs}"
 
-# ---- fixed SPARC hparams, common to every arm (the SmolVLM recipe) ----------
+# ---- fixed SPARC hparams, common to every arm (alpha/beta/tau are the
+# recipe of every family; the layer and the window scale with depth) ---------
 ALPHA=1.05
 BETA=0.1
 TAU=3.0
-SELECTED_LAYER=15
+SELECTED_LAYER="${SELECTED_LAYER:-15}"
 SE_LAYERS_LO=0
-SE_LAYERS_HI=24
+SE_LAYERS_HI="${SE_LAYERS_HI:-24}"
 REPETITION_PENALTY=1.2
+MAX_EDGE="${MAX_EDGE:-}"
+THINK="${THINK:-0}"
+MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-}"
+SPHEROPE="${SPHEROPE:-off}"
+CIRCULAR_PAD="${CIRCULAR_PAD:-0}"
 
+SUFFIX=""
+if [[ "$THINK" -eq 1 ]]; then
+    SUFFIX="_think"
+fi
+if [[ "$SPHEROPE" != "off" || "$CIRCULAR_PAD" -gt 0 ]]; then
+    SUFFIX="${SUFFIX}_rope"
+fi
 if [[ "$SMOKE" -eq 1 ]]; then
     NUM_ITEMS=2
-    SUFFIX="_smoke"
-else
-    SUFFIX=""
+    SUFFIX="${SUFFIX}_smoke"
 fi
+
+INPUT_FLAGS=()
+[[ -n "$MAX_EDGE" ]] && INPUT_FLAGS+=(--max-edge "$MAX_EDGE")
+[[ "$THINK" -eq 1 ]] && INPUT_FLAGS+=(--think)
+[[ -n "$MAX_NEW_TOKENS" ]] && INPUT_FLAGS+=(--max-new-tokens "$MAX_NEW_TOKENS")
+[[ "$SPHEROPE" != "off" ]] && INPUT_FLAGS+=(--spherope "$SPHEROPE")
+[[ "$CIRCULAR_PAD" -gt 0 ]] && INPUT_FLAGS+=(--circular-pad "$CIRCULAR_PAD")
 
 # ---- improvement-flag groups (explicit; no reliance on CLI defaults) --------
 ADAPTIVE_FLAGS=(--adaptive --lam 0.5 --ceiling 2.0)
@@ -140,6 +171,7 @@ echo "  config           : ${CONFIG:-<generation skipped>}"
 echo "  questions        : $QUESTIONS"
 echo "  items/arm        : $NUM_ITEMS"
 echo "  common hparams   : alpha=$ALPHA beta=$BETA tau=$TAU selected_layer=$SELECTED_LAYER se_layers=($SE_LAYERS_LO,$SE_LAYERS_HI) rep_penalty=$REPETITION_PENALTY (greedy)"
+echo "  input            : max_edge=${MAX_EDGE:-<as is>} think=$THINK max_new_tokens=${MAX_NEW_TOKENS:-<config>} spherope=$SPHEROPE circular_pad=$CIRCULAR_PAD"
 echo "  arms             : ${SELECTED_ARMS[*]}"
 echo "  arm5 ref layer   : ${DERIVED_LAYER:-<generation skipped>}"
 echo "  judge model      : ${JUDGE_MODEL:-<script default>}"
@@ -174,6 +206,7 @@ run_arm() {
             --selected-layer "$sel_layer" \
             --se-layers "$SE_LAYERS_LO" "$SE_LAYERS_HI" \
             --repetition-penalty "$REPETITION_PENALTY" \
+            "${INPUT_FLAGS[@]}" \
             "${extra_flags[@]}" \
             2>&1 | tee -a "$run_dir/console.log"
     fi
