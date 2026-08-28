@@ -79,9 +79,15 @@ class QwenVLWrapper(ModelWrapper):
 
         self._model = self._load_model(self.model_id, model_kwargs).to(device)
         self._model.eval()
+        self._set_vision_attention("sdpa")
 
         self._lm_head = self._discover_lm_head()
         self._n_layers = self._discover_n_layers()
+
+    def _set_vision_attention(self, implementation: str) -> None:
+        visual = getattr(getattr(self._model, "model", self._model), "visual", None)
+        if visual is not None and hasattr(visual, "set_attn_implementation"):
+            visual.set_attn_implementation(implementation)
 
     @staticmethod
     def _load_model(model_id: str, model_kwargs: dict[str, Any]):

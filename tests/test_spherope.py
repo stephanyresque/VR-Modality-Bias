@@ -390,3 +390,19 @@ def test_pad_columns_scale_the_pixel_pad_to_the_token_grid():
     assert pad_columns(112, 1760, 126) == 8
     assert pad_columns(0, 1760, 126) == 0
     assert pad_columns(100, 1000, 55, merge=2) % 2 == 0
+
+
+# ---------------------------------------------------------------- vision attention
+
+
+def test_the_qwen_wrapper_moves_only_the_vision_tower_to_sdpa(tiny_qwen):
+    from vr_modality_bias.models.qwen_vl import QwenVLWrapper
+
+    tiny_qwen.set_attn_implementation("eager")
+    wrapper = QwenVLWrapper.__new__(QwenVLWrapper)
+    wrapper._model = tiny_qwen
+
+    wrapper._set_vision_attention("sdpa")
+
+    assert tiny_qwen.model.visual.config._attn_implementation == "sdpa"
+    assert tiny_qwen.model.language_model.config._attn_implementation == "eager"
